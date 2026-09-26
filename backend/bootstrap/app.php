@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Identity\Http\Middleware\GarantirUsuarioAtivo;
 use App\Modules\Tenancy\Http\Middleware\DefinirTenantDoUsuario;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,6 +24,13 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->prependToPriorityList(
             before: SubstituteBindings::class,
             prepend: DefinirTenantDoUsuario::class,
+        );
+
+        // Usuário desativado precisa perder o acesso antes de qualquer resolução de
+        // tenant/binding; sem isso o SortedMiddleware do Laravel roda a checagem depois.
+        $middleware->prependToPriorityList(
+            before: DefinirTenantDoUsuario::class,
+            prepend: GarantirUsuarioAtivo::class,
         );
 
         // Atrás de balanceador/CDN, o IP real do cliente vem no X-Forwarded-For.
