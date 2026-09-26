@@ -114,4 +114,19 @@ class LoginTest extends TestCase
 
         $this->assertGuest('web');
     }
+
+    public function test_limite_por_ip_soma_tentativas_de_emails_diferentes(): void
+    {
+        $this->usuario();
+
+        for ($i = 0; $i < 20; $i++) {
+            $this->spa()->postJson('/api/app/auth/login', ['email' => "x{$i}@teste.com", 'password' => 'errada'])
+                ->assertStatus(422);
+        }
+
+        $this->spa()->postJson('/api/app/auth/login', ['email' => 'ana@empresa.com', 'password' => 'Senha123'])
+            ->assertStatus(422)
+            ->assertJsonPath('errors.email.0', fn (string $m): bool => str_starts_with($m, 'Muitas tentativas'));
+        $this->assertGuest('web');
+    }
 }

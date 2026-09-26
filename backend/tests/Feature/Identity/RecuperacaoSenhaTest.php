@@ -12,6 +12,8 @@ use Illuminate\Queue\CallQueuedClosure;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 class RecuperacaoSenhaTest extends TestCase
@@ -94,5 +96,32 @@ class RecuperacaoSenhaTest extends TestCase
             'password' => 'fraca',
             'password_confirmation' => 'fraca',
         ])->assertStatus(422)->assertJsonValidationErrors('password');
+    }
+
+    private function redefinir(string $token): TestResponse
+    {
+        return $this->spa()->postJson('/api/app/auth/redefinir-senha', [
+            'token' => $token, 'email' => 'ana@empresa.com',
+            'password' => 'NovaSenha1', 'password_confirmation' => 'NovaSenha1',
+        ]);
+    }
+
+    public function test_token_expirado_e_recusado(): void
+    {
+        $usuario = Usuario::factory()->for(Tenant::factory())->create(['email' => 'ana@empresa.com']);
+        $token = Password::broker()->createToken($usuario);
+
+        $this->travel(61)->minutes();
+
+        $this->redefinir($token)->assertStatus(422)->assertJsonPath('errors.email.0', 'Link inválido ou expirado.');
+    }
+
+    public function test_token_nao_pode_ser_reutilizado(): void
+    {
+        $usuario = Usuario::factory()->for(Tenant::factory())->create(['email' => 'ana@empresa.com']);
+        $token = Password::broker()->createToken($usuario);
+
+        $this->redefinir($token)->assertOk();
+        $this->redefinir($token)->assertStatus(422)->assertJsonPath('errors.email.0', 'Link inválido ou expirado.');
     }
 }

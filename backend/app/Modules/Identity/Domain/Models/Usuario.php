@@ -37,7 +37,8 @@ class Usuario extends Authenticatable
 
     protected $table = 'usuarios';
 
-    protected $fillable = ['tenant_id', 'nome', 'email', 'password', 'papel', 'ativo'];
+    /** tenant_id e papel são atribuídos só pelas Actions, via forceFill. */
+    protected $fillable = ['nome', 'email', 'password', 'ativo'];
 
     protected $hidden = ['password', 'remember_token'];
 

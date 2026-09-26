@@ -13,6 +13,8 @@ final class LoginRequest extends FormRequest
 {
     private const MAX_TENTATIVAS = 5;
 
+    private const MAX_TENTATIVAS_POR_IP = 20;
+
     private const MENSAGEM_GENERICA = 'E-mail ou senha incorretos.';
 
     protected function prepareForValidation(): void
@@ -31,13 +33,16 @@ final class LoginRequest extends FormRequest
 
     public function autenticar(): void
     {
-        $chave = $this->chaveLimite();
+        $chaveEmail = 'login:'.$this->string('email')->toString().'|'.$this->ip();
+        $chaveIp = 'login-ip:'.$this->ip();
 
-        if (RateLimiter::tooManyAttempts($chave, self::MAX_TENTATIVAS)) {
-            $segundos = RateLimiter::availableIn($chave);
-            throw ValidationException::withMessages([
-                'email' => "Muitas tentativas. Tente novamente em {$segundos} segundos.",
-            ]);
+        foreach ([$chaveEmail => self::MAX_TENTATIVAS, $chaveIp => self::MAX_TENTATIVAS_POR_IP] as $chave => $maximo) {
+            if (RateLimiter::tooManyAttempts($chave, $maximo)) {
+                $segundos = RateLimiter::availableIn($chave);
+                throw ValidationException::withMessages([
+                    'email' => "Muitas tentativas. Tente novamente em {$segundos} segundos.",
+                ]);
+            }
         }
 
         $credenciais = [
@@ -47,15 +52,12 @@ final class LoginRequest extends FormRequest
         ];
 
         if (! Auth::guard('web')->attempt($credenciais)) {
-            RateLimiter::hit($chave, 15 * 60);
+            RateLimiter::hit($chaveEmail, 15 * 60);
+            // Soma entre todos os e-mails: barra quem testa senhas comuns em muitas contas.
+            RateLimiter::hit($chaveIp, 60);
             throw ValidationException::withMessages(['email' => self::MENSAGEM_GENERICA]);
         }
 
-        RateLimiter::clear($chave);
-    }
-
-    private function chaveLimite(): string
-    {
-        return 'login:'.$this->string('email')->toString().'|'.$this->ip();
+        RateLimiter::clear($chaveEmail);
     }
 }
