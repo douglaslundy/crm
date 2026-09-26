@@ -17,4 +17,9 @@ final class TenantNaoDefinidoException extends RuntimeException
     {
         return new self("Registro com tenant_id {$recebido} fora do tenant do contexto ({$esperado}).");
     }
+
+    public static function imutavel(string $original): self
+    {
+        return new self("O tenant_id de um registro não pode mudar (original: {$original}).");
+    }
 }

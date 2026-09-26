@@ -8,6 +8,8 @@ use App\Modules\Identity\Domain\Models\Usuario;
 use App\Modules\Tenancy\Domain\Models\Tenant;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Queue\CallQueuedClosure;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Notification;
 use Tests\TestCase;
@@ -27,6 +29,20 @@ class RecuperacaoSenhaTest extends TestCase
             ->assertJsonPath('message', self::MENSAGEM);
 
         Notification::assertNothingSent();
+    }
+
+    public function test_envio_do_link_acontece_depois_da_resposta(): void
+    {
+        // Enviar o e-mail dentro da requisição deixaria a resposta mais lenta só
+        // para e-mails cadastrados — o tempo revelaria quem tem conta.
+        Bus::fake();
+        Notification::fake();
+        Usuario::factory()->for(Tenant::factory())->create(['email' => 'ana@empresa.com']);
+
+        $this->spa()->postJson('/api/app/auth/esqueci-senha', ['email' => 'ana@empresa.com'])->assertOk();
+
+        Notification::assertNothingSent();
+        Bus::assertDispatchedAfterResponse(CallQueuedClosure::class);
     }
 
     public function test_fluxo_completo_redefine_a_senha(): void

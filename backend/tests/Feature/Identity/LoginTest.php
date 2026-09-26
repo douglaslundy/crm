@@ -76,6 +76,21 @@ class LoginTest extends TestCase
             ->assertJsonPath('errors.email.0', fn (string $msg) => str_starts_with($msg, 'Muitas tentativas.'));
     }
 
+    public function test_atras_de_proxy_confiavel_o_bloqueio_e_por_cliente_real(): void
+    {
+        // phpunit.xml define TRUSTED_PROXIES=127.0.0.1 (o REMOTE_ADDR dos testes).
+        $this->usuario();
+
+        for ($i = 0; $i < 5; $i++) {
+            $this->spa()->withHeader('X-Forwarded-For', '203.0.113.10')
+                ->postJson('/api/app/auth/login', ['email' => 'ana@empresa.com', 'password' => 'errada']);
+        }
+
+        $this->spa()->withHeader('X-Forwarded-For', '198.51.100.20')
+            ->postJson('/api/app/auth/login', ['email' => 'ana@empresa.com', 'password' => 'Senha123'])
+            ->assertOk();
+    }
+
     public function test_me_sem_sessao_devolve_401(): void
     {
         $this->spa()->getJson('/api/app/auth/me')->assertUnauthorized();

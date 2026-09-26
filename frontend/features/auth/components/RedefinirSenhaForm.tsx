@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError } from '@/lib/api';
+import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { authApi } from '../api';
 import { redefinirSenhaSchema, type RedefinirSenhaDados } from '../schemas';
 
@@ -29,6 +30,8 @@ export function RedefinirSenhaForm({ token, email }: { token: string; email: str
       form.setError('root', { message: erro instanceof ApiError ? erro.primeiraMensagem() : 'Tente novamente.' }),
   });
 
+  const envioUnico = useEnvioUnico();
+
   if (!token || !email) {
     return (
       <div className="space-y-4 text-center">
@@ -38,9 +41,14 @@ export function RedefinirSenhaForm({ token, email }: { token: string; email: str
     );
   }
 
+  const enviando = form.formState.isSubmitting;
   const erros = form.formState.errors;
   return (
-    <form onSubmit={form.handleSubmit((d) => redefinir.mutate(d))} noValidate className="space-y-4">
+    <form
+      onSubmit={envioUnico(form.handleSubmit(async (d) => { await redefinir.mutateAsync(d).catch(() => undefined); }))}
+      noValidate
+      className="space-y-4"
+    >
       <div className="space-y-2">
         <Label htmlFor="password">Nova senha</Label>
         <Input id="password" type="password" autoComplete="new-password" {...form.register('password')} />
@@ -54,8 +62,8 @@ export function RedefinirSenhaForm({ token, email }: { token: string; email: str
         ) : null}
       </div>
       {erros.root ? <p role="alert" className="text-sm text-danger">{erros.root.message}</p> : null}
-      <Button type="submit" className="w-full" disabled={redefinir.isPending}>
-        {redefinir.isPending ? 'Salvando...' : 'Redefinir senha'}
+      <Button type="submit" className="w-full" disabled={enviando}>
+        {enviando ? 'Salvando...' : 'Redefinir senha'}
       </Button>
     </form>
   );

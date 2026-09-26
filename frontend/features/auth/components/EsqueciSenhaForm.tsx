@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError } from '@/lib/api';
+import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { authApi } from '../api';
 import { esqueciSenhaSchema, type EsqueciSenhaDados } from '../schemas';
 
@@ -19,6 +20,8 @@ export function EsqueciSenhaForm() {
       form.setError('root', { message: erro instanceof ApiError ? erro.primeiraMensagem() : 'Tente novamente.' }),
   });
 
+  const envioUnico = useEnvioUnico();
+
   if (pedido.isSuccess) {
     return (
       <div className="space-y-4 text-center">
@@ -28,17 +31,22 @@ export function EsqueciSenhaForm() {
     );
   }
 
+  const enviando = form.formState.isSubmitting;
   const erros = form.formState.errors;
   return (
-    <form onSubmit={form.handleSubmit((d) => pedido.mutate(d))} noValidate className="space-y-4">
+    <form
+      onSubmit={envioUnico(form.handleSubmit(async (d) => { await pedido.mutateAsync(d).catch(() => undefined); }))}
+      noValidate
+      className="space-y-4"
+    >
       <div className="space-y-2">
         <Label htmlFor="email">E-mail cadastrado</Label>
         <Input id="email" type="email" autoComplete="email" {...form.register('email')} />
         {erros.email ? <p className="text-sm text-danger">{erros.email.message}</p> : null}
       </div>
       {erros.root ? <p role="alert" className="text-sm text-danger">{erros.root.message}</p> : null}
-      <Button type="submit" className="w-full" disabled={pedido.isPending}>
-        {pedido.isPending ? 'Enviando...' : 'Enviar link'}
+      <Button type="submit" className="w-full" disabled={enviando}>
+        {enviando ? 'Enviando...' : 'Enviar link'}
       </Button>
       <Link href="/login" className="block text-center text-sm text-muted-foreground hover:text-foreground">
         Voltar ao login

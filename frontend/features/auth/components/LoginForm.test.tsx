@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ApiError } from '@/lib/api';
@@ -68,7 +68,10 @@ describe('LoginForm', () => {
     await userEvent.type(screen.getByLabelText('E-mail'), 'ana@x.com');
     await userEvent.type(screen.getByLabelText('Senha'), 'Senha123');
     const botao = screen.getByRole('button', { name: 'Entrar' });
-    await userEvent.dblClick(botao);
+    await act(async () => {
+      fireEvent.click(botao);
+      fireEvent.click(botao);
+    });
 
     expect(authApi.login).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('button', { name: 'Entrando...' })).toBeDisabled();

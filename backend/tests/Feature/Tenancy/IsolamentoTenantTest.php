@@ -86,6 +86,32 @@ class IsolamentoTenantTest extends TestCase
         RegistroDeTeste::create(['descricao' => 'intruso', 'tenant_id' => $this->tenantB->id]);
     }
 
+    public function test_update_nao_move_registro_para_outro_tenant(): void
+    {
+        $this->contexto()->set($this->tenantA->id);
+        $registro = RegistroDeTeste::create(['descricao' => 'de A']);
+
+        try {
+            $registro->update(['tenant_id' => $this->tenantB->id]);
+            $this->fail('Era esperada TenantNaoDefinidoException.');
+        } catch (TenantNaoDefinidoException) {
+            // esperado
+        }
+
+        $this->assertSame($this->tenantA->id, RegistroDeTeste::withoutTenantScope()->find($registro->id)?->tenant_id);
+    }
+
+    public function test_save_com_tenant_alterado_lanca_excecao(): void
+    {
+        $this->contexto()->set($this->tenantA->id);
+        $registro = RegistroDeTeste::create(['descricao' => 'de A']);
+        $registro->tenant_id = $this->tenantB->id;
+
+        $this->expectException(TenantNaoDefinidoException::class);
+
+        $registro->save();
+    }
+
     public function test_sem_scope_explicito_admin_enxerga_todos(): void
     {
         $this->contexto()->set($this->tenantA->id);

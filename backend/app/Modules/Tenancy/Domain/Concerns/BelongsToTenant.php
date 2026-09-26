@@ -32,6 +32,14 @@ trait BelongsToTenant
                 throw TenantNaoDefinidoException::divergente($contexto, (string) $informado);
             }
         });
+
+        // tenant_id é imutável depois da criação. insert()/upsert()/query()->update()
+        // não disparam eventos de model e ficam fora desta guarda (ver ADR 0002).
+        static::updating(function (Model $model): void {
+            if ($model->isDirty('tenant_id')) {
+                throw TenantNaoDefinidoException::imutavel((string) $model->getOriginal('tenant_id'));
+            }
+        });
     }
 
     /** @return Builder<static> */

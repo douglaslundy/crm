@@ -33,6 +33,33 @@ describe('api', () => {
     expect(String(fetchMock.mock.calls[0][0])).toContain('/sanctum/csrf-cookie');
   });
 
+  it('com token CSRF vencido (419), renova o cookie e repete a requisição uma vez', async () => {
+    document.cookie = 'XSRF-TOKEN=velho';
+    const fetchMock = vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(resposta(419, { message: 'CSRF token mismatch.' }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(resposta(200, { ok: true }));
+
+    const corpo = await api<{ ok: boolean }>('/api/app/auth/login', { method: 'POST', body: '{}' });
+
+    expect(corpo).toEqual({ ok: true });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(String(fetchMock.mock.calls[1][0])).toContain('/sanctum/csrf-cookie');
+  });
+
+  it('se o 419 persistir, devolve mensagem em português', async () => {
+    document.cookie = 'XSRF-TOKEN=velho';
+    vi.spyOn(globalThis, 'fetch')
+      .mockResolvedValueOnce(resposta(419, { message: 'CSRF token mismatch.' }))
+      .mockResolvedValueOnce(new Response(null, { status: 204 }))
+      .mockResolvedValueOnce(resposta(419, { message: 'CSRF token mismatch.' }));
+
+    const erro = await api('/api/app/auth/login', { method: 'POST', body: '{}' }).catch((e: unknown) => e);
+
+    expect((erro as ApiError).status).toBe(419);
+    expect((erro as ApiError).primeiraMensagem()).toBe('Sua sessão expirou. Recarregue a página e tente novamente.');
+  });
+
   it('converte erro HTTP em ApiError com status, mensagem e erros', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       resposta(422, { message: 'Dados inválidos.', errors: { email: ['E-mail ou senha incorretos.'] } }),

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ApiError } from '@/lib/api';
+import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { authApi } from '../api';
 import { QUERY_KEY_USUARIO } from '../hooks/useUsuario';
 import { loginSchema, type LoginDados } from '../schemas';
@@ -30,11 +31,14 @@ export function LoginForm() {
     },
   });
 
-  // mutateAsync mantém formState.isSubmitting = true até a resposta chegar;
-  // com o botão desabilitado, um duplo clique não gera dois envios.
-  const enviar = form.handleSubmit(async (dados) => {
-    await login.mutateAsync(dados).catch(() => undefined);
-  });
+  // A trava de useEnvioUnico barra o 2º clique no mesmo tick; mutateAsync mantém
+  // formState.isSubmitting = true (botão desabilitado) até a resposta chegar.
+  const envioUnico = useEnvioUnico();
+  const enviar = envioUnico(
+    form.handleSubmit(async (dados) => {
+      await login.mutateAsync(dados).catch(() => undefined);
+    }),
+  );
   const enviando = form.formState.isSubmitting;
   const erros = form.formState.errors;
 
