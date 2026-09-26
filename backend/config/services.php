@@ -35,4 +35,8 @@ return [
         ],
     ],
 
+    'brasilapi' => [
+        'url' => env('BRASILAPI_URL', 'https://brasilapi.com.br'),
+    ],
+
 ];
