@@ -1,0 +1,40 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Platform;
+
+use App\Modules\Identity\Domain\Models\Usuario;
+use App\Modules\Platform\Domain\Enums\Modulo;
+use App\Modules\Platform\Domain\Enums\Recurso;
+use App\Modules\Platform\Domain\Models\Plano;
+use App\Modules\Tenancy\Domain\Models\Tenant;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\TestCase;
+
+class AssinaturaTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_devolve_situacao_plano_e_consumo(): void
+    {
+        $plano = Plano::factory()
+            ->comModulos(Modulo::FiscalNfe)
+            ->comLimites([Recurso::Usuarios->value => 3, Recurso::Clientes->value => -1])
+            ->create(['nome' => 'Essencial']);
+        $tenant = Tenant::factory()->for($plano)->emTeste('2026-10-15')->create();
+        $usuario = Usuario::factory()->for($tenant)->create();
+
+        $this->spa()->actingAs($usuario)->getJson('/api/app/assinatura')
+            ->assertOk()
+            ->assertJsonPath('data.situacao', 'TESTE')
+            ->assertJsonPath('data.teste_termina_em', '2026-10-15')
+            ->assertJsonPath('data.plano.nome', 'Essencial')
+            ->assertJsonPath('data.plano.modulos', ['FISCAL_NFE'])
+            ->assertJsonPath('data.plano.limites.USUARIOS', 3)
+            ->assertJsonPath('data.plano.limites.CLIENTES', -1)
+            ->assertJsonPath('data.plano.limites.PRODUTOS', 0)
+            ->assertJsonPath('data.consumo', [['recurso' => 'USUARIOS', 'uso' => 1, 'limite' => 3]])
+            ->assertJsonMissingPath('data.plano.empresas');
+    }
+}

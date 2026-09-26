@@ -1,6 +1,9 @@
 <?php
 
 use App\Modules\Identity\Http\Middleware\GarantirUsuarioAtivo;
+use App\Modules\Platform\Http\Middleware\ExigirUsuarioDaEmpresa;
+use App\Modules\Platform\Http\Middleware\SomentePlataforma;
+use App\Modules\Platform\Http\Middleware\VerificarSituacaoDoTenant;
 use App\Modules\Shared\Domain\Exceptions\ErroDeNegocio;
 use App\Modules\Tenancy\Http\Middleware\DefinirTenantDoUsuario;
 use Illuminate\Foundation\Application;
@@ -41,6 +44,20 @@ return Application::configure(basePath: dirname(__DIR__))
         if ($proxies !== '') {
             $middleware->trustProxies(at: $proxies === '*' ? '*' : array_map('trim', explode(',', $proxies)));
         }
+
+        $middleware->group('empresa', [
+            'auth:sanctum',
+            GarantirUsuarioAtivo::class,
+            DefinirTenantDoUsuario::class,
+            ExigirUsuarioDaEmpresa::class,
+            VerificarSituacaoDoTenant::class,
+        ]);
+        $middleware->group('plataforma', [
+            'auth:sanctum',
+            GarantirUsuarioAtivo::class,
+            DefinirTenantDoUsuario::class,
+            SomentePlataforma::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontReport(ErroDeNegocio::class);
