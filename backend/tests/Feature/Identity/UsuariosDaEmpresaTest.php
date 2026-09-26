@@ -94,7 +94,22 @@ class UsuariosDaEmpresaTest extends TestCase
         $this->travel(73)->hours();
         $this->spa()->postJson('/api/app/auth/aceitar-convite', [
             'token' => $token, 'email' => 'bia@x.com', 'password' => 'Senha123', 'password_confirmation' => 'Senha123',
-        ])->assertStatus(422);
+        ])->assertStatus(422)
+            ->assertJsonPath('errors.email.0', 'Convite inválido ou expirado. Use "Esqueci minha senha" na tela de entrada para definir sua senha.');
+    }
+
+    public function test_convite_expirado_tem_recuperacao_pelo_esqueci_minha_senha(): void
+    {
+        $this->spa()->actingAs($this->dono)
+            ->postJson('/api/app/usuarios', ['nome' => 'Bia', 'email' => 'bia@x.com', 'papel' => 'FISCAL'])
+            ->assertCreated();
+
+        $this->travel(73)->hours();
+
+        $this->app['auth']->forgetGuards();
+        $this->flushSession();
+
+        $this->spa()->postJson('/api/app/auth/esqueci-senha', ['email' => 'bia@x.com'])->assertOk();
     }
 
     public function test_convite_respeita_o_limite_do_plano(): void

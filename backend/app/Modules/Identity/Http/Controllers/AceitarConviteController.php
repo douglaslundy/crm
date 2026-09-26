@@ -25,7 +25,7 @@ final class AceitarConviteController
 
         if ($status !== Password::PASSWORD_RESET) {
             throw ValidationException::withMessages([
-                'email' => 'Convite inválido ou expirado. Peça um novo convite ao administrador.',
+                'email' => 'Convite inválido ou expirado. Use "Esqueci minha senha" na tela de entrada para definir sua senha.',
             ]);
         }
 
