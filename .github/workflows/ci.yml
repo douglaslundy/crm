@@ -25,6 +25,45 @@ jobs:
       - run: php artisan test
       - run: composer audit
 
+  backend-pgsql:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: crm
+          POSTGRES_PASSWORD: crm
+          POSTGRES_DB: crm_test
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U crm"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_USERNAME: crm
+      DB_PASSWORD: crm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, pdo_pgsql, openssl, soap, dom, zip, intl
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist
+      - run: cp .env.example .env && php artisan key:generate
+      # phpunit.xml fixa SQLite em memória; aqui a conexão é forçada para o PostgreSQL do serviço.
+      - run: >-
+          sed -e 's|name="DB_CONNECTION" value="sqlite"|name="DB_CONNECTION" value="pgsql" force="true"|'
+          -e 's|name="DB_DATABASE" value=":memory:"|name="DB_DATABASE" value="crm_test" force="true"|'
+          phpunit.xml > phpunit.pgsql.xml
+      - run: php artisan test --configuration=phpunit.pgsql.xml
+
   frontend:
     runs-on: ubuntu-latest
     defaults:
