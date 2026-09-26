@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\Platform\Providers;
 
+use App\Modules\Platform\Application\RegistroDeContadores;
 use App\Modules\Platform\Console\ExpirarTestesCommand;
 use Illuminate\Support\ServiceProvider;
 
 final class PlatformServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        $this->app->singleton(RegistroDeContadores::class);
+    }
+
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {

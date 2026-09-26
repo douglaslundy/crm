@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Identity\Providers;
 
+use App\Modules\Identity\Application\ContadorDeUsuariosAtivos;
+use App\Modules\Platform\Application\RegistroDeContadores;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Route;
@@ -13,6 +15,8 @@ final class IdentityServiceProvider extends ServiceProvider
 {
     public function boot(): void
     {
+        $this->app->make(RegistroDeContadores::class)->registrar(new ContadorDeUsuariosAtivos);
+
         Route::middleware('api')
             ->prefix('api/app')
             ->group(__DIR__.'/../Http/routes.php');
