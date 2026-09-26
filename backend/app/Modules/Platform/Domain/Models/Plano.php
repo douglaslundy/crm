@@ -61,10 +61,11 @@ class Plano extends Model
         ];
     }
 
+    /** orderBy('id'): SQLite pode escanear pelo índice único (plano_id, modulo) sem isso, devolvendo ordem alfabética em vez da ordem de inserção. */
     /** @return HasMany<PlanoModulo, $this> */
     public function modulos(): HasMany
     {
-        return $this->hasMany(PlanoModulo::class);
+        return $this->hasMany(PlanoModulo::class)->orderBy('id');
     }
 
     /** @return HasMany<PlanoLimite, $this> */
