@@ -12,6 +12,7 @@ use Illuminate\Validation\ValidationException;
 final class LoginRequest extends FormRequest
 {
     private const MAX_TENTATIVAS = 5;
+
     private const MENSAGEM_GENERICA = 'E-mail ou senha incorretos.';
 
     protected function prepareForValidation(): void
@@ -23,7 +24,7 @@ final class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email'    => ['required', 'string', 'email'],
+            'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
         ];
     }
@@ -40,9 +41,9 @@ final class LoginRequest extends FormRequest
         }
 
         $credenciais = [
-            'email'    => $this->string('email')->toString(),
+            'email' => $this->string('email')->toString(),
             'password' => $this->string('password')->toString(),
-            'ativo'    => true,
+            'ativo' => true,
         ];
 
         if (! Auth::guard('web')->attempt($credenciais)) {
@@ -55,6 +56,6 @@ final class LoginRequest extends FormRequest
 
     private function chaveLimite(): string
     {
-        return 'login:' . $this->string('email')->toString() . '|' . $this->ip();
+        return 'login:'.$this->string('email')->toString().'|'.$this->ip();
     }
 }

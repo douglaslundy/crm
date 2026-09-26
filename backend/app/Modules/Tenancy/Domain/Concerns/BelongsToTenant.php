@@ -16,7 +16,7 @@ trait BelongsToTenant
 {
     public static function bootBelongsToTenant(): void
     {
-        static::addGlobalScope(new TenantScope());
+        static::addGlobalScope(new TenantScope);
 
         static::creating(function (Model $model): void {
             $contexto = app(TenantContext::class)->require();
@@ -37,7 +37,7 @@ trait BelongsToTenant
     /** @return Builder<static> */
     public static function withoutTenantScope(): Builder
     {
-        return static::withoutGlobalScope(TenantScope::class);
+        return static::query()->withoutGlobalScope(TenantScope::class);
     }
 
     /** @return BelongsTo<Tenant, $this> */

@@ -46,9 +46,9 @@ class RecuperacaoSenhaTest extends TestCase
         });
 
         $this->spa()->postJson('/api/app/auth/redefinir-senha', [
-            'token'                 => $token,
-            'email'                 => 'ana@empresa.com',
-            'password'              => 'NovaSenha1',
+            'token' => $token,
+            'email' => 'ana@empresa.com',
+            'password' => 'NovaSenha1',
             'password_confirmation' => 'NovaSenha1',
         ])->assertOk();
 
@@ -61,9 +61,9 @@ class RecuperacaoSenhaTest extends TestCase
         $hashAntes = $usuario->password;
 
         $this->spa()->postJson('/api/app/auth/redefinir-senha', [
-            'token'                 => 'token-adulterado',
-            'email'                 => 'ana@empresa.com',
-            'password'              => 'NovaSenha1',
+            'token' => 'token-adulterado',
+            'email' => 'ana@empresa.com',
+            'password' => 'NovaSenha1',
             'password_confirmation' => 'NovaSenha1',
         ])->assertStatus(422)->assertJsonPath('errors.email.0', 'Link inválido ou expirado.');
 
@@ -73,9 +73,9 @@ class RecuperacaoSenhaTest extends TestCase
     public function test_senha_fraca_e_recusada(): void
     {
         $this->spa()->postJson('/api/app/auth/redefinir-senha', [
-            'token'                 => 'x',
-            'email'                 => 'ana@empresa.com',
-            'password'              => 'fraca',
+            'token' => 'x',
+            'email' => 'ana@empresa.com',
+            'password' => 'fraca',
             'password_confirmation' => 'fraca',
         ])->assertStatus(422)->assertJsonValidationErrors('password');
     }

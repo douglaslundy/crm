@@ -15,18 +15,18 @@ final class IdentityServiceProvider extends ServiceProvider
     {
         Route::middleware('api')
             ->prefix('api/app')
-            ->group(__DIR__ . '/../Http/routes.php');
+            ->group(__DIR__.'/../Http/routes.php');
 
         ResetPassword::createUrlUsing(function (object $usuario, string $token): string {
             $base = rtrim((string) config('app.frontend_url'), '/');
 
-            return $base . '/redefinir-senha?token=' . $token . '&email=' . urlencode($usuario->email);
+            return $base.'/redefinir-senha?token='.$token.'&email='.urlencode($usuario->email);
         });
 
         ResetPassword::toMailUsing(function (object $usuario, string $token): MailMessage {
             $url = call_user_func(ResetPassword::$createUrlCallback, $usuario, $token);
 
-            return (new MailMessage())
+            return (new MailMessage)
                 ->subject('Redefinição de senha')
                 ->greeting('Olá!')
                 ->line('Recebemos um pedido para redefinir a senha da sua conta.')

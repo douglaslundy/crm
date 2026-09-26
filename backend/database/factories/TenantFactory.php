@@ -16,8 +16,8 @@ class TenantFactory extends Factory
     public function definition(): array
     {
         return [
-            'nome'   => fake()->company(),
-            'cnpj'   => fake()->unique()->numerify('##############'),
+            'nome' => fake()->company(),
+            'cnpj' => fake()->unique()->numerify('##############'),
             'status' => 'ATIVO',
         ];
     }

@@ -17,7 +17,7 @@ class LoginTest extends TestCase
     private function usuario(array $attrs = []): Usuario
     {
         return Usuario::factory()->for(Tenant::factory())->create(array_merge([
-            'email'    => 'ana@empresa.com',
+            'email' => 'ana@empresa.com',
             'password' => 'Senha123',
         ], $attrs));
     }

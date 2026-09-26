@@ -17,11 +17,11 @@ class UsuarioFactory extends Factory
     public function definition(): array
     {
         return [
-            'nome'     => fake()->name(),
-            'email'    => fake()->unique()->safeEmail(),
+            'nome' => fake()->name(),
+            'email' => fake()->unique()->safeEmail(),
             'password' => 'Senha123',
-            'papel'    => Papel::Proprietario,
-            'ativo'    => true,
+            'papel' => Papel::Proprietario,
+            'ativo' => true,
         ];
     }
 }

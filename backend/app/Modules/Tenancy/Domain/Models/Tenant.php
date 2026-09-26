@@ -19,6 +19,7 @@ class Tenant extends Model
 {
     /** @use HasFactory<TenantFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $fillable = ['nome', 'cnpj', 'status'];

@@ -12,7 +12,7 @@ abstract class TestCase extends BaseTestCase
     protected function spa(): static
     {
         return $this->withHeaders([
-            'Origin'  => 'http://localhost:3000',
+            'Origin' => 'http://localhost:3000',
             'Referer' => 'http://localhost:3000/',
         ]);
     }

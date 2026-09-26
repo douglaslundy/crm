@@ -15,12 +15,12 @@ final class UsuarioResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id'     => $this->id,
-            'nome'   => $this->nome,
-            'email'  => $this->email,
-            'papel'  => $this->papel->value,
+            'id' => $this->id,
+            'nome' => $this->nome,
+            'email' => $this->email,
+            'papel' => $this->papel->value,
             'tenant' => $this->tenant === null ? null : [
-                'id'   => $this->tenant->id,
+                'id' => $this->tenant->id,
                 'nome' => $this->tenant->nome,
                 'cnpj' => $this->tenant->cnpj,
             ],

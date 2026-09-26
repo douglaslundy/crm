@@ -31,6 +31,7 @@ class Usuario extends Authenticatable
 {
     /** @use HasFactory<UsuarioFactory> */
     use HasFactory;
+
     use HasUuids;
     use Notifiable;
 
@@ -45,8 +46,8 @@ class Usuario extends Authenticatable
     {
         return [
             'password' => 'hashed',
-            'papel'    => Papel::class,
-            'ativo'    => 'boolean',
+            'papel' => Papel::class,
+            'ativo' => 'boolean',
         ];
     }
 

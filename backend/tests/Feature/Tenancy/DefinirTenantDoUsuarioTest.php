@@ -27,7 +27,7 @@ class DefinirTenantDoUsuarioTest extends TestCase
         (new DefinirTenantDoUsuario(app(TenantContext::class)))->handle($request, function () use (&$capturado) {
             $capturado = app(TenantContext::class)->id();
 
-            return new Response();
+            return new Response;
         });
 
         return $capturado;
