@@ -1,6 +1,6 @@
 # Plataforma Fiscal + CRM (SaaS): projeto mestre
 
-- **Status:** RASCUNHO para revisão do usuário.
+- **Status:** APROVADO em 2026-09-25. S1 a S5 e a ordem das fases foram aceitas; o nome continua provisório.
 - **Data:** 2026-09-25.
 - **Nome do produto:** provisório.
 - **Base técnica fiscal:** `docs/referencia-fiscal/00-INDICE.md`, extraída do Mecânica Pro, e a skill `br-fiscal-note-emission`.

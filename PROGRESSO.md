@@ -4,7 +4,7 @@
 2026-09-25
 
 ## Tarefa em andamento
-Revisão, pelo usuário, do projeto mestre (spec).
+Revisão, pelo usuário, do plano da F0 (`docs/superpowers/plans/2026-09-25-f0-fundacao.md`).
 
 ## Contexto necessário
 - `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`: o projeto mestre.
@@ -17,4 +17,4 @@ Revisão, pelo usuário, do projeto mestre (spec).
 - [x] Projeto mestre (spec) escrito.
 
 ## Próxima tarefa
-Depois da aprovação da spec: escrever o plano de implementação da **F0 (Fundação)** em `docs/superpowers/plans/`.
+Executar o plano da F0, tarefa por tarefa (Tasks 1 a 7).
