@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
+use App\Modules\Platform\Domain\Models\Plano;
+use App\Modules\Tenancy\Domain\Enums\SituacaoAssinatura;
 use App\Modules\Tenancy\Domain\Models\Tenant;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -16,9 +18,22 @@ class TenantFactory extends Factory
     public function definition(): array
     {
         return [
-            'nome' => fake()->company(),
+            'razao_social' => fake()->company(),
+            'nome_fantasia' => null,
             'cnpj' => fake()->unique()->numerify('##############'),
-            'status' => 'ATIVO',
+            'plano_id' => Plano::factory(),
+            'situacao' => SituacaoAssinatura::Ativa,
+            'teste_termina_em' => null,
         ];
+    }
+
+    public function situacao(SituacaoAssinatura $situacao): static
+    {
+        return $this->state(['situacao' => $situacao]);
+    }
+
+    public function emTeste(string $terminaEm): static
+    {
+        return $this->state(['situacao' => SituacaoAssinatura::Teste, 'teste_termina_em' => $terminaEm]);
     }
 }

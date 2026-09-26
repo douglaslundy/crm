@@ -21,8 +21,11 @@ final class UsuarioResource extends JsonResource
             'papel' => $this->papel->value,
             'tenant' => $this->tenant === null ? null : [
                 'id' => $this->tenant->id,
-                'nome' => $this->tenant->nome,
+                'razao_social' => $this->tenant->razao_social,
+                'nome_fantasia' => $this->tenant->nome_fantasia,
                 'cnpj' => $this->tenant->cnpj,
+                'situacao' => $this->tenant->situacao->value,
+                'teste_termina_em' => $this->tenant->teste_termina_em?->toDateString(),
             ],
         ];
     }
