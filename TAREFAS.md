@@ -11,3 +11,13 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
 - [ ] **F6 API pública:** `/api/v1`, chaves live/test, idempotência, webhooks de saída, OpenAPI e guia.
 - [ ] **F7 CRM:** funis, negócios, atividades, timeline, propostas → nota, relatórios, metas.
 - [ ] **F8 Go-live:** auditoria fiscal, carga, backup e restauração, piloto em produção.
+
+## Pendências herdadas da revisão da F0 (resolver no início da F1)
+- [ ] Tirar `tenant_id` e `papel` de `Usuario::$fillable` (escalada de tenant ou privilégio por mass assignment).
+- [ ] Pôr `DefinirTenantDoUsuario` na prioridade de middleware, antes do `SubstituteBindings` (route model binding de Models de tenant).
+- [ ] Revalidar `ativo` do usuário a cada requisição (usuário desativado hoje mantém a sessão).
+- [ ] Frontend: `MutationCache.onError` para 401, e revalidar `/me` com o app aberto.
+- [ ] Acessibilidade: `aria-invalid` e `aria-describedby` em todos os campos. Form de redefinição deve mostrar erro de e-mail/token vindo do link.
+- [ ] Testes de token de redefinição expirado e reutilizado. Job de CI com PostgreSQL.
+- [ ] `.env.example`: `QUEUE_CONNECTION=sync` no local. Documentar `SESSION_DOMAIN`/`SESSION_SECURE_COOKIE` de produção. Origem não stateful devolve 500.
+- [ ] Avaliar limite adicional por IP no login (spray de e-mails).
