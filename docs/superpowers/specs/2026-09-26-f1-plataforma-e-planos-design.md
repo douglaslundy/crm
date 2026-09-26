@@ -1,6 +1,6 @@
 # F1: Plataforma e planos (spec da fase)
 
-- **Status:** RASCUNHO para revisão.
+- **Status:** APROVADA (2026-09-27). Plano: `docs/superpowers/plans/2026-09-27-f1-plataforma-e-planos.md`.
 - **Data:** 2026-09-26.
 - **Spec mestre:** `2026-09-25-plataforma-fiscal-crm-design.md`, §3, §4, §5 e §15 (linha F1).
 - **Critério de pronto (da spec mestre):** o admin cria um plano, um tenant é ativado manualmente e um limite é respeitado.

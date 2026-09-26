@@ -4,12 +4,12 @@
 2026-09-26
 
 ## Tarefa em andamento
-Revisão, pelo usuário, da spec da F1 (`docs/superpowers/specs/2026-09-26-f1-plataforma-e-planos-design.md`).
+Revisão, pelo usuário, do plano da F1 e escolha do modo de execução (subagentes ou nativo).
 
 ## Contexto necessário
-- Spec da F1 (acima). Decisões do usuário: cadastro com `TESTE`/`PENDENTE`, impersonação fora da F1, BrasilAPI para preencher os dados pelo CNPJ.
-- `docs/adr/0002-isolamento-de-tenant.md` e `backend/app/Modules/{Tenancy,Identity}/`.
-- Pendências da F0 em `TAREFAS.md`, já incorporadas à §10 da spec da F1.
+- Plano: `docs/superpowers/plans/2026-09-27-f1-plataforma-e-planos.md` (18 tarefas: backend de 1 a 11, frontend de 12 a 18). Ledger em `.superpowers/sdd/`.
+- Spec da F1 (aprovada): `docs/superpowers/specs/2026-09-26-f1-plataforma-e-planos-design.md`.
+- A execução começa numa branch nova (`f1-plataforma`), nunca direto no `master`.
 
 ## Concluído
 - [x] Requisitos, decisões, base fiscal (`docs/referencia-fiscal/`) e pesquisa de CRM.
@@ -23,7 +23,8 @@ Revisão, pelo usuário, da spec da F1 (`docs/superpowers/specs/2026-09-26-f1-pl
   - [x] Task 6: layout responsivo (sidebar e barra inferior) com proteção de rota.
   - [x] Task 7: CI, PHPStan nível 6, Pint, docker-compose, ADRs 0001 a 0003 e README.
   - [x] Correções da revisão: `tenant_id` imutável, e-mail de senha enviado depois da resposta, `TRUSTED_PROXIES`, pt-BR, retry no 419, envio único nos formulários.
-- [x] Spec da F1 escrita (commit `1c92bb8`).
+- [x] Spec da F1 escrita (commit `1c92bb8`) e aprovada.
+- [x] Plano da F1 escrito.
 
 ## Decisões não óbvias
 - O `php.ini` global ganhou `pdo_sqlite`, `sqlite3`, `soap` e `intl`, com autorização do usuário e backup `php.ini.bak`.
@@ -35,4 +36,4 @@ Revisão, pelo usuário, da spec da F1 (`docs/superpowers/specs/2026-09-26-f1-pl
 - Os arquivos voltam do checkout com CRLF (autocrlf do Windows). Edições por regex com `\n` falham nesses arquivos.
 
 ## Próxima tarefa
-Com a spec da F1 aprovada: escrever o plano de implementação da F1 em `docs/superpowers/plans/`.
+Com o plano aprovado: executar a F1 tarefa por tarefa, a partir da Tarefa 1.
