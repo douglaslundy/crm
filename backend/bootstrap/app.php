@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Identity\Http\Middleware\GarantirUsuarioAtivo;
+use App\Modules\Shared\Domain\Exceptions\ErroDeNegocio;
 use App\Modules\Tenancy\Http\Middleware\DefinirTenantDoUsuario;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -42,6 +43,12 @@ return Application::configure(basePath: dirname(__DIR__))
         }
     })
     ->withExceptions(function (Exceptions $exceptions): void {
+        $exceptions->dontReport(ErroDeNegocio::class);
+        $exceptions->render(fn (ErroDeNegocio $e) => response()->json(
+            ['message' => $e->getMessage(), 'codigo' => $e->codigo()] + $e->extras(),
+            $e->status(),
+        ));
+
         // A mensagem de 429 do framework é fixa em inglês e não passa pela tradução.
         $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
             if ($request->expectsJson()) {
