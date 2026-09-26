@@ -69,6 +69,9 @@ return [
 
     'timezone' => 'UTC',
 
+    // Fuso das regras de negócio (vencimento de teste, "hoje"). O banco continua em UTC.
+    'fuso_negocio' => 'America/Sao_Paulo',
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
