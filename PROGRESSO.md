@@ -14,7 +14,7 @@ Revisão final do branch `f0-fundacao` e integração ao `master`.
 ## Concluído
 - [x] Requisitos, decisões, base fiscal (`docs/referencia-fiscal/`) e pesquisa de CRM.
 - [x] Projeto mestre (spec) aprovado.
-- [x] **F0 Fundação**, branch `f0-fundacao`:
+- [x] **F0 Fundação** (integrada ao master em 2026-09-26, depois da revisão final e da passada de correções):
   - [x] Task 1: backend Laravel 12 com `/api/health`.
   - [x] Task 2: tenancy fail-closed (`TenantContext`, `TenantScope`, `BelongsToTenant`).
   - [x] Task 3: identidade (login SPA, logout, me, recuperação de senha, bloqueio após 5 tentativas, contexto de tenant por usuário).
