@@ -99,6 +99,13 @@ return [
             'expire' => 60,
             'throttle' => 60,
         ],
+
+        'convites' => [
+            'provider' => 'users',
+            'table' => 'convite_tokens',
+            'expire' => 72 * 60,
+            'throttle' => 0,
+        ],
     ],
 
     /*

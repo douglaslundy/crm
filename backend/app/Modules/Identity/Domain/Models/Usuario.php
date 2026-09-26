@@ -7,6 +7,7 @@ namespace App\Modules\Identity\Domain\Models;
 use App\Modules\Identity\Domain\Enums\Papel;
 use App\Modules\Tenancy\Domain\Models\Tenant;
 use Database\Factories\UsuarioFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -62,6 +63,16 @@ class Usuario extends Authenticatable
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    /**
+     * Usuario não tem TenantScope (ver ADR 0002): toda busca de usuário da empresa passa por aqui.
+     *
+     * @param  Builder<Usuario>  $query
+     */
+    public function scopeDaEmpresa(Builder $query, string $tenantId): void
+    {
+        $query->where('tenant_id', $tenantId);
     }
 
     protected static function newFactory(): UsuarioFactory

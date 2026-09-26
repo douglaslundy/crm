@@ -18,4 +18,16 @@ enum Papel: string
     {
         return $this === self::Superadmin || $this === self::Suporte;
     }
+
+    /** @return list<self> */
+    public static function daEmpresa(): array
+    {
+        return [self::Proprietario, self::Admin, self::Fiscal, self::Vendedor, self::Leitura];
+    }
+
+    /** @return list<string> */
+    public static function valoresDaEmpresa(): array
+    {
+        return array_map(fn (self $p): string => $p->value, self::daEmpresa());
+    }
 }
