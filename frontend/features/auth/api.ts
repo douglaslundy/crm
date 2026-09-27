@@ -13,4 +13,6 @@ export const authApi = {
     api<Mensagem>('/api/app/auth/esqueci-senha', { method: 'POST', body: JSON.stringify(dados) }),
   redefinirSenha: (dados: { token: string; email: string; password: string; password_confirmation: string }) =>
     api<Mensagem>('/api/app/auth/redefinir-senha', { method: 'POST', body: JSON.stringify(dados) }),
+  aceitarConvite: (dados: { token: string; email: string; password: string; password_confirmation: string }) =>
+    api<Mensagem>('/api/app/auth/aceitar-convite', { method: 'POST', body: JSON.stringify(dados) }),
 };

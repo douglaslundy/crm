@@ -14,14 +14,34 @@ import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { authApi } from '../api';
 import { redefinirSenhaSchema, type RedefinirSenhaDados } from '../schemas';
 
-export function RedefinirSenhaForm({ token, email }: { token: string; email: string }) {
+type Modo = 'redefinir' | 'convite';
+
+const MENSAGEM_LINK_INVALIDO: Record<Modo, string> = {
+  redefinir: 'Link inválido ou expirado.',
+  convite: 'Convite inválido ou expirado. Use "Esqueci minha senha" na tela de entrada para definir sua senha.',
+};
+
+const ROTULO_LINK: Record<Modo, string> = {
+  redefinir: 'Solicitar novo link',
+  convite: 'Esqueci minha senha',
+};
+
+export function RedefinirSenhaForm({
+  token,
+  email,
+  modo = 'redefinir',
+}: {
+  token: string;
+  email: string;
+  modo?: Modo;
+}) {
   const router = useRouter();
   const form = useForm<RedefinirSenhaDados>({
     resolver: zodResolver(redefinirSenhaSchema),
     defaultValues: { token, email, password: '', password_confirmation: '' },
   });
   const redefinir = useMutation({
-    mutationFn: (dados: RedefinirSenhaDados) => authApi.redefinirSenha(dados),
+    mutationFn: (dados: RedefinirSenhaDados) => (modo === 'convite' ? authApi.aceitarConvite(dados) : authApi.redefinirSenha(dados)),
     onSuccess: ({ message }) => {
       toast.success(message);
       router.replace('/login');
@@ -35,8 +55,8 @@ export function RedefinirSenhaForm({ token, email }: { token: string; email: str
   if (!token || !email) {
     return (
       <div className="space-y-4 text-center">
-        <p role="alert" className="text-danger">Link inválido ou expirado.</p>
-        <Link href="/esqueci-senha" className="text-sm underline">Solicitar novo link</Link>
+        <p role="alert" className="text-danger">{MENSAGEM_LINK_INVALIDO[modo]}</p>
+        <Link href="/esqueci-senha" className="text-sm underline">{ROTULO_LINK[modo]}</Link>
       </div>
     );
   }
@@ -59,12 +79,12 @@ export function RedefinirSenhaForm({ token, email }: { token: string; email: str
       </Campo>
       {erros.token || erros.email ? (
         <p role="alert" className="text-sm text-danger">
-          Link inválido ou expirado. <Link href="/esqueci-senha" className="underline">Solicitar novo link</Link>
+          {MENSAGEM_LINK_INVALIDO[modo]} <Link href="/esqueci-senha" className="underline">{ROTULO_LINK[modo]}</Link>
         </p>
       ) : null}
       {erros.root ? <p role="alert" className="text-sm text-danger">{erros.root.message}</p> : null}
       <Button type="submit" className="w-full" disabled={enviando}>
-        {enviando ? 'Salvando...' : 'Redefinir senha'}
+        {enviando ? 'Salvando...' : modo === 'convite' ? 'Definir senha' : 'Redefinir senha'}
       </Button>
     </form>
   );

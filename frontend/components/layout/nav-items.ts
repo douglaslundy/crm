@@ -1,4 +1,4 @@
-import { Building2, Gauge, LayoutDashboard, Package, type LucideIcon } from 'lucide-react';
+import { Building2, Gauge, LayoutDashboard, Package, Users, type LucideIcon } from 'lucide-react';
 import type { Papel } from '@/features/auth/types';
 
 export interface NavItem {
@@ -12,7 +12,10 @@ export interface NavItem {
 }
 
 /** Área da empresa. Cada fase acrescenta aqui os itens do seu módulo. */
-export const NAV_ITEMS: NavItem[] = [{ href: '/dashboard', label: 'Início', icon: LayoutDashboard }];
+export const NAV_ITEMS: NavItem[] = [
+  { href: '/dashboard', label: 'Início', icon: LayoutDashboard },
+  { href: '/configuracoes/usuarios', label: 'Usuários', icon: Users, papeis: ['PROPRIETARIO', 'ADMIN'] },
+];
 
 export const NAV_ITEMS_ADMIN: NavItem[] = [
   { href: '/admin', label: 'Painel', icon: Gauge, exato: true },

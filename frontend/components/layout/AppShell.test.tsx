@@ -28,5 +28,17 @@ describe('AppShell', () => {
     expect(screen.getByText('Empresa X')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sair' })).toBeInTheDocument();
     expect(screen.getByText('página')).toBeInTheDocument();
+    expect(within(lateral).getByRole('link', { name: /Usuários/ })).toHaveAttribute('href', '/configuracoes/usuarios');
+  });
+
+  it('mostra "Usuários" só para proprietário e administrador', () => {
+    const client = new QueryClient();
+    client.setQueryData(QUERY_KEY_USUARIO, {
+      id: '1', nome: 'Vera', email: 'v@x.com', papel: 'VENDEDOR',
+      tenant: { id: 't', razao_social: 'X', nome_fantasia: null, cnpj: '11222333000181', situacao: 'ATIVA', teste_termina_em: null },
+    });
+    render(<QueryClientProvider client={client}><AppShell><p>página</p></AppShell></QueryClientProvider>);
+
+    expect(screen.queryByRole('link', { name: /Usuários/ })).not.toBeInTheDocument();
   });
 });
