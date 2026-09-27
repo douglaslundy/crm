@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Identity\Application\Actions;
 
 use App\Modules\Identity\Application\PoliticaDeUsuarios;
+use App\Modules\Identity\Domain\Exceptions\UsuarioJaInativoException;
 use App\Modules\Identity\Domain\Models\Usuario;
+use Illuminate\Support\Facades\DB;
 
 /** O desativado perde o acesso na próxima requisição (GarantirUsuarioAtivo). */
 final class DesativarUsuario
@@ -16,9 +18,15 @@ final class DesativarUsuario
     {
         $this->politica->garantirPodeDesativar($autor, $alvo);
 
-        $alvo->forceFill(['ativo' => false])->save();
-        activity('usuarios')->performedOn($alvo)->causedBy($autor)->event('usuario_desativado')->log('Usuário desativado');
+        if (! $alvo->ativo) {
+            throw new UsuarioJaInativoException;
+        }
 
-        return $alvo;
+        return DB::transaction(function () use ($autor, $alvo): Usuario {
+            $alvo->forceFill(['ativo' => false])->save();
+            activity('usuarios')->performedOn($alvo)->causedBy($autor)->event('usuario_desativado')->log('Usuário desativado');
+
+            return $alvo;
+        });
     }
 }

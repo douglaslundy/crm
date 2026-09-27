@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Identity\Application\Actions;
 
 use App\Modules\Identity\Application\PoliticaDeUsuarios;
+use App\Modules\Identity\Domain\Exceptions\UsuarioJaAtivoException;
 use App\Modules\Identity\Domain\Models\Usuario;
 use App\Modules\Platform\Application\EntitlementService;
 use App\Modules\Platform\Domain\Enums\Recurso;
@@ -21,6 +22,10 @@ final class ReativarUsuario
     public function executar(Usuario $autor, Usuario $alvo): Usuario
     {
         $this->politica->garantirPodeAlterar($autor, $alvo);
+
+        if ($alvo->ativo) {
+            throw new UsuarioJaAtivoException;
+        }
 
         return DB::transaction(function () use ($autor, $alvo): Usuario {
             /** @var Tenant $tenant */

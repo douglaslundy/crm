@@ -37,4 +37,19 @@ class AssinaturaTest extends TestCase
             ->assertJsonPath('data.consumo', [['recurso' => 'USUARIOS', 'uso' => 1, 'limite' => 3]])
             ->assertJsonMissingPath('data.plano.empresas');
     }
+
+    public function test_consumo_isola_por_tenant(): void
+    {
+        $plano = Plano::factory()->comLimites([Recurso::Usuarios->value => 3])->create();
+        $tenant = Tenant::factory()->for($plano)->create();
+        $usuario = Usuario::factory()->for($tenant)->create();
+
+        $outroPlano = Plano::factory()->comLimites([Recurso::Usuarios->value => 10])->create();
+        $outroTenant = Tenant::factory()->for($outroPlano)->create();
+        Usuario::factory()->count(4)->for($outroTenant)->create();
+
+        $this->spa()->actingAs($usuario)->getJson('/api/app/assinatura')
+            ->assertOk()
+            ->assertJsonPath('data.consumo', [['recurso' => 'USUARIOS', 'uso' => 1, 'limite' => 3]]);
+    }
 }

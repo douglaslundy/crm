@@ -138,6 +138,30 @@ class UsuariosDaEmpresaTest extends TestCase
             ->assertJsonPath('codigo', 'LIMITE_DO_PLANO');
     }
 
+    public function test_reativar_usuario_ja_ativo_e_recusado_sem_auditar(): void
+    {
+        $membro = $this->membro();
+
+        $this->spa()->actingAs($this->dono)->postJson("/api/app/usuarios/{$membro->id}/reativar")
+            ->assertStatus(422)
+            ->assertJsonPath('codigo', 'USUARIO_JA_ATIVO')
+            ->assertJsonPath('message', 'Este usuário já está ativo.');
+
+        $this->assertSame(0, Activity::query()->where('event', 'usuario_reativado')->count());
+    }
+
+    public function test_desativar_usuario_ja_inativo_e_recusado_sem_auditar(): void
+    {
+        $membro = $this->membro(ativo: false);
+
+        $this->spa()->actingAs($this->dono)->postJson("/api/app/usuarios/{$membro->id}/desativar")
+            ->assertStatus(422)
+            ->assertJsonPath('codigo', 'USUARIO_JA_INATIVO')
+            ->assertJsonPath('message', 'Este usuário já está desativado.');
+
+        $this->assertSame(0, Activity::query()->where('event', 'usuario_desativado')->count());
+    }
+
     public function test_desativar_e_reativar(): void
     {
         $membro = $this->membro();

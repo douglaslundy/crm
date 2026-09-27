@@ -7,6 +7,7 @@ namespace App\Modules\Platform\Http\Controllers\Publico;
 use App\Modules\Identity\Http\Resources\UsuarioResource;
 use App\Modules\Platform\Application\Actions\CadastrarEmpresa;
 use App\Modules\Platform\Http\Requests\CadastroRequest;
+use App\Modules\Shared\Domain\Exceptions\SessaoIndisponivelException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 
@@ -14,6 +15,10 @@ final class CadastroController
 {
     public function __invoke(CadastroRequest $request, CadastrarEmpresa $cadastrar): JsonResponse
     {
+        if (! $request->hasSession()) {
+            throw new SessaoIndisponivelException;
+        }
+
         $usuario = $cadastrar->executar($request->dados());
 
         Auth::guard('web')->login($usuario);

@@ -59,5 +59,7 @@ class ExpirarTestesTest extends TestCase
         $this->assertNotNull($evento);
         $this->assertSame('10 0 * * *', $evento->expression);
         $this->assertSame('America/Sao_Paulo', $evento->timezone);
+        $this->assertTrue($evento->withoutOverlapping);
+        $this->assertTrue($evento->onOneServer);
     }
 }

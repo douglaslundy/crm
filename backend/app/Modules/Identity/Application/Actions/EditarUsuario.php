@@ -7,6 +7,7 @@ namespace App\Modules\Identity\Application\Actions;
 use App\Modules\Identity\Application\PoliticaDeUsuarios;
 use App\Modules\Identity\Domain\Enums\Papel;
 use App\Modules\Identity\Domain\Models\Usuario;
+use Illuminate\Support\Facades\DB;
 
 final class EditarUsuario
 {
@@ -19,13 +20,15 @@ final class EditarUsuario
         $this->politica->garantirPodeAlterar($autor, $alvo);
         $this->politica->garantirPodeAtribuir($autor, $papel);
 
-        $papelAnterior = $alvo->papel;
-        $alvo->forceFill(['nome' => $dados['nome'], 'papel' => $papel])->save();
+        return DB::transaction(function () use ($autor, $alvo, $papel, $dados): Usuario {
+            $papelAnterior = $alvo->papel;
+            $alvo->forceFill(['nome' => $dados['nome'], 'papel' => $papel])->save();
 
-        activity('usuarios')->performedOn($alvo)->causedBy($autor)->event('usuario_editado')
-            ->withProperties(['papel_de' => $papelAnterior->value, 'papel_para' => $papel->value])
-            ->log('Usuário editado');
+            activity('usuarios')->performedOn($alvo)->causedBy($autor)->event('usuario_editado')
+                ->withProperties(['papel_de' => $papelAnterior->value, 'papel_para' => $papel->value])
+                ->log('Usuário editado');
 
-        return $alvo;
+            return $alvo;
+        });
     }
 }

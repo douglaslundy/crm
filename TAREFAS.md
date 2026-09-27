@@ -30,12 +30,12 @@ Achados menores adiados e uma decisão de produto parcada durante a revisão das
 - [ ] Conceder o papel PROPRIETARIO é irreversível hoje (só ADMIN é impedido de promover; não há regra contra um segundo proprietário). Decidir se isso é aceitável ou se precisa de restrição adicional.
 
 **Cosméticos e dívidas técnicas menores:**
-- [ ] `backend/bootstrap/app.php` sem `declare(strict_types=1)` (pré-existente).
+- [x] `backend/bootstrap/app.php` sem `declare(strict_types=1)` (pré-existente).
 - [ ] `Cnpj`: arrays `PESOS_DV1`/`PESOS_DV2` quase idênticos.
 - [ ] Sem teste HTTP específico de `CnpjInvalidoException` (422 `CNPJ_INVALIDO`).
-- [ ] Migrations publicadas do pacote `activitylog` sem `declare(strict_types=1)`.
+- [x] Migrations publicadas do pacote `activitylog` sem `declare(strict_types=1)`.
 - [ ] `ExpirarTestesCommand` conta `$total` por referência (cosmético).
-- [ ] Sem teste cross-tenant para `ContadorDeUsuariosAtivos`.
+- [x] Sem teste cross-tenant para `ContadorDeUsuariosAtivos`.
 - [ ] `limite()` e `consumo()` do `EntitlementService` com expressões quase idênticas.
 - [ ] `AssinaturaController`: `firstOrFail` com tenant órfão devolve 404 com mensagem em inglês.
 - [ ] Bloco `/** @var Usuario $autor */` repetido nos controllers de admin.
@@ -43,12 +43,12 @@ Achados menores adiados e uma decisão de produto parcada durante a revisão das
 - [ ] `CadastrarEmpresa`: `firstOrFail` em corrida de plano desativado devolve 404 genérico em inglês.
 - [ ] BrasilAPI: resposta 200 com corpo vazio é cacheada como "encontrado".
 - [ ] `GET /api/publico/planos` sem throttle.
-- [ ] Reativar usuário já ativo não é barrado (422 enganoso ou auditoria espúria).
+- [x] Reativar usuário já ativo não é barrado (422 enganoso ou auditoria espúria).
 - [ ] `unique` de e-mail fora do lock: corrida de convites para o mesmo e-mail pode dar 500.
 - [ ] Lacunas de teste em convites: POST de PROPRIETARIO por ADMIN, reuso de token de convite, token do broker `users` no aceitar-convite, papéis FISCAL/LEITURA.
 - [ ] Workaround `forgetGuards`/`flushSession` repetido nos testes — criar helper no `TestCase`.
 - [ ] Listagem de usuários da empresa sem paginação (plano ilimitado).
-- [ ] `EditarUsuario`/`DesativarUsuario` gravam e auditam fora de transação.
+- [x] `EditarUsuario`/`DesativarUsuario` gravam e auditam fora de transação.
 - [ ] Commit de correção `83bf928` com mensagem em inglês.
 - [ ] `Campo` sem teste do caso sem dica e sem erro.
 - [ ] Faixas de cor do `ConsumoDoPlano` (80%/100%) e ramos INADIMPLENTE/CANCELADA da `FaixaSituacao` sem teste.

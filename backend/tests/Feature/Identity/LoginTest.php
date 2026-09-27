@@ -22,6 +22,17 @@ class LoginTest extends TestCase
         ], $attrs));
     }
 
+    public function test_sem_sessao_stateful_devolve_400(): void
+    {
+        $this->usuario();
+
+        $this->postJson('/api/app/auth/login', ['email' => 'ana@empresa.com', 'password' => 'Senha123'])
+            ->assertStatus(400)
+            ->assertJsonPath('codigo', 'SESSAO_INDISPONIVEL');
+
+        $this->assertGuest('web');
+    }
+
     public function test_login_valido_devolve_usuario_com_tenant(): void
     {
         $usuario = $this->usuario();

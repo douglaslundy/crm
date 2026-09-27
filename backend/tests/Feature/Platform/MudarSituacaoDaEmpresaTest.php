@@ -52,4 +52,22 @@ class MudarSituacaoDaEmpresaTest extends TestCase
         $this->assertSame(SituacaoAssinatura::Cancelada, $tenant->refresh()->situacao);
         $this->assertSame(0, Activity::query()->count());
     }
+
+    public function test_valida_a_transicao_sobre_a_situacao_recarregada_do_banco(): void
+    {
+        // $tenant em memória ainda está TESTE; outra requisição já cancelou no banco.
+        $tenant = Tenant::factory()->situacao(SituacaoAssinatura::Teste)->create();
+        Tenant::query()->whereKey($tenant->id)->update(['situacao' => SituacaoAssinatura::Cancelada->value]);
+
+        try {
+            app(MudarSituacaoDaEmpresa::class)->executar($tenant, SituacaoAssinatura::Ativa, 'x', null);
+            $this->fail('Deveria lançar.');
+        } catch (TransicaoDeSituacaoInvalidaException $e) {
+            $this->assertSame('TRANSICAO_INVALIDA', $e->codigo());
+            $this->assertSame('Não é possível mudar a situação de CANCELADA para ATIVA.', $e->getMessage());
+        }
+
+        $this->assertSame(SituacaoAssinatura::Cancelada, $tenant->fresh()->situacao);
+        $this->assertSame(0, Activity::query()->count());
+    }
 }

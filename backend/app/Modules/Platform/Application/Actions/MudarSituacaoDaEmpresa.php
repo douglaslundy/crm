@@ -15,23 +15,27 @@ final class MudarSituacaoDaEmpresa
     /** $autor null = sistema (ex.: expiração automática do teste). */
     public function executar(Tenant $tenant, SituacaoAssinatura $destino, string $motivo, ?Usuario $autor): Tenant
     {
-        $origem = $tenant->situacao;
+        return DB::transaction(function () use ($tenant, $destino, $motivo, $autor): Tenant {
+            /** @var Tenant $atual */
+            $atual = Tenant::query()->lockForUpdate()->findOrFail($tenant->id);
+            $origem = $atual->situacao;
 
-        if (! $origem->podeIrPara($destino)) {
-            throw TransicaoDeSituacaoInvalidaException::de($origem, $destino);
-        }
+            if (! $origem->podeIrPara($destino)) {
+                throw TransicaoDeSituacaoInvalidaException::de($origem, $destino);
+            }
 
-        return DB::transaction(function () use ($tenant, $origem, $destino, $motivo, $autor): Tenant {
-            $tenant->forceFill(['situacao' => $destino, 'situacao_alterada_em' => now()])->save();
+            $atual->forceFill(['situacao' => $destino, 'situacao_alterada_em' => now()])->save();
 
             $registro = activity('assinatura')
-                ->performedOn($tenant)
+                ->performedOn($atual)
                 ->event('situacao_alterada')
                 ->withProperties(['de' => $origem->value, 'para' => $destino->value, 'motivo' => $motivo]);
             if ($autor !== null) {
                 $registro->causedBy($autor);
             }
             $registro->log('Situação da assinatura alterada');
+
+            $tenant->setRawAttributes($atual->getAttributes(), true);
 
             return $tenant;
         });

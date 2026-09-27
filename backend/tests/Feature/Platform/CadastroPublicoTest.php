@@ -145,6 +145,18 @@ class CadastroPublicoTest extends TestCase
         $this->assertSame(1, Tenant::query()->count());
     }
 
+    public function test_sem_sessao_stateful_devolve_400_e_nao_grava_nada(): void
+    {
+        $plano = Plano::factory()->create();
+
+        $this->postJson('/api/publico/cadastro', $this->dados($plano))
+            ->assertStatus(400)
+            ->assertJsonPath('codigo', 'SESSAO_INDISPONIVEL');
+
+        $this->assertSame(0, Tenant::query()->count());
+        $this->assertSame(0, Usuario::query()->count());
+    }
+
     public function test_violacao_de_unicidade_vira_422(): void
     {
         // Simula a corrida: a validação passou, mas outro cadastro gravou o mesmo CNPJ antes.

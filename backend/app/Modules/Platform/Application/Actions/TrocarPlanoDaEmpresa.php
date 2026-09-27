@@ -22,21 +22,28 @@ final class TrocarPlanoDaEmpresa
             throw new PlanoIndisponivelException;
         }
 
-        $excessos = $this->entitlements->excessos($tenant, $novo);
-        if ($excessos !== []) {
-            throw new PlanoInsuficienteException($excessos);
-        }
-
         return DB::transaction(function () use ($tenant, $novo, $autor): Tenant {
-            $anterior = $tenant->plano_id;
-            $tenant->forceFill(['plano_id' => $novo->id])->save();
+            // Trava a linha do tenant: a checagem de excessos vale contra o uso
+            // no exato momento da troca (mesmo padrão do ConvidarUsuario).
+            /** @var Tenant $atual */
+            $atual = Tenant::query()->lockForUpdate()->findOrFail($tenant->id);
+
+            $excessos = $this->entitlements->excessos($atual, $novo);
+            if ($excessos !== []) {
+                throw new PlanoInsuficienteException($excessos);
+            }
+
+            $anterior = $atual->plano_id;
+            $atual->forceFill(['plano_id' => $novo->id])->save();
 
             activity('assinatura')
-                ->performedOn($tenant)
+                ->performedOn($atual)
                 ->causedBy($autor)
                 ->event('plano_trocado')
                 ->withProperties(['de' => $anterior, 'para' => $novo->id])
                 ->log('Plano da empresa trocado');
+
+            $tenant->setRawAttributes($atual->getAttributes(), true);
 
             return $tenant->load('plano');
         });

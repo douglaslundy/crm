@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Modules\Identity\Http\Middleware\GarantirUsuarioAtivo;
 use App\Modules\Platform\Http\Middleware\ExigirUsuarioDaEmpresa;
 use App\Modules\Platform\Http\Middleware\SomentePlataforma;
