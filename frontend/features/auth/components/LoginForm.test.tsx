@@ -29,6 +29,7 @@ describe('LoginForm', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
 
     expect(await screen.findByText('Informe um e-mail válido.')).toBeInTheDocument();
+    expect(screen.getByLabelText('E-mail')).toHaveAccessibleDescription('Informe um e-mail válido.');
     expect(authApi.login).not.toHaveBeenCalled();
   });
 

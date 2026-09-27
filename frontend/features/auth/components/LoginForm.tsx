@@ -5,9 +5,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { Campo } from '@/components/form/Campo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { ApiError } from '@/lib/api';
 import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { authApi } from '../api';
@@ -44,16 +44,12 @@ export function LoginForm() {
 
   return (
     <form onSubmit={enviar} noValidate className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="email">E-mail</Label>
-        <Input id="email" type="email" autoComplete="email" aria-invalid={!!erros.email} {...form.register('email')} />
-        {erros.email ? <p className="text-sm text-danger">{erros.email.message}</p> : null}
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="password">Senha</Label>
-        <Input id="password" type="password" autoComplete="current-password" aria-invalid={!!erros.password} {...form.register('password')} />
-        {erros.password ? <p className="text-sm text-danger">{erros.password.message}</p> : null}
-      </div>
+      <Campo id="email" label="E-mail" erro={erros.email?.message}>
+        {(a11y) => <Input {...a11y} type="email" autoComplete="email" {...form.register('email')} />}
+      </Campo>
+      <Campo id="password" label="Senha" erro={erros.password?.message}>
+        {(a11y) => <Input {...a11y} type="password" autoComplete="current-password" {...form.register('password')} />}
+      </Campo>
       {erros.root ? (
         <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{erros.root.message}</p>
       ) : null}

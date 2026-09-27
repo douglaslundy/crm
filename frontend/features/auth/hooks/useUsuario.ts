@@ -9,5 +9,7 @@ export function useUsuario() {
     queryKey: QUERY_KEY_USUARIO,
     queryFn: async () => (await authApi.me()).data,
     staleTime: 5 * 60 * 1000,
+    // Papel, situação da assinatura ou desativação mudam no servidor: revalida ao voltar para a aba.
+    refetchOnWindowFocus: 'always',
   });
 }

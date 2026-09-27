@@ -9,16 +9,18 @@ export const loginSchema = z.object({
 
 export const esqueciSenhaSchema = z.object({ email });
 
+export const senhaForte = z
+  .string()
+  .min(8, 'A senha precisa ter pelo menos 8 caracteres.')
+  .regex(/[A-Z]/, 'Inclua pelo menos uma letra maiúscula.')
+  .regex(/[a-z]/, 'Inclua pelo menos uma letra minúscula.')
+  .regex(/[0-9]/, 'Inclua pelo menos um número.');
+
 export const redefinirSenhaSchema = z
   .object({
     token: z.string().min(1),
     email,
-    password: z
-      .string()
-      .min(8, 'A senha precisa ter pelo menos 8 caracteres.')
-      .regex(/[A-Z]/, 'Inclua pelo menos uma letra maiúscula.')
-      .regex(/[a-z]/, 'Inclua pelo menos uma letra minúscula.')
-      .regex(/[0-9]/, 'Inclua pelo menos um número.'),
+    password: senhaForte,
     password_confirmation: z.string(),
   })
   .refine((d) => d.password === d.password_confirmation, {

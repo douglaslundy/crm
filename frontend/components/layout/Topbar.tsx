@@ -22,7 +22,9 @@ export function Topbar() {
   return (
     <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur">
       <div className="min-w-0">
-        <p className="truncate text-sm font-medium">{usuario?.tenant?.nome ?? 'Administração da plataforma'}</p>
+        <p className="truncate text-sm font-medium">
+          {usuario?.tenant ? (usuario.tenant.nome_fantasia ?? usuario.tenant.razao_social) : 'Administração da plataforma'}
+        </p>
         <p className="truncate text-xs text-muted-foreground">{usuario?.nome}</p>
       </div>
       <div className="flex items-center gap-1">

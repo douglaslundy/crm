@@ -12,7 +12,7 @@ describe('AppShell', () => {
     const client = new QueryClient();
     client.setQueryData(QUERY_KEY_USUARIO, {
       id: '1', nome: 'Ana Souza', email: 'ana@x.com', papel: 'PROPRIETARIO',
-      tenant: { id: 't', nome: 'Empresa X', cnpj: '11222333000181' },
+      tenant: { id: 't', razao_social: 'Empresa X Ltda', nome_fantasia: 'Empresa X', cnpj: '11222333000181', situacao: 'ATIVA', teste_termina_em: null },
     });
 
     render(

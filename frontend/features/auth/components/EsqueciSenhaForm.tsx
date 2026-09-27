@@ -4,9 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
+import { Campo } from '@/components/form/Campo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { ApiError } from '@/lib/api';
 import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { authApi } from '../api';
@@ -39,11 +39,9 @@ export function EsqueciSenhaForm() {
       noValidate
       className="space-y-4"
     >
-      <div className="space-y-2">
-        <Label htmlFor="email">E-mail cadastrado</Label>
-        <Input id="email" type="email" autoComplete="email" {...form.register('email')} />
-        {erros.email ? <p className="text-sm text-danger">{erros.email.message}</p> : null}
-      </div>
+      <Campo id="email" label="E-mail cadastrado" erro={erros.email?.message}>
+        {(a11y) => <Input {...a11y} type="email" autoComplete="email" {...form.register('email')} />}
+      </Campo>
       {erros.root ? <p role="alert" className="text-sm text-danger">{erros.root.message}</p> : null}
       <Button type="submit" className="w-full" disabled={enviando}>
         {enviando ? 'Enviando...' : 'Enviar link'}

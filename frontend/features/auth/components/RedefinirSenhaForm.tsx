@@ -6,9 +6,9 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import { Campo } from '@/components/form/Campo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { ApiError } from '@/lib/api';
 import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { authApi } from '../api';
@@ -49,18 +49,19 @@ export function RedefinirSenhaForm({ token, email }: { token: string; email: str
       noValidate
       className="space-y-4"
     >
-      <div className="space-y-2">
-        <Label htmlFor="password">Nova senha</Label>
-        <Input id="password" type="password" autoComplete="new-password" {...form.register('password')} />
-        {erros.password ? <p className="text-sm text-danger">{erros.password.message}</p> : null}
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="password_confirmation">Confirmar nova senha</Label>
-        <Input id="password_confirmation" type="password" autoComplete="new-password" {...form.register('password_confirmation')} />
-        {erros.password_confirmation ? (
-          <p className="text-sm text-danger">{erros.password_confirmation.message}</p>
-        ) : null}
-      </div>
+      <Campo id="password" label="Nova senha" erro={erros.password?.message}>
+        {(a11y) => <Input {...a11y} type="password" autoComplete="new-password" {...form.register('password')} />}
+      </Campo>
+      <Campo id="password_confirmation" label="Confirmar nova senha" erro={erros.password_confirmation?.message}>
+        {(a11y) => (
+          <Input {...a11y} type="password" autoComplete="new-password" {...form.register('password_confirmation')} />
+        )}
+      </Campo>
+      {erros.token || erros.email ? (
+        <p role="alert" className="text-sm text-danger">
+          Link inválido ou expirado. <Link href="/esqueci-senha" className="underline">Solicitar novo link</Link>
+        </p>
+      ) : null}
       {erros.root ? <p role="alert" className="text-sm text-danger">{erros.root.message}</p> : null}
       <Button type="submit" className="w-full" disabled={enviando}>
         {enviando ? 'Salvando...' : 'Redefinir senha'}
