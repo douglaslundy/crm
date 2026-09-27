@@ -1,15 +1,16 @@
 # Progresso do Projeto
 
 ## Última atualização
-2026-09-26
+2026-09-27
 
 ## Tarefa em andamento
-Revisão, pelo usuário, do plano da F1 e escolha do modo de execução (subagentes ou nativo).
+F1 concluída (branch `f1-plataforma`), aguardando revisão final e integração ao `master`. Próxima tarefa: escrever a spec da F2 (cadastros e configuração fiscal do emitente).
 
 ## Contexto necessário
-- Plano: `docs/superpowers/plans/2026-09-27-f1-plataforma-e-planos.md` (18 tarefas: backend de 1 a 11, frontend de 12 a 18). Ledger em `.superpowers/sdd/`.
-- Spec da F1 (aprovada): `docs/superpowers/specs/2026-09-26-f1-plataforma-e-planos-design.md`.
-- A execução começa numa branch nova (`f1-plataforma`), nunca direto no `master`.
+- Spec mestre: `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`, §F2 (escopo da fase: clientes, produtos, serviços, categorias fiscais, pendências, importação CSV, dados fiscais do emitente, certificado, CSC, séries).
+- Base fiscal: `docs/referencia-fiscal/00-INDICE.md` — abrir só o arquivo do assunto necessário.
+- Skill fiscal: `br-fiscal-note-emission` — ler antes de qualquer código ou spec que toque regra fiscal (certificado, CSC, séries, dados do emitente).
+- Pendências da revisão da F1 (não bloqueiam a F2): `TAREFAS.md`, seção "Pendências da revisão da F1".
 
 ## Concluído
 - [x] Requisitos, decisões, base fiscal (`docs/referencia-fiscal/`) e pesquisa de CRM.
@@ -25,6 +26,10 @@ Revisão, pelo usuário, do plano da F1 e escolha do modo de execução (subagen
   - [x] Correções da revisão: `tenant_id` imutável, e-mail de senha enviado depois da resposta, `TRUSTED_PROXIES`, pt-BR, retry no 419, envio único nos formulários.
 - [x] Spec da F1 escrita (commit `1c92bb8`) e aprovada.
 - [x] Plano da F1 escrito.
+- [x] **F1 Plataforma e planos** (18 tarefas, branch `f1-plataforma`, aguardando revisão final e integração ao `master`):
+  - [x] Tarefas 1-11 (backend): tenancy fail-closed reforçado, `Plano`/`Tenant`/módulos/limites, `EntitlementService`, `MudarSituacaoDaEmpresa`, expiração de teste, cadastro público com CNPJ/BrasilAPI, admin de planos e empresas, convites e papéis de usuário.
+  - [x] Tarefas 12-17 (frontend): tipos e API admin, telas de planos e empresas (admin), fluxo de cadastro público, área do app (dashboard, assinatura, usuários), convite e definição de senha.
+  - [x] Tarefa 18 (fechamento): suíte completa verde (backend 142 testes, Pint, PHPStan nível 6, `composer audit`; frontend 74 testes, typecheck, lint, build, `npm audit`) e fumaça ponta a ponta via curl (plano com limite de 1 usuário → cadastro `PENDENTE` → ativação manual `ATIVA` → 4º passo barrado com `422 LIMITE_DO_PLANO`), exatamente o critério de pronto da spec mestre.
 
 ## Decisões não óbvias
 - O `php.ini` global ganhou `pdo_sqlite`, `sqlite3`, `soap` e `intl`, com autorização do usuário e backup `php.ini.bak`.
@@ -36,4 +41,4 @@ Revisão, pelo usuário, do plano da F1 e escolha do modo de execução (subagen
 - Os arquivos voltam do checkout com CRLF (autocrlf do Windows). Edições por regex com `\n` falham nesses arquivos.
 
 ## Próxima tarefa
-Com o plano aprovado: executar a F1 tarefa por tarefa, a partir da Tarefa 1.
+Escrever a spec da F2 (cadastros e configuração fiscal do emitente): clientes, produtos, serviços, categorias fiscais, pendências, importação CSV, dados fiscais, certificado, CSC e séries.
