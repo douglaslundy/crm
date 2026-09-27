@@ -2,18 +2,22 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useUsuario } from '@/features/auth/hooks/useUsuario';
 import { cn } from '@/lib/utils';
-import { NAV_ITEMS } from './nav-items';
+import { estaAtivo, itensVisiveis, type NavItem } from './nav-items';
 
-export function Sidebar() {
+export function Sidebar({ itens }: { itens: NavItem[] }) {
   const pathname = usePathname();
+  const { data: usuario } = useUsuario();
+  const visiveis = itensVisiveis(itens, usuario?.papel);
 
   return (
     <aside className="hidden w-60 shrink-0 border-r bg-card md:flex md:flex-col">
       <div className="px-5 py-4 text-lg font-semibold">Plataforma</div>
       <nav aria-label="Navegação principal" className="flex flex-col gap-1 px-3">
-        {NAV_ITEMS.map(({ href, label, icon: Icone }) => {
-          const ativo = pathname.startsWith(href);
+        {visiveis.map((item) => {
+          const { href, label, icon: Icone } = item;
+          const ativo = estaAtivo(item, pathname);
           return (
             <Link
               key={href}

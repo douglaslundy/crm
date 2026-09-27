@@ -2,19 +2,23 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useUsuario } from '@/features/auth/hooks/useUsuario';
 import { cn } from '@/lib/utils';
-import { NAV_ITEMS } from './nav-items';
+import { estaAtivo, itensVisiveis, type NavItem } from './nav-items';
 
-export function BottomNav() {
+export function BottomNav({ itens }: { itens: NavItem[] }) {
   const pathname = usePathname();
+  const { data: usuario } = useUsuario();
+  const visiveis = itensVisiveis(itens, usuario?.papel);
 
   return (
     <nav
       aria-label="Navegação inferior"
       className="fixed inset-x-0 bottom-0 z-20 flex border-t bg-card pb-[env(safe-area-inset-bottom)] md:hidden"
     >
-      {NAV_ITEMS.map(({ href, label, icon: Icone }) => {
-        const ativo = pathname.startsWith(href);
+      {visiveis.map((item) => {
+        const { href, label, icon: Icone } = item;
+        const ativo = estaAtivo(item, pathname);
         return (
           <Link
             key={href}
