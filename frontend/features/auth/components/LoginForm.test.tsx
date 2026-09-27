@@ -35,7 +35,10 @@ describe('LoginForm', () => {
 
   it('com sucesso, vai para o dashboard', async () => {
     vi.mocked(authApi.login).mockResolvedValue({
-      data: { id: '1', nome: 'Ana', email: 'ana@x.com', papel: 'PROPRIETARIO', tenant: null },
+      data: {
+        id: '1', nome: 'Ana', email: 'ana@x.com', papel: 'PROPRIETARIO',
+        tenant: { id: 't', razao_social: 'X Ltda', nome_fantasia: null, cnpj: '11222333000181', situacao: 'ATIVA', teste_termina_em: null },
+      },
     });
     renderizar();
 
@@ -45,6 +48,19 @@ describe('LoginForm', () => {
 
     expect(authApi.login).toHaveBeenCalledWith({ email: 'ana@x.com', password: 'Senha123' });
     await vi.waitFor(() => expect(push).toHaveBeenCalledWith('/dashboard'));
+  });
+
+  it('admin da plataforma vai para /admin', async () => {
+    vi.mocked(authApi.login).mockResolvedValue({
+      data: { id: '1', nome: 'Admin', email: 'admin@x.com', papel: 'SUPERADMIN', tenant: null },
+    });
+    renderizar();
+
+    await userEvent.type(screen.getByLabelText('E-mail'), 'admin@x.com');
+    await userEvent.type(screen.getByLabelText('Senha'), 'Senha123');
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }));
+
+    await vi.waitFor(() => expect(push).toHaveBeenCalledWith('/admin'));
   });
 
   it('mostra o erro da API e não navega', async () => {

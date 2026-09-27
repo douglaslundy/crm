@@ -23,7 +23,7 @@ export function LoginForm() {
     mutationFn: (dados: LoginDados) => authApi.login(dados),
     onSuccess: ({ data }) => {
       queryClient.setQueryData(QUERY_KEY_USUARIO, data);
-      router.push('/dashboard');
+      router.push(data.tenant ? '/dashboard' : '/admin');
     },
     onError: (erro) => {
       const mensagem = erro instanceof ApiError ? erro.primeiraMensagem() : 'Não foi possível entrar. Tente novamente.';
