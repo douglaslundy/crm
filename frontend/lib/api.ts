@@ -5,9 +5,15 @@ export class ApiError extends Error {
     public readonly status: number,
     message: string,
     public readonly errors: Record<string, string[]> = {},
+    /** Corpo completo da resposta: erros de negócio trazem `codigo` e extras (ex.: `excessos`). */
+    public readonly corpo: Record<string, unknown> = {},
   ) {
     super(message);
     this.name = 'ApiError';
+  }
+
+  get codigo(): string | undefined {
+    return typeof this.corpo.codigo === 'string' ? this.corpo.codigo : undefined;
   }
 
   /** Primeira mensagem de validação, ou a mensagem geral. */
@@ -54,12 +60,12 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   if (resposta.status === 204) return undefined as T;
   if (resposta.status === CSRF_EXPIRADO) throw new ApiError(CSRF_EXPIRADO, MENSAGEM_CSRF);
 
-  const corpo = (await resposta.json().catch(() => ({}))) as {
+  const corpo = (await resposta.json().catch(() => ({}))) as Record<string, unknown> & {
     message?: string;
     errors?: Record<string, string[]>;
   };
   if (!resposta.ok) {
-    throw new ApiError(resposta.status, corpo.message ?? 'Erro inesperado. Tente novamente.', corpo.errors ?? {});
+    throw new ApiError(resposta.status, corpo.message ?? 'Erro inesperado. Tente novamente.', corpo.errors ?? {}, corpo);
   }
   return corpo as T;
 }

@@ -71,4 +71,16 @@ describe('api', () => {
     expect((erro as ApiError).status).toBe(422);
     expect((erro as ApiError).errors.email[0]).toBe('E-mail ou senha incorretos.');
   });
+
+  it('expõe o código e o corpo dos erros de negócio', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      resposta(422, { message: 'Excedido.', codigo: 'PLANO_EXCEDIDO', excessos: [{ recurso: 'USUARIOS', uso: 3, limite: 1 }] }),
+    );
+
+    const erro = await api('/api/admin/x').catch((e: unknown) => e);
+
+    expect(erro).toBeInstanceOf(ApiError);
+    expect((erro as ApiError).codigo).toBe('PLANO_EXCEDIDO');
+    expect((erro as ApiError).corpo.excessos).toEqual([{ recurso: 'USUARIOS', uso: 3, limite: 1 }]);
+  });
 });
