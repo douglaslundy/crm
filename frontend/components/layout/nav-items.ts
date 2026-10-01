@@ -1,4 +1,4 @@
-import { Building2, Gauge, LayoutDashboard, Package, Users, Wrench, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, Building2, Gauge, LayoutDashboard, Package, Users, Wrench, type LucideIcon } from 'lucide-react';
 import type { Papel } from '@/features/auth/types';
 
 export interface NavItem {
@@ -16,6 +16,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'Início', icon: LayoutDashboard },
   { href: '/produtos', label: 'Produtos', icon: Package, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
   { href: '/servicos', label: 'Serviços', icon: Wrench, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
+  { href: '/pendencias-fiscais', label: 'Pendências fiscais', icon: AlertTriangle, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
   { href: '/configuracoes/usuarios', label: 'Usuários', icon: Users, papeis: ['PROPRIETARIO', 'ADMIN'] },
 ];
 
