@@ -44,6 +44,17 @@ class Emitente extends Model
 
     protected $hidden = ['certificado_pfx_encrypted', 'certificado_senha_encrypted', 'csc_token_homologacao_encrypted', 'csc_token_producao_encrypted'];
 
+    /**
+     * O default do banco (`->default(...)` na migration) não é lido de volta para o
+     * Model em memória num `create([])`; precisa estar aqui também.
+     *
+     * @var array<string, string>
+     */
+    protected $attributes = [
+        'ambiente_fiscal' => 'HOMOLOGACAO',
+        'certificado_status' => 'PENDENTE',
+    ];
+
     /** @return array<string, string> */
     protected function casts(): array
     {
