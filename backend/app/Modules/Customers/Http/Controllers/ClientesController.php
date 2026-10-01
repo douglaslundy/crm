@@ -7,12 +7,14 @@ namespace App\Modules\Customers\Http\Controllers;
 use App\Modules\Customers\Application\Actions\AtualizarCliente;
 use App\Modules\Customers\Application\Actions\ConverterEmCliente;
 use App\Modules\Customers\Application\Actions\CriarCliente;
+use App\Modules\Customers\Application\Actions\ImportarClientesCsv;
 use App\Modules\Customers\Domain\Models\Cliente;
 use App\Modules\Customers\Http\Requests\AtualizarClienteRequest;
 use App\Modules\Customers\Http\Requests\CriarClienteRequest;
 use App\Modules\Customers\Http\Resources\ClienteResource;
 use App\Modules\Identity\Domain\Models\Usuario;
 use App\Modules\Shared\Application\PoliticaDeCadastros;
+use App\Modules\Shared\Http\Requests\ImportarCsvRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -53,6 +55,13 @@ final class ClientesController
         $cliente = Cliente::query()->findOrFail($id);
 
         return new ClienteResource($converter->executar($cliente));
+    }
+
+    public function importar(ImportarCsvRequest $request, ImportarClientesCsv $importar): JsonResponse
+    {
+        $this->politica->garantirPodeEscrever($this->autor($request));
+
+        return response()->json(['data' => $importar->executar($this->autor($request), $request->file('arquivo'))]);
     }
 
     private function autor(Request $request): Usuario

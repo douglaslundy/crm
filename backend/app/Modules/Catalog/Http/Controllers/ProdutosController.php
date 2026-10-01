@@ -6,12 +6,14 @@ namespace App\Modules\Catalog\Http\Controllers;
 
 use App\Modules\Catalog\Application\Actions\AtualizarProduto;
 use App\Modules\Catalog\Application\Actions\CriarProduto;
+use App\Modules\Catalog\Application\Actions\ImportarProdutosCsv;
 use App\Modules\Catalog\Domain\Models\Produto;
 use App\Modules\Catalog\Http\Requests\AtualizarProdutoRequest;
 use App\Modules\Catalog\Http\Requests\CriarProdutoRequest;
 use App\Modules\Catalog\Http\Resources\ProdutoResource;
 use App\Modules\Identity\Domain\Models\Usuario;
 use App\Modules\Shared\Application\PoliticaDeCadastros;
+use App\Modules\Shared\Http\Requests\ImportarCsvRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -44,6 +46,13 @@ final class ProdutosController
         $produto = Produto::query()->findOrFail($id);
 
         return new ProdutoResource($atualizar->executar($produto, $request->dados()));
+    }
+
+    public function importar(ImportarCsvRequest $request, ImportarProdutosCsv $importar): JsonResponse
+    {
+        $this->politica->garantirPodeEscrever($this->autor($request));
+
+        return response()->json(['data' => $importar->executar($this->autor($request), $request->file('arquivo'))]);
     }
 
     private function autor(Request $request): Usuario

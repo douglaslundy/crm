@@ -6,12 +6,14 @@ namespace App\Modules\Catalog\Http\Controllers;
 
 use App\Modules\Catalog\Application\Actions\AtualizarServico;
 use App\Modules\Catalog\Application\Actions\CriarServico;
+use App\Modules\Catalog\Application\Actions\ImportarServicosCsv;
 use App\Modules\Catalog\Domain\Models\Servico;
 use App\Modules\Catalog\Http\Requests\AtualizarServicoRequest;
 use App\Modules\Catalog\Http\Requests\CriarServicoRequest;
 use App\Modules\Catalog\Http\Resources\ServicoResource;
 use App\Modules\Identity\Domain\Models\Usuario;
 use App\Modules\Shared\Application\PoliticaDeCadastros;
+use App\Modules\Shared\Http\Requests\ImportarCsvRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
@@ -44,6 +46,13 @@ final class ServicosController
         $servico = Servico::query()->findOrFail($id);
 
         return new ServicoResource($atualizar->executar($servico, $request->dados()));
+    }
+
+    public function importar(ImportarCsvRequest $request, ImportarServicosCsv $importar): JsonResponse
+    {
+        $this->politica->garantirPodeEscrever($this->autor($request));
+
+        return response()->json(['data' => $importar->executar($this->autor($request), $request->file('arquivo'))]);
     }
 
     private function autor(Request $request): Usuario

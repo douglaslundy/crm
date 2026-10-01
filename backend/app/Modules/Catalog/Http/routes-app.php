@@ -26,4 +26,7 @@ Route::middleware('empresa')->group(function (): void {
     Route::post('categorias-fiscais-padrao', [CategoriasFiscaisController::class, 'store'])->name('app.categorias-fiscais.store');
     Route::put('categorias-fiscais-padrao/{id}', [CategoriasFiscaisController::class, 'update'])->name('app.categorias-fiscais.update');
     Route::post('produtos/{produtoId}/aplicar-categoria/{categoriaId}', [CategoriasFiscaisController::class, 'aplicar'])->name('app.produtos.aplicar-categoria');
+
+    Route::post('produtos/importar', [ProdutosController::class, 'importar'])->name('app.produtos.importar');
+    Route::post('servicos/importar', [ServicosController::class, 'importar'])->name('app.servicos.importar');
 });

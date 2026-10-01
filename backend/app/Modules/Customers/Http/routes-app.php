@@ -12,6 +12,7 @@ Route::middleware('empresa')->group(function (): void {
     Route::get('clientes/{id}', [ClientesController::class, 'show'])->name('app.clientes.show');
     Route::put('clientes/{id}', [ClientesController::class, 'update'])->name('app.clientes.update');
     Route::post('clientes/{id}/converter-em-cliente', [ClientesController::class, 'converterEmCliente'])->name('app.clientes.converter-em-cliente');
+    Route::post('clientes/importar', [ClientesController::class, 'importar'])->name('app.clientes.importar');
 
     Route::post('clientes/{clienteId}/contatos', [ContatosController::class, 'store'])->name('app.clientes.contatos.store');
     Route::put('clientes/{clienteId}/contatos/{contatoId}', [ContatosController::class, 'update'])->name('app.clientes.contatos.update');
