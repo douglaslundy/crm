@@ -83,4 +83,17 @@ describe('api', () => {
     expect((erro as ApiError).codigo).toBe('PLANO_EXCEDIDO');
     expect((erro as ApiError).corpo.excessos).toEqual([{ recurso: 'USUARIOS', uso: 3, limite: 1 }]);
   });
+
+  it('não define Content-Type quando o corpo é FormData, deixando o boundary automático', async () => {
+    document.cookie = 'XSRF-TOKEN=abc%3D';
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue(resposta(200, { data: 'ok' }));
+
+    const corpo = new FormData();
+    corpo.append('arquivo', new Blob(['conteudo']), 'arquivo.csv');
+
+    await api('/api/app/clientes/importar', { method: 'POST', body: corpo });
+
+    const [, init] = fetchMock.mock.calls[0];
+    expect(new Headers(init?.headers).has('Content-Type')).toBe(false);
+  });
 });
