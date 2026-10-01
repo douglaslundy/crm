@@ -4,7 +4,7 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
 
 - [x] **F0 Fundação:** repositório, Docker, CI, Laravel + Next, monólito modular, autenticação, tenancy com isolamento testado, layout responsivo com temas dark e light.
 - [x] **F1 Plataforma e planos:** admin do SaaS, planos (módulos e limites), onboarding de empresa, usuários e papéis, `EntitlementService`.
-- [ ] **F2 Cadastros e emitente** (tarefas 1 a 23 de 28 prontas; faltam 24 a 28): clientes, produtos, serviços, categorias fiscais, pendências, CSV, dados fiscais, certificado, CSC, séries.
+- [ ] **F2 Cadastros e emitente** (tarefas 1 a 24 de 28 prontas; faltam 25 a 28): clientes, produtos, serviços, categorias fiscais, pendências, CSV, dados fiscais, certificado, CSC, séries.
 - [ ] **F3 NF-e e NFC-e** (NFePHP): emissão, fila, reconciliação, PDF, cancelamento, inutilização, contingência, dashboard fiscal.
 - [ ] **F4 NFS-e Nacional** (`nfse-php`): DANFSe, cancelamento, venda mista.
 - [ ] **F5 Cobrança** (Mercado Pago): checkout transparente, assinatura, webhooks, inadimplência, excedente.

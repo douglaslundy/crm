@@ -4,7 +4,7 @@
 2026-10-01
 
 ## Tarefa em andamento
-**F2, execução do plano `docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.md`.** Tarefas 1 a 23 concluídas e commitadas (verificado contra o `git log` em 2026-10-01 após queda da sessão). Falta a Tarefa 24.
+**F2, execução do plano `docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.md`.** Tarefas 1 a 24 concluídas e commitadas. Falta a Tarefa 25.
 
 ## Decisões pendentes com o usuário
 - **Remoto no GitHub:** o repositório não tem remoto; o CI (incluindo o job em PostgreSQL 16) só roda depois de configurar um.
@@ -17,7 +17,7 @@
 - Base fiscal: `docs/referencia-fiscal/00-INDICE.md` — abrir só o arquivo do assunto necessário.
 - Skill fiscal: `br-fiscal-note-emission` — ler antes de qualquer código ou spec que toque regra fiscal.
 - Padrões já estabelecidos na F1 (seguir): `docs/adr/0004-planos-situacao-e-limites.md` (EntitlementService, contadores por módulo, erros `{message, codigo}`), grupo de middleware `empresa`, `Campo`/`useEnvioUnico` no frontend.
-- Tarefa 24 do plano (linha ~7267): pendências fiscais no frontend. Padrão a seguir: `frontend/features/produtos` e `frontend/features/servicos`.
+- Tarefa 25 do plano (linha ~7459): clientes, contatos e conversão de estágio no frontend. Padrão: `frontend/features/produtos` e `servicos`.
 - Pendências da revisão da F1 (não bloqueiam a F2): `TAREFAS.md`, seção "Pendências da revisão da F1".
 
 ## Concluído
@@ -52,4 +52,4 @@
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-F2 Tarefa 24: Frontend, pendências fiscais. Depois 25 (clientes), 26 (wizard do emitente), 27 (CSV) e 28 (revisão final e fumaça). Observação: o teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado).
+F2 Tarefa 25: Frontend, clientes. Depois 26 (wizard do emitente), 27 (CSV) e 28 (revisão final e fumaça). Observação: o teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado).
