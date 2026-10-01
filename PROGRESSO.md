@@ -4,7 +4,7 @@
 2026-10-01
 
 ## Tarefa em andamento
-**F2, execução do plano `docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.md`.** Tarefas 1 a 25 concluídas e commitadas. Falta a Tarefa 26.
+**F2, execução do plano `docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.md`.** Tarefas 1 a 26 concluídas e commitadas. Falta a Tarefa 27.
 
 ## Decisões pendentes com o usuário
 - **Remoto no GitHub:** o repositório não tem remoto; o CI (incluindo o job em PostgreSQL 16) só roda depois de configurar um.
@@ -17,7 +17,7 @@
 - Base fiscal: `docs/referencia-fiscal/00-INDICE.md` — abrir só o arquivo do assunto necessário.
 - Skill fiscal: `br-fiscal-note-emission` — ler antes de qualquer código ou spec que toque regra fiscal.
 - Padrões já estabelecidos na F1 (seguir): `docs/adr/0004-planos-situacao-e-limites.md` (EntitlementService, contadores por módulo, erros `{message, codigo}`), grupo de middleware `empresa`, `Campo`/`useEnvioUnico` no frontend.
-- Tarefa 26 do plano (linha ~7989): wizard do emitente e Configurações fiscais (consome GET emitente, PUT empresa|fiscal|csc|series, POST certificado (FormData) e ambiente/producao). Padrão: `frontend/features/clientes`.
+- Tarefa 27 do plano (linha ~8673): `ImportarCsvForm` genérico em `frontend/components/form` (POST `/importar`, erros por linha) e uso nas páginas de produtos, serviços e clientes.
 - Pendências da revisão da F1 (não bloqueiam a F2): `TAREFAS.md`, seção "Pendências da revisão da F1".
 
 ## Concluído
@@ -34,7 +34,7 @@
   - Decisões: módulo `Fiscal` novo (só emitente/certificado/séries nesta fase); wizard de onboarding pós-ativação; certificado validado com `openssl_pkcs12_read()` nativo (sem antecipar `sped-nfe`); papéis (`PROPRIETARIO/ADMIN/FISCAL` no emitente, +`VENDEDOR` nos cadastros); CSV cria e atualiza por chave; F2 já constrói a transição `LEAD → CLIENTE`.
 - [x] **Plano da F2** escrito (2026-10-01): `docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.md`, 28 tarefas.
   - Ordem: `Shared` (Cpf, ConsultaCep) → `Catalog` (produtos/serviços/categorias/pendências) → `Customers` (clientes/contatos/conversão) → `Fiscal` (emitente/certificado/CSC/séries) → matriz de papéis → CSV → API pública `/api/v1` → frontend (produtos, serviços, pendências, clientes, wizard do emitente, CSV) → revisão final.
-- [x] **F2 Tarefas 1 a 25** (2026-10-01): Shared (Cpf, ConsultaCep), upload FormData, Catalog (produto, serviço, categoria fiscal, validador, pendências), Customers (cliente, contato, LEAD→CLIENTE), Fiscal (emitente, certificado A1, CSC, séries), matriz de papéis, importador CSV, CSV de cadastros, API `/api/v1`, frontend de produtos e serviços.
+- [x] **F2 Tarefas 1 a 26** (2026-10-01): Shared (Cpf, ConsultaCep), upload FormData, Catalog (produto, serviço, categoria fiscal, validador, pendências), Customers (cliente, contato, LEAD→CLIENTE), Fiscal (emitente, certificado A1, CSC, séries), matriz de papéis, importador CSV, CSV de cadastros, API `/api/v1`, frontend de produtos, serviços, pendências, clientes e wizard do emitente (`/onboarding`, `/configuracoes/fiscal`).
 
 ## Decisões não óbvias
 - O `php.ini` global ganhou `pdo_sqlite`, `sqlite3`, `soap` e `intl`, com autorização do usuário e backup `php.ini.bak`.
@@ -52,4 +52,4 @@
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-F2 Tarefa 26: wizard do emitente. Depois 27 (CSV) e 28 (revisão final e fumaça). Observação: o teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado).
+F2 Tarefa 27: importação CSV no frontend. Depois 28 (revisão final e fumaça). Observação: o teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado).
