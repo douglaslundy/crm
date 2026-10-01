@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Customers\Http\Controllers;
 
 use App\Modules\Customers\Application\Actions\AtualizarCliente;
+use App\Modules\Customers\Application\Actions\ConverterEmCliente;
 use App\Modules\Customers\Application\Actions\CriarCliente;
 use App\Modules\Customers\Domain\Models\Cliente;
 use App\Modules\Customers\Http\Requests\AtualizarClienteRequest;
@@ -44,6 +45,14 @@ final class ClientesController
         $cliente = Cliente::query()->findOrFail($id);
 
         return new ClienteResource($atualizar->executar($cliente, $request->dados()));
+    }
+
+    public function converterEmCliente(Request $request, string $id, ConverterEmCliente $converter): ClienteResource
+    {
+        $this->politica->garantirPodeEscrever($this->autor($request));
+        $cliente = Cliente::query()->findOrFail($id);
+
+        return new ClienteResource($converter->executar($cliente));
     }
 
     private function autor(Request $request): Usuario
