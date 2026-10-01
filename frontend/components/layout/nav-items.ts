@@ -14,6 +14,7 @@ export interface NavItem {
 /** Área da empresa. Cada fase acrescenta aqui os itens do seu módulo. */
 export const NAV_ITEMS: NavItem[] = [
   { href: '/dashboard', label: 'Início', icon: LayoutDashboard },
+  { href: '/produtos', label: 'Produtos', icon: Package, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
   { href: '/configuracoes/usuarios', label: 'Usuários', icon: Users, papeis: ['PROPRIETARIO', 'ADMIN'] },
 ];
 
