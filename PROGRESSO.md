@@ -4,7 +4,7 @@
 2026-10-01
 
 ## Tarefa em andamento
-Spec da F2 escrita e aprovada no brainstorming: `docs/superpowers/specs/2026-10-01-f2-cadastros-e-emitente-design.md`. Aguardando a revisão do usuário sobre o arquivo antes de passar para o plano (`writing-plans`).
+Plano da F2 escrito: `docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.md` (28 tarefas: Shared, Catalog, Customers, Fiscal, CSV, API pública e frontend). Aguardando o usuário revisar e escolher a execução (recomendado: subagentes, como na F1).
 
 ## Decisões pendentes com o usuário
 - **Remoto no GitHub:** o repositório não tem remoto; o CI (incluindo o job em PostgreSQL 16) só roda depois de configurar um.
@@ -31,7 +31,9 @@ Spec da F2 escrita e aprovada no brainstorming: `docs/superpowers/specs/2026-10-
   - Suítes no master: backend 148 testes, frontend 74; Pint, PHPStan 6, typecheck, lint e build verdes. Fumaça ponta a ponta do critério de pronto: OK.
 - [x] **Spec da F2** escrita e aprovada no brainstorming (2026-10-01): `docs/superpowers/specs/2026-10-01-f2-cadastros-e-emitente-design.md`.
   - Decisões: módulo `Fiscal` novo (só emitente/certificado/séries nesta fase); wizard de onboarding pós-ativação; certificado validado com `openssl_pkcs12_read()` nativo (sem antecipar `sped-nfe`); papéis (`PROPRIETARIO/ADMIN/FISCAL` no emitente, +`VENDEDOR` nos cadastros); CSV cria e atualiza por chave; F2 já constrói a transição `LEAD → CLIENTE`.
-  - Ainda falta: plano de implementação (`writing-plans`), depois de o usuário revisar o arquivo da spec.
+- [x] **Plano da F2** escrito (2026-10-01): `docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.md`, 28 tarefas.
+  - Ordem: `Shared` (Cpf, ConsultaCep) → `Catalog` (produtos/serviços/categorias/pendências) → `Customers` (clientes/contatos/conversão) → `Fiscal` (emitente/certificado/CSC/séries) → matriz de papéis → CSV → API pública `/api/v1` → frontend (produtos, serviços, pendências, clientes, wizard do emitente, CSV) → revisão final.
+  - Ainda falta: usuário revisar o plano e escolher a execução (sugerido: subagentes, como a F1).
 
 ## Decisões não óbvias
 - O `php.ini` global ganhou `pdo_sqlite`, `sqlite3`, `soap` e `intl`, com autorização do usuário e backup `php.ini.bak`.
@@ -49,4 +51,4 @@ Spec da F2 escrita e aprovada no brainstorming: `docs/superpowers/specs/2026-10-
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-Usuário revisa a spec da F2 (`docs/superpowers/specs/2026-10-01-f2-cadastros-e-emitente-design.md`). Aprovada → invocar `writing-plans` para gerar o plano de implementação (seguindo o padrão da F1: tarefas por subagente, revisão por tarefa e revisão final).
+Usuário revisa o plano da F2 (`docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.md`) e escolhe a execução (subagentes ou nativa). Aprovado → executar as 28 tarefas na ordem do plano.
