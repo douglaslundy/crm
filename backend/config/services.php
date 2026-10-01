@@ -39,4 +39,8 @@ return [
         'url' => env('BRASILAPI_URL', 'https://brasilapi.com.br'),
     ],
 
+    'viacep' => [
+        'url' => env('VIACEP_URL', 'https://viacep.com.br'),
+    ],
+
 ];
