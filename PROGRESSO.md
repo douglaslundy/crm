@@ -1,14 +1,16 @@
 # Progresso do Projeto
 
 ## Última atualização
-2026-09-27
+2026-10-01
 
 ## Tarefa em andamento
-Nenhuma. F1 integrada ao `master`. Próxima tarefa: escrever a spec da F2 (cadastros e configuração fiscal do emitente), começando pelo brainstorming com o usuário.
+Spec da F2 escrita e aprovada no brainstorming: `docs/superpowers/specs/2026-10-01-f2-cadastros-e-emitente-design.md`. Aguardando a revisão do usuário sobre o arquivo antes de passar para o plano (`writing-plans`).
 
 ## Decisões pendentes com o usuário
-- **Papel PROPRIETARIO irreversível:** hoje (spec F1 §9) ninguém altera nem desativa um proprietário; se o dono promover outro usuário, só dá para desfazer no banco. Opções: (A) manter; (B) proprietário pode alterar outro proprietário, nunca a si mesmo; (C) remover a opção de conceder o papel.
 - **Remoto no GitHub:** o repositório não tem remoto; o CI (incluindo o job em PostgreSQL 16) só roda depois de configurar um.
+
+## Decisões já tomadas
+- **Papel PROPRIETARIO irreversível (2026-10-01):** mantido como está — ninguém altera nem desativa um proprietário pela aplicação; reversão só no banco.
 
 ## Contexto necessário
 - Spec mestre: `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`, linha F2 do §15 (clientes, produtos, serviços, categorias fiscais, pendências, importação CSV, dados fiscais do emitente, certificado, CSC, séries).
@@ -27,6 +29,9 @@ Nenhuma. F1 integrada ao `master`. Próxima tarefa: escrever a spec da F2 (cadas
   - Frontend: faixas de situação e "Aguardando ativação", consumo no dashboard, `/planos` e `/cadastro`, área `/admin` (painel, planos, empresas), `Configurações › Usuários`, `/definir-senha`.
   - Revisão final: corrigidos cadastro/login sem sessão (400 `SESSAO_INDISPONIVEL` antes de gravar), teste de isolamento da assinatura, locks contra corrida (situação × rotina noturna, troca de plano × convite), transação na auditoria de usuários, `strict_types` faltantes.
   - Suítes no master: backend 148 testes, frontend 74; Pint, PHPStan 6, typecheck, lint e build verdes. Fumaça ponta a ponta do critério de pronto: OK.
+- [x] **Spec da F2** escrita e aprovada no brainstorming (2026-10-01): `docs/superpowers/specs/2026-10-01-f2-cadastros-e-emitente-design.md`.
+  - Decisões: módulo `Fiscal` novo (só emitente/certificado/séries nesta fase); wizard de onboarding pós-ativação; certificado validado com `openssl_pkcs12_read()` nativo (sem antecipar `sped-nfe`); papéis (`PROPRIETARIO/ADMIN/FISCAL` no emitente, +`VENDEDOR` nos cadastros); CSV cria e atualiza por chave; F2 já constrói a transição `LEAD → CLIENTE`.
+  - Ainda falta: plano de implementação (`writing-plans`), depois de o usuário revisar o arquivo da spec.
 
 ## Decisões não óbvias
 - O `php.ini` global ganhou `pdo_sqlite`, `sqlite3`, `soap` e `intl`, com autorização do usuário e backup `php.ini.bak`.
@@ -44,4 +49,4 @@ Nenhuma. F1 integrada ao `master`. Próxima tarefa: escrever a spec da F2 (cadas
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-Spec da F2 (cadastros e configuração fiscal do emitente): brainstorming com o usuário → spec → plano → execução. Antes, perguntar a decisão sobre o papel PROPRIETARIO.
+Usuário revisa a spec da F2 (`docs/superpowers/specs/2026-10-01-f2-cadastros-e-emitente-design.md`). Aprovada → invocar `writing-plans` para gerar o plano de implementação (seguindo o padrão da F1: tarefas por subagente, revisão por tarefa e revisão final).
