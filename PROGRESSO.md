@@ -4,7 +4,7 @@
 2026-10-01
 
 ## Tarefa em andamento
-Plano da F2 escrito: `docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.md` (28 tarefas: Shared, Catalog, Customers, Fiscal, CSV, API pública e frontend). Aguardando o usuário revisar e escolher a execução (recomendado: subagentes, como na F1).
+**F2, execução do plano `docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.md`.** Tarefas 1 a 23 concluídas e commitadas (verificado contra o `git log` em 2026-10-01 após queda da sessão). Falta a Tarefa 24.
 
 ## Decisões pendentes com o usuário
 - **Remoto no GitHub:** o repositório não tem remoto; o CI (incluindo o job em PostgreSQL 16) só roda depois de configurar um.
@@ -17,6 +17,7 @@ Plano da F2 escrito: `docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.
 - Base fiscal: `docs/referencia-fiscal/00-INDICE.md` — abrir só o arquivo do assunto necessário.
 - Skill fiscal: `br-fiscal-note-emission` — ler antes de qualquer código ou spec que toque regra fiscal.
 - Padrões já estabelecidos na F1 (seguir): `docs/adr/0004-planos-situacao-e-limites.md` (EntitlementService, contadores por módulo, erros `{message, codigo}`), grupo de middleware `empresa`, `Campo`/`useEnvioUnico` no frontend.
+- Tarefa 24 do plano (linha ~7267): pendências fiscais no frontend. Padrão a seguir: `frontend/features/produtos` e `frontend/features/servicos`.
 - Pendências da revisão da F1 (não bloqueiam a F2): `TAREFAS.md`, seção "Pendências da revisão da F1".
 
 ## Concluído
@@ -33,7 +34,7 @@ Plano da F2 escrito: `docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.
   - Decisões: módulo `Fiscal` novo (só emitente/certificado/séries nesta fase); wizard de onboarding pós-ativação; certificado validado com `openssl_pkcs12_read()` nativo (sem antecipar `sped-nfe`); papéis (`PROPRIETARIO/ADMIN/FISCAL` no emitente, +`VENDEDOR` nos cadastros); CSV cria e atualiza por chave; F2 já constrói a transição `LEAD → CLIENTE`.
 - [x] **Plano da F2** escrito (2026-10-01): `docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.md`, 28 tarefas.
   - Ordem: `Shared` (Cpf, ConsultaCep) → `Catalog` (produtos/serviços/categorias/pendências) → `Customers` (clientes/contatos/conversão) → `Fiscal` (emitente/certificado/CSC/séries) → matriz de papéis → CSV → API pública `/api/v1` → frontend (produtos, serviços, pendências, clientes, wizard do emitente, CSV) → revisão final.
-  - Ainda falta: usuário revisar o plano e escolher a execução (sugerido: subagentes, como a F1).
+- [x] **F2 Tarefas 1 a 23** (2026-10-01): Shared (Cpf, ConsultaCep), upload FormData, Catalog (produto, serviço, categoria fiscal, validador, pendências), Customers (cliente, contato, LEAD→CLIENTE), Fiscal (emitente, certificado A1, CSC, séries), matriz de papéis, importador CSV, CSV de cadastros, API `/api/v1`, frontend de produtos e serviços.
 
 ## Decisões não óbvias
 - O `php.ini` global ganhou `pdo_sqlite`, `sqlite3`, `soap` e `intl`, com autorização do usuário e backup `php.ini.bak`.
@@ -51,4 +52,4 @@ Plano da F2 escrito: `docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-Usuário revisa o plano da F2 (`docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.md`) e escolhe a execução (subagentes ou nativa). Aprovado → executar as 28 tarefas na ordem do plano.
+F2 Tarefa 24: Frontend, pendências fiscais. Depois 25 (clientes), 26 (wizard do emitente), 27 (CSV) e 28 (revisão final e fumaça). Observação: o teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado).
