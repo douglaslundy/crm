@@ -16,5 +16,6 @@ final class CustomersServiceProvider extends ServiceProvider
         $this->app->make(RegistroDeContadores::class)->registrar(new ContadorDeClientes);
 
         Route::middleware('api')->prefix('api/app')->group(__DIR__.'/../Http/routes-app.php');
+        Route::middleware('api')->prefix('api/v1')->group(__DIR__.'/../Http/routes-v1.php');
     }
 }
