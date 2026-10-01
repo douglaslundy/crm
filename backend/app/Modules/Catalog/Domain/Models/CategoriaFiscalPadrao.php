@@ -21,8 +21,10 @@ use Illuminate\Database\Eloquent\Model;
 class CategoriaFiscalPadrao extends Model
 {
     use BelongsToTenant;
+
     /** @use HasFactory<CategoriaFiscalPadraoFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $table = 'categorias_fiscais_padrao';

@@ -7,6 +7,7 @@ namespace App\Modules\Catalog\Domain\Models;
 use App\Modules\Catalog\Domain\Enums\FonteFiscal;
 use App\Modules\Catalog\Domain\Enums\TributacaoIcms;
 use App\Modules\Tenancy\Domain\Concerns\BelongsToTenant;
+use Carbon\CarbonInterface;
 use Database\Factories\ProdutoFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,13 +25,15 @@ use Illuminate\Database\Eloquent\Model;
  * @property ?int $origem
  * @property ?TributacaoIcms $tributacao_icms
  * @property FonteFiscal $fiscal_fonte
- * @property ?\Carbon\CarbonInterface $fiscal_revisado_em
+ * @property ?CarbonInterface $fiscal_revisado_em
  */
 class Produto extends Model
 {
     use BelongsToTenant;
+
     /** @use HasFactory<ProdutoFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $fillable = [

@@ -55,10 +55,12 @@ class AdminEmpresasTest extends TestCase
         $tenant = Tenant::factory()->for(Plano::factory()->comLimites([Recurso::Usuarios->value => 3]))->create();
         Usuario::factory()->count(2)->for($tenant)->create();
 
-        $this->spa()->actingAs($this->admin)->getJson("/api/admin/empresas/{$tenant->id}")
+        $resposta = $this->spa()->actingAs($this->admin)->getJson("/api/admin/empresas/{$tenant->id}")
             ->assertOk()
-            ->assertJsonPath('data.id', $tenant->id)
-            ->assertJsonPath('data.consumo', [['recurso' => 'USUARIOS', 'uso' => 2, 'limite' => 3]]);
+            ->assertJsonPath('data.id', $tenant->id);
+
+        // consumo() lista todo recurso com contador registrado; outros módulos (F2+) registram os seus.
+        $this->assertContains(['recurso' => 'USUARIOS', 'uso' => 2, 'limite' => 3], $resposta->json('data.consumo'));
     }
 
     public function test_mudar_situacao_exige_motivo_e_segue_a_maquina_de_estados(): void

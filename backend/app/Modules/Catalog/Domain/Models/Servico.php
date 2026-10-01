@@ -23,8 +23,10 @@ use Illuminate\Database\Eloquent\Model;
 class Servico extends Model
 {
     use BelongsToTenant;
+
     /** @use HasFactory<ServicoFactory> */
     use HasFactory;
+
     use HasUuids;
 
     protected $fillable = ['nome', 'preco_centavos', 'codigo_lc116', 'c_trib_nac', 'codigo_municipal', 'aliquota_iss', 'nbs'];

@@ -25,7 +25,7 @@ class AssinaturaTest extends TestCase
         $tenant = Tenant::factory()->for($plano)->emTeste('2026-10-15')->create();
         $usuario = Usuario::factory()->for($tenant)->create();
 
-        $this->spa()->actingAs($usuario)->getJson('/api/app/assinatura')
+        $resposta = $this->spa()->actingAs($usuario)->getJson('/api/app/assinatura')
             ->assertOk()
             ->assertJsonPath('data.situacao', 'TESTE')
             ->assertJsonPath('data.teste_termina_em', '2026-10-15')
@@ -34,8 +34,10 @@ class AssinaturaTest extends TestCase
             ->assertJsonPath('data.plano.limites.USUARIOS', 3)
             ->assertJsonPath('data.plano.limites.CLIENTES', -1)
             ->assertJsonPath('data.plano.limites.PRODUTOS', 0)
-            ->assertJsonPath('data.consumo', [['recurso' => 'USUARIOS', 'uso' => 1, 'limite' => 3]])
             ->assertJsonMissingPath('data.plano.empresas');
+
+        // consumo() lista todo recurso com contador registrado; outros módulos (F2+) registram os seus.
+        $this->assertContains(['recurso' => 'USUARIOS', 'uso' => 1, 'limite' => 3], $resposta->json('data.consumo'));
     }
 
     public function test_consumo_isola_por_tenant(): void
@@ -48,8 +50,8 @@ class AssinaturaTest extends TestCase
         $outroTenant = Tenant::factory()->for($outroPlano)->create();
         Usuario::factory()->count(4)->for($outroTenant)->create();
 
-        $this->spa()->actingAs($usuario)->getJson('/api/app/assinatura')
-            ->assertOk()
-            ->assertJsonPath('data.consumo', [['recurso' => 'USUARIOS', 'uso' => 1, 'limite' => 3]]);
+        $resposta = $this->spa()->actingAs($usuario)->getJson('/api/app/assinatura')->assertOk();
+
+        $this->assertContains(['recurso' => 'USUARIOS', 'uso' => 1, 'limite' => 3], $resposta->json('data.consumo'));
     }
 }

@@ -108,7 +108,8 @@ class EntitlementServiceTest extends TestCase
         $menor = Plano::factory()->comLimites([Recurso::Usuarios->value => 2])->create();
         $ilimitado = Plano::factory()->comLimites([Recurso::Usuarios->value => -1])->create();
 
-        $this->assertSame([['recurso' => 'USUARIOS', 'uso' => 3, 'limite' => 5]], $this->servico()->consumo($tenant));
+        // consumo() lista todo recurso com contador registrado; outros módulos (F2+) registram os seus.
+        $this->assertContains(['recurso' => 'USUARIOS', 'uso' => 3, 'limite' => 5], $this->servico()->consumo($tenant));
         $this->assertSame([['recurso' => 'USUARIOS', 'uso' => 3, 'limite' => 2]], $this->servico()->excessos($tenant, $menor));
         $this->assertSame([], $this->servico()->excessos($tenant, $ilimitado));
     }
