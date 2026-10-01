@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Catalog\Http\Controllers\CategoriasFiscaisController;
+use App\Modules\Catalog\Http\Controllers\PendenciasFiscaisController;
 use App\Modules\Catalog\Http\Controllers\ProdutosController;
 use App\Modules\Catalog\Http\Controllers\ServicosController;
 use Illuminate\Support\Facades\Route;
@@ -10,6 +11,9 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('empresa')->group(function (): void {
     Route::get('produtos', [ProdutosController::class, 'index'])->name('app.produtos.index');
     Route::post('produtos', [ProdutosController::class, 'store'])->name('app.produtos.store');
+    // Antes de produtos/{id}, senão "pendencias-fiscais" seria capturado como um {id}.
+    Route::get('produtos/pendencias-fiscais', [PendenciasFiscaisController::class, 'index'])->name('app.produtos.pendencias-fiscais');
+    Route::post('produtos/{id}/marcar-revisado', [PendenciasFiscaisController::class, 'marcarRevisado'])->name('app.produtos.marcar-revisado');
     Route::get('produtos/{id}', [ProdutosController::class, 'show'])->name('app.produtos.show');
     Route::put('produtos/{id}', [ProdutosController::class, 'update'])->name('app.produtos.update');
 
