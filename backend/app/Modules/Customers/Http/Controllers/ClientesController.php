@@ -27,7 +27,7 @@ final class ClientesController
 
     public function show(string $id): ClienteResource
     {
-        return new ClienteResource(Cliente::query()->findOrFail($id));
+        return new ClienteResource(Cliente::query()->with('contatos')->findOrFail($id));
     }
 
     public function store(CriarClienteRequest $request, CriarCliente $criar): JsonResponse

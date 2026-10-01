@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Customers\Http\Controllers\ClientesController;
+use App\Modules\Customers\Http\Controllers\ContatosController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('empresa')->group(function (): void {
@@ -10,4 +11,7 @@ Route::middleware('empresa')->group(function (): void {
     Route::post('clientes', [ClientesController::class, 'store'])->name('app.clientes.store');
     Route::get('clientes/{id}', [ClientesController::class, 'show'])->name('app.clientes.show');
     Route::put('clientes/{id}', [ClientesController::class, 'update'])->name('app.clientes.update');
+
+    Route::post('clientes/{clienteId}/contatos', [ContatosController::class, 'store'])->name('app.clientes.contatos.store');
+    Route::put('clientes/{clienteId}/contatos/{contatoId}', [ContatosController::class, 'update'])->name('app.clientes.contatos.update');
 });

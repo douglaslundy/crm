@@ -33,6 +33,7 @@ final class ClienteResource extends JsonResource
             'tags' => $this->tags,
             'origem' => $this->origem,
             'estagio' => $this->estagio->value,
+            'contatos' => ContatoResource::collection($this->whenLoaded('contatos')),
         ];
     }
 }
