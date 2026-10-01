@@ -73,10 +73,11 @@ class EntitlementServiceTest extends TestCase
 
     public function test_recurso_sem_contador_lanca_em_vez_de_devolver_zero(): void
     {
-        $tenant = $this->tenantCom([Recurso::Clientes->value => 10]);
+        // DocumentosMes só ganha contador na F3 (emissão de documentos fiscais).
+        $tenant = $this->tenantCom([Recurso::DocumentosMes->value => 10]);
 
         $this->expectException(RecursoSemContadorException::class);
-        $this->servico()->uso($tenant, Recurso::Clientes);
+        $this->servico()->uso($tenant, Recurso::DocumentosMes);
     }
 
     public function test_tenant_sem_plano_nao_tem_modulo_nem_limite(): void
