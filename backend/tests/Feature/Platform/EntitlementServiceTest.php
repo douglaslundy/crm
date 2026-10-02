@@ -73,11 +73,11 @@ class EntitlementServiceTest extends TestCase
 
     public function test_recurso_sem_contador_lanca_em_vez_de_devolver_zero(): void
     {
-        // DocumentosMes só ganha contador na F3 (emissão de documentos fiscais).
-        $tenant = $this->tenantCom([Recurso::DocumentosMes->value => 10]);
+        // ApiRequisicoesMin só ganha contador na F6 (API pública); DocumentosMes ganhou na F3a.
+        $tenant = $this->tenantCom([Recurso::ApiRequisicoesMin->value => 10]);
 
         $this->expectException(RecursoSemContadorException::class);
-        $this->servico()->uso($tenant, Recurso::DocumentosMes);
+        $this->servico()->uso($tenant, Recurso::ApiRequisicoesMin);
     }
 
     public function test_tenant_sem_plano_nao_tem_modulo_nem_limite(): void
