@@ -4,7 +4,7 @@
 2026-10-01
 
 ## Tarefa em andamento
-**F3a (emissão de NF-e): spec escrito, aguardando revisão do usuário.** `docs/superpowers/specs/2026-10-01-f3a-nfe-emissao-design.md`. F3 dividida em F3a (NF-e núcleo), F3b (NFC-e, cancelamento, inutilização, PDF) e F3c (contingência, dashboard).
+**F3a (emissão de NF-e): spec aprovado e plano escrito, aguardando revisão do usuário e escolha do método de execução.** Spec `docs/superpowers/specs/2026-10-01-f3a-nfe-emissao-design.md`; plano `docs/superpowers/plans/2026-10-02-f3a-nfe-emissao.md` (23 tarefas: backend 1 a 16, frontend 17 a 22, fechamento 23).
 
 ## Decisões pendentes com o usuário
 - **Remoto no GitHub:** o repositório não tem remoto; o CI (incluindo o job em PostgreSQL 16) só roda depois de configurar um.
@@ -56,4 +56,4 @@
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-Usuário revisa o spec da F3a. Aprovado: invocar `writing-plans` para escrever `docs/superpowers/plans/2026-10-01-f3a-nfe-emissao.md`. Contexto: o spec da F3a, `docs/referencia-fiscal/{01,03,06,07}`, skill `br-fiscal-note-emission` (pitfalls). Observação: o teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado).
+Usuário revisa o plano da F3a e escolhe a execução (subagent-driven ou native). Depois: Tarefa 1 (instalar `sped-nfe`, fila `database`, `config/fiscal.php`). Contexto: só o plano e o spec da F3a; abrir `docs/referencia-fiscal/03-nfephp-nfe.md` e `~/.claude/skills/br-fiscal-note-emission/references/pitfalls.md` nas Tarefas 12 e 13. Observação: o teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado).
