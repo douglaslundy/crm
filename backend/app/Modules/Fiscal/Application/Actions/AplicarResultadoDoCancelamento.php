@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Application\Actions;
 
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeCancelamento;
+use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsulta;
+use App\Modules\Fiscal\Domain\Enums\SituacaoNaSefaz;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Models\Nota;
 use App\Modules\Fiscal\Domain\Models\NotaEvento;
@@ -35,6 +37,40 @@ final class AplicarResultadoDoCancelamento
                 'status' => StatusNota::Autorizada, 'cancelamento_cstat' => $r->cstat, 'cancelamento_motivo' => $r->motivo,
             ])->save();
             NotaEvento::registrar($nota, StatusNota::Cancelando, StatusNota::Autorizada, "Cancelamento recusado (cStat {$r->cstat}): {$r->motivo}");
+
+            return $nota;
+        });
+    }
+
+    /** Reconciliação: a SEFAZ diz que a chave está cancelada, mas a resposta do nosso pedido se perdeu. */
+    public function aplicarConsulta(string $notaId, ResultadoDeConsulta $consulta): Nota
+    {
+        return DB::transaction(function () use ($notaId, $consulta): Nota {
+            $nota = Nota::query()->whereKey($notaId)->lockForUpdate()->firstOrFail();
+            if ($nota->status !== StatusNota::Cancelando || $consulta->situacao !== SituacaoNaSefaz::Cancelada) {
+                return $nota;
+            }
+            $nota->forceFill([
+                'status' => StatusNota::Cancelada, 'cancelado_em' => now(),
+                'cancelamento_cstat' => $consulta->cstat, 'cancelamento_motivo' => $consulta->motivo,
+            ])->save();
+            NotaEvento::registrar($nota, StatusNota::Cancelando, StatusNota::Cancelada, 'Cancelamento confirmado na SEFAZ');
+
+            return $nota;
+        });
+    }
+
+    /** Passou o prazo e a SEFAZ ainda mostra a nota autorizada: o pedido não chegou. Volta a AUTORIZADA para tentar de novo. */
+    public function naoConfirmado(string $notaId): Nota
+    {
+        return DB::transaction(function () use ($notaId): Nota {
+            $nota = Nota::query()->whereKey($notaId)->lockForUpdate()->firstOrFail();
+            if ($nota->status !== StatusNota::Cancelando) {
+                return $nota;
+            }
+            $mensagem = 'Cancelamento não confirmado pela SEFAZ; tente de novo.';
+            $nota->forceFill(['status' => StatusNota::Autorizada, 'cancelamento_motivo' => $mensagem])->save();
+            NotaEvento::registrar($nota, StatusNota::Cancelando, StatusNota::Autorizada, $mensagem);
 
             return $nota;
         });

@@ -13,10 +13,17 @@ use App\Modules\Fiscal\Domain\Models\Nota;
 
 final class ConciliarNota
 {
-    public function __construct(private readonly EmissorDeNfe $emissor, private readonly AplicarResultadoDaEmissao $aplicar) {}
+    public function __construct(
+        private readonly EmissorDeNfe $emissor,
+        private readonly AplicarResultadoDaEmissao $aplicar,
+        private readonly AplicarResultadoDoCancelamento $cancelamento,
+    ) {}
 
     public function executar(Nota $nota): Nota
     {
+        if ($nota->status === StatusNota::Cancelando) {
+            return $this->conciliarCancelamento($nota);
+        }
         if ($nota->status !== StatusNota::Processando) {
             return $nota;
         }
@@ -39,6 +46,20 @@ final class ConciliarNota
                 ? $this->aplicar->executar($nota->id, ResultadoDeEmissao::erro('A SEFAZ não recebeu a nota. Emita novamente: o número foi preservado.'))
                 : $nota,
             SituacaoNaSefaz::Erro => $nota,
+        };
+    }
+
+    private function conciliarCancelamento(Nota $nota): Nota
+    {
+        $emitente = Emitente::query()->findOrFail($nota->emitente_id);
+        $consulta = $this->emissor->consultarPorChave($emitente, (string) $nota->chave, null, (string) $nota->ambiente);
+        $vencida = $nota->cancelamento_solicitado_em === null
+            || $nota->cancelamento_solicitado_em->lt(now()->subMinutes((int) config('fiscal.minutos_para_nunca_enviada')));
+
+        return match ($consulta->situacao) {
+            SituacaoNaSefaz::Cancelada => $this->cancelamento->aplicarConsulta($nota->id, $consulta),
+            SituacaoNaSefaz::Autorizada => $vencida ? $this->cancelamento->naoConfirmado($nota->id) : $nota,
+            SituacaoNaSefaz::NaoEncontrada, SituacaoNaSefaz::Erro => $nota,
         };
     }
 }

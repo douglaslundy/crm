@@ -22,7 +22,7 @@ final class ContadorDeDocumentosMes implements ContadorDeUso
     {
         return Nota::withoutTenantScope()
             ->where('tenant_id', $tenant->id)
-            ->where('status', StatusNota::Autorizada)
+            ->whereIn('status', [StatusNota::Autorizada, StatusNota::Cancelando, StatusNota::Cancelada])
             ->where('ambiente', 'PRODUCAO')
             ->whereBetween('emitido_em', [now()->startOfMonth(), now()->endOfMonth()])
             ->count();

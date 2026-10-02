@@ -15,11 +15,11 @@ final class ReconciliarNotasCommand extends Command
 {
     protected $signature = 'fiscal:reconciliar-processando';
 
-    protected $description = 'Concilia com a SEFAZ as notas que ficaram em PROCESSANDO (inclusive as nunca enviadas).';
+    protected $description = 'Concilia com a SEFAZ as notas em PROCESSANDO (inclusive as nunca enviadas) e em CANCELANDO.';
 
     public function handle(ConciliarNota $conciliar, TenantContext $contexto): int
     {
-        $notas = Nota::withoutTenantScope()->where('status', StatusNota::Processando)->orderBy('iniciada_em')->get();
+        $notas = Nota::withoutTenantScope()->whereIn('status', [StatusNota::Processando, StatusNota::Cancelando])->orderBy('updated_at')->get();
 
         foreach ($notas as $nota) {
             $contexto->set($nota->tenant_id);

@@ -110,6 +110,66 @@ class ReconciliarNotasTest extends TestCase
         $this->assertSame(StatusNota::Processando, $nota->refresh()->status);
     }
 
+    private function cancelando(int $minutosAtras, ?string $chave = null): Nota
+    {
+        $nota = Nota::factory()->create(['emitente_id' => $this->emitente->id, 'cliente_id' => $this->cliente->id]);
+        $nota->forceFill([
+            'status' => StatusNota::Cancelando, 'ambiente' => 'HOMOLOGACAO', 'serie' => '1', 'numero' => random_int(1, 9999),
+            'chave' => $chave ?? str_repeat('4', 44), 'protocolo' => '135260000000001', 'xml_autorizado' => '<nfeProc>x</nfeProc>',
+            'cancelamento_justificativa' => 'Cancelamento por erro de digitação do valor total',
+            'cancelamento_solicitado_em' => now()->subMinutes($minutosAtras),
+        ])->save();
+
+        return $nota;
+    }
+
+    public function test_cancelando_cancelada_na_sefaz_vira_cancelada(): void
+    {
+        $nota = $this->cancelando(2);
+        $this->emissor->enfileirarConsulta(ResultadoDeConsulta::cancelada());
+
+        $this->rodar();
+
+        $nota->refresh();
+        $this->assertSame(StatusNota::Cancelada, $nota->status);
+        $this->assertNotNull($nota->cancelado_em);
+        $this->assertSame('101', $nota->cancelamento_cstat);
+    }
+
+    public function test_cancelando_ainda_autorizada_depois_do_prazo_volta_a_autorizada_com_aviso(): void
+    {
+        $nota = $this->cancelando(30);
+        $this->emissor->enfileirarConsulta(ResultadoDeConsulta::autorizada('135260000000001', null));
+
+        $this->rodar();
+
+        $nota->refresh();
+        $this->assertSame(StatusNota::Autorizada, $nota->status);
+        $this->assertStringContainsString('não confirmado', (string) $nota->cancelamento_motivo);
+    }
+
+    public function test_cancelando_ainda_autorizada_dentro_do_prazo_continua_cancelando(): void
+    {
+        $nota = $this->cancelando(2);
+        $this->emissor->enfileirarConsulta(ResultadoDeConsulta::autorizada('135260000000001', null));
+
+        $this->rodar();
+
+        $this->assertSame(StatusNota::Cancelando, $nota->refresh()->status);
+    }
+
+    public function test_cancelando_com_erro_ou_nao_encontrada_na_consulta_nao_muda(): void
+    {
+        $a = $this->cancelando(30);
+        $b = $this->cancelando(30);
+        $this->emissor->enfileirarConsulta(ResultadoDeConsulta::erro('timeout'), ResultadoDeConsulta::naoEncontrada());
+
+        $this->rodar();
+
+        $this->assertSame(StatusNota::Cancelando, $a->refresh()->status);
+        $this->assertSame(StatusNota::Cancelando, $b->refresh()->status);
+    }
+
     public function test_a_consulta_usa_o_ambiente_da_nota_e_nao_o_do_emitente(): void
     {
         $this->emitente->update(['ambiente_fiscal' => 'PRODUCAO']);

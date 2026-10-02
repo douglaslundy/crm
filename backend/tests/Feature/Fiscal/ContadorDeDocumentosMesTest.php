@@ -30,14 +30,17 @@ class ContadorDeDocumentosMesTest extends TestCase
         $nota->forceFill(['status' => $status, 'ambiente' => $ambiente, 'emitido_em' => $emitidoEm])->save();
     }
 
-    public function test_conta_so_autorizadas_em_producao_no_mes_corrente(): void
+    public function test_conta_autorizadas_e_canceladas_em_producao_no_mes_corrente(): void
     {
         $this->nota(StatusNota::Autorizada, 'PRODUCAO', now());
+        $this->nota(StatusNota::Cancelada, 'PRODUCAO', now());
+        $this->nota(StatusNota::Cancelando, 'PRODUCAO', now());
         $this->nota(StatusNota::Autorizada, 'HOMOLOGACAO', now());
+        $this->nota(StatusNota::Cancelada, 'HOMOLOGACAO', now());
         $this->nota(StatusNota::Rejeitada, 'PRODUCAO', now());
         $this->nota(StatusNota::Autorizada, 'PRODUCAO', now()->subMonth());
 
-        $this->assertSame(1, app(EntitlementService::class)->uso($this->tenant, Recurso::DocumentosMes));
+        $this->assertSame(3, app(EntitlementService::class)->uso($this->tenant, Recurso::DocumentosMes), 'cancelada continua contando');
     }
 
     public function test_limite_do_plano_bloqueia_com_codigo_estavel(): void
