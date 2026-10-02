@@ -70,9 +70,13 @@ final class IniciarEmissao
             }
 
             $anterior = $nota->status;
+            // ERRO = incerteza: a nota pode ter chegado à SEFAZ. Com o mesmo número, a chave fica para o job
+            // consultar antes de reenviar. REJEITADA é decisão da SEFAZ, então a chave antiga não vale mais.
+            $manterChave = $anterior === StatusNota::Erro && ! $numeroNovo;
             $nota->forceFill([
                 'status' => StatusNota::Processando, 'ambiente' => $ambiente, 'iniciada_em' => now(),
-                'chave' => null, 'protocolo' => null, 'xml_enviado' => null, 'xml_autorizado' => null,
+                'chave' => $manterChave ? $nota->chave : null, 'protocolo' => null,
+                'xml_enviado' => $manterChave ? $nota->xml_enviado : null, 'xml_autorizado' => null,
                 'cstat' => null, 'motivo' => null, 'mensagem_erro' => null,
                 'tentativas_numero' => $numeroNovo ? 0 : $nota->tentativas_numero,
             ])->save();
