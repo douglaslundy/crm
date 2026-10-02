@@ -7,7 +7,10 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
 - [x] **F2 Cadastros e emitente** (28 de 28, fechada em 2026-10-01): clientes, produtos, serviços, categorias fiscais, pendências, CSV, dados fiscais, certificado, CSC, séries.
 - [ ] **F3 NF-e e NFC-e** (NFePHP), dividida em três specs, cada uma com plano próprio:
   - [x] **F3a Núcleo da NF-e** (23 de 23, fechada em 2026-10-02): modelo da nota, resolvers tributários, XML, emissão pela fila, numeração, polling, reconciliação, consulta, XML, confirmação de produção. Plano: `docs/superpowers/plans/2026-10-02-f3a-nfe-emissao.md`. Falta só a emissão real em homologação (precisa de certificado A1), roteiro no `PROGRESSO.md`.
-  - [ ] **F3b** (sem spec nem plano): NFC-e (CSC, QR Code), cancelamento, inutilização, PDF (DANFE e cupom).
+  - [ ] **F3b**, dividida em três specs (2026-10-02), cada uma com plano próprio, nesta ordem:
+    - [ ] **F3b1 Cancelamento e inutilização da NF-e** (spec escrita, aguardando revisão): `docs/superpowers/specs/2026-10-02-f3b1-cancelamento-inutilizacao-design.md`.
+    - [ ] **F3b2 PDF da NF-e** (DANFE A4 a partir do XML autorizado; avaliar `sped-da` contra os layouts da skill): sem spec.
+    - [ ] **F3b3 NFC-e** (emissão com CSC e QR Code, cupom 80 mm, cancelamento em 30 min): sem spec.
   - [ ] **F3c** (sem spec nem plano): contingência (EPEC e offline), retransmissão, alertas de prazo, dashboard fiscal.
   - Critério de pronto da F3: nota autorizada em homologação para NF-e e NFC-e, com o XML validado contra o XSD.
 - [ ] **F4 NFS-e Nacional** (`nfse-php`): DANFSe, cancelamento, venda mista.
