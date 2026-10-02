@@ -7,17 +7,17 @@ namespace App\Modules\Fiscal\Providers;
 use App\Modules\Fiscal\Application\ContadorDeDocumentosMes;
 use App\Modules\Fiscal\Console\ReconciliarNotasCommand;
 use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfe;
+use App\Modules\Fiscal\Infrastructure\NfePhp\NfePhpEmissor;
 use App\Modules\Platform\Application\RegistroDeContadores;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
-use LogicException;
 
 final class FiscalServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        // Provisório: a Tarefa 14 troca pelo NfePhpEmissor. Os testes sobrescrevem com app()->instance().
-        $this->app->bind(EmissorDeNfe::class, fn () => throw new LogicException('Emissor NFePHP ainda não configurado.'));
+        // Os testes sobrescrevem com app()->instance(EmissorDeNfe::class, new EmissorFake).
+        $this->app->bind(EmissorDeNfe::class, NfePhpEmissor::class);
     }
 
     public function boot(): void
