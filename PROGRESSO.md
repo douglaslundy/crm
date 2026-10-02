@@ -4,7 +4,7 @@
 2026-10-01
 
 ## Tarefa em andamento
-**F2, execução do plano `docs/superpowers/plans/2026-10-01-f2-cadastros-e-emitente.md`.** Todas as 28 tarefas concluídas. F2 fechada.
+**F3a (emissão de NF-e): spec escrito, aguardando revisão do usuário.** `docs/superpowers/specs/2026-10-01-f3a-nfe-emissao-design.md`. F3 dividida em F3a (NF-e núcleo), F3b (NFC-e, cancelamento, inutilização, PDF) e F3c (contingência, dashboard).
 
 ## Decisões pendentes com o usuário
 - **Remoto no GitHub:** o repositório não tem remoto; o CI (incluindo o job em PostgreSQL 16) só roda depois de configurar um.
@@ -56,4 +56,4 @@
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-F3: brainstorming do spec (NF-e e NFC-e com NFePHP) antes de qualquer código. Observação: o teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado).
+Usuário revisa o spec da F3a. Aprovado: invocar `writing-plans` para escrever `docs/superpowers/plans/2026-10-01-f3a-nfe-emissao.md`. Contexto: o spec da F3a, `docs/referencia-fiscal/{01,03,06,07}`, skill `br-fiscal-note-emission` (pitfalls). Observação: o teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado).
