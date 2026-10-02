@@ -110,6 +110,18 @@ class ReconciliarNotasTest extends TestCase
         $this->assertSame(StatusNota::Processando, $nota->refresh()->status);
     }
 
+    public function test_a_consulta_usa_o_ambiente_da_nota_e_nao_o_do_emitente(): void
+    {
+        $this->emitente->update(['ambiente_fiscal' => 'PRODUCAO']);
+        $nota = $this->processando(str_repeat('7', 44), 30); // a nota é de HOMOLOGACAO
+        $this->emissor->enfileirarConsulta(ResultadoDeConsulta::naoEncontrada());
+
+        $this->rodar();
+
+        $this->assertSame(['HOMOLOGACAO'], $this->emissor->ambientes);
+        $this->assertSame(StatusNota::Erro, $nota->refresh()->status);
+    }
+
     public function test_varre_notas_de_todos_os_tenants_sem_vazar_contexto(): void
     {
         $nota = $this->processando(str_repeat('6', 44), 30);

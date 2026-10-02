@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Domain\Contracts;
 
 use App\Modules\Fiscal\Domain\Emissao\NotaParaEmissao;
+use App\Modules\Fiscal\Domain\Emissao\ResultadoDeCancelamento;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsulta;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEmissao;
+use App\Modules\Fiscal\Domain\Emissao\ResultadoDeInutilizacao;
 use App\Modules\Fiscal\Domain\Emissao\XmlAssinado;
 use App\Modules\Fiscal\Domain\Models\Emitente;
 
@@ -19,5 +21,11 @@ interface EmissorDeNfe
     /** Envia e interpreta a resposta. Falha de comunicação lança exceção (vira ERRO no job). */
     public function transmitir(Emitente $emitente, NotaParaEmissao $nota, XmlAssinado $xml): ResultadoDeEmissao;
 
-    public function consultarPorChave(Emitente $emitente, string $chave, ?string $xmlEnviado): ResultadoDeConsulta;
+    /** `$ambiente` é o da NOTA (HOMOLOGACAO ou PRODUCAO), nunca o atual do emitente: ele pode ter mudado depois da emissão. */
+    public function consultarPorChave(Emitente $emitente, string $chave, ?string $xmlEnviado, string $ambiente): ResultadoDeConsulta;
+
+    /** Envia o evento de cancelamento. Falha de comunicação lança exceção (a nota permanece CANCELANDO). */
+    public function cancelar(Emitente $emitente, string $chave, string $protocolo, string $justificativa, string $ambiente, string $xmlAutorizado): ResultadoDeCancelamento;
+
+    public function inutilizar(Emitente $emitente, int $serie, int $numeroInicial, int $numeroFinal, string $justificativa, string $ambiente): ResultadoDeInutilizacao;
 }

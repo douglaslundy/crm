@@ -45,7 +45,7 @@ final class EmitirNotaJob implements ShouldQueue
             $emitente = Emitente::query()->findOrFail($nota->emitente_id);
 
             if ($nota->chave !== null) {
-                $consulta = $emissor->consultarPorChave($emitente, $nota->chave, $nota->xml_enviado);
+                $consulta = $emissor->consultarPorChave($emitente, $nota->chave, $nota->xml_enviado, (string) $nota->ambiente);
                 if ($consulta->situacao === SituacaoNaSefaz::Autorizada) {
                     $aplicar->aplicarConsulta($nota->id, $consulta);
 

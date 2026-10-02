@@ -97,7 +97,7 @@ final class AplicarResultadoDaEmissao
     {
         $chave = (string) $r->chaveOcupante;
         $emitente = Emitente::query()->findOrFail($nota->emitente_id);
-        $consulta = $this->emissor->consultarPorChave($emitente, $chave, null);
+        $consulta = $this->emissor->consultarPorChave($emitente, $chave, null, (string) $nota->ambiente);
         $limite = (int) config('fiscal.tentativas_numero_ocupado');
 
         if ($consulta->situacao === SituacaoNaSefaz::Cancelada && $nota->tentativas_numero < $limite) {

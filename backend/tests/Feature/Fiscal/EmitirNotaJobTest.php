@@ -110,6 +110,7 @@ class EmitirNotaJobTest extends TestCase
         $this->assertSame(StatusNota::Autorizada, $de_novo->status);
         $this->assertSame('135000000000009', $de_novo->protocolo);
         $this->assertSame(['consultar'], $this->emissor->chamadas, 'não reenviou uma nota já autorizada');
+        $this->assertSame(['HOMOLOGACAO'], $this->emissor->ambientes);
     }
 
     public function test_numero_ocupado_por_nota_cancelada_avanca_e_reemite(): void

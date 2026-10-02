@@ -31,7 +31,7 @@ final class ConciliarNota
         }
 
         $emitente = Emitente::query()->findOrFail($nota->emitente_id);
-        $consulta = $this->emissor->consultarPorChave($emitente, $nota->chave, $nota->xml_enviado);
+        $consulta = $this->emissor->consultarPorChave($emitente, $nota->chave, $nota->xml_enviado, (string) $nota->ambiente);
 
         return match ($consulta->situacao) {
             SituacaoNaSefaz::Autorizada, SituacaoNaSefaz::Cancelada => $this->aplicar->aplicarConsulta($nota->id, $consulta),
