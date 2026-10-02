@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Providers;
 
 use App\Modules\Fiscal\Application\ContadorDeDocumentosMes;
+use App\Modules\Fiscal\Console\ReconciliarNotasCommand;
 use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfe;
 use App\Modules\Platform\Application\RegistroDeContadores;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +23,10 @@ final class FiscalServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->app->make(RegistroDeContadores::class)->registrar(new ContadorDeDocumentosMes);
+
+        if ($this->app->runningInConsole()) {
+            $this->commands([ReconciliarNotasCommand::class]);
+        }
 
         Route::middleware('api')->prefix('api/app')->group(__DIR__.'/../Http/routes-app.php');
     }

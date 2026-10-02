@@ -12,3 +12,6 @@ Artisan::command('inspire', function () {
 
 Schedule::command('assinaturas:expirar-testes')->dailyAt('00:10')->timezone('America/Sao_Paulo')
     ->withoutOverlapping()->onOneServer();
+
+Schedule::command('fiscal:reconciliar-processando')->everyFifteenMinutes()
+    ->withoutOverlapping()->onOneServer();
