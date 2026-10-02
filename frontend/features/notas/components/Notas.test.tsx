@@ -6,9 +6,11 @@ import { describe, expect, it, vi } from 'vitest';
 import { useUsuario } from '@/features/auth/hooks/useUsuario';
 import { clientesApi } from '@/features/clientes/api';
 import { produtosApi } from '@/features/produtos/api';
-import { notasApi } from '../api';
+import { inutilizacoesApi, notasApi } from '../api';
 import type { Nota } from '../types';
 import { DetalheDaNota } from './DetalheDaNota';
+import { FormInutilizacao } from './FormInutilizacao';
+import { ListaDeInutilizacoes } from './ListaDeInutilizacoes';
 import { ListaDeNotas } from './ListaDeNotas';
 import { NotaForm } from './NotaForm';
 import { StatusDaNota } from './StatusDaNota';
@@ -329,5 +331,63 @@ describe('DetalheDaNota cancelamento', () => {
     expect(await screen.findByText('135260000000555')).toBeInTheDocument();
     expect(screen.getByText(justificativa)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Baixar XML do cancelamento' })).toHaveAttribute('href', 'http://api.test/api/app/notas/n1/xml-cancelamento');
+  });
+});
+
+describe('inutilização', () => {
+  async function preencher(inicial: string, final: string) {
+    await userEvent.type(screen.getByLabelText('Série'), '1');
+    await userEvent.type(screen.getByLabelText('Número inicial'), inicial);
+    await userEvent.type(screen.getByLabelText('Número final'), final);
+    await userEvent.type(screen.getByLabelText('Justificativa'), 'Numeração perdida por queda do servidor');
+    await userEvent.click(screen.getByRole('button', { name: 'Inutilizar numeração' }));
+  }
+
+  it('envia a faixa no formato da API', async () => {
+    vi.mocked(inutilizacoesApi.criar).mockResolvedValue({ data: { id: 'i1', serie: '1', numero_inicial: 3, numero_final: 5, justificativa: 'x', ambiente: 'HOMOLOGACAO', status: 'INUTILIZADA', cstat: '102', motivo: null, protocolo: '1', created_at: '2026-10-02T10:00:00-03:00' } });
+    renderizar(<FormInutilizacao />);
+
+    await preencher('3', '5');
+
+    await waitFor(() => expect(inutilizacoesApi.criar).toHaveBeenCalledWith({
+      serie: '1', numero_inicial: 3, numero_final: 5, justificativa: 'Numeração perdida por queda do servidor',
+    }));
+  });
+
+  it('valida a faixa antes de enviar', async () => {
+    vi.mocked(inutilizacoesApi.criar).mockClear();
+    renderizar(<FormInutilizacao />);
+
+    await preencher('9', '5');
+
+    expect(await screen.findByText('O número inicial não pode passar do final.')).toBeInTheDocument();
+    expect(inutilizacoesApi.criar).not.toHaveBeenCalled();
+  });
+
+  it('mostra o bloqueio do servidor', async () => {
+    const { ApiError } = await import('@/lib/api');
+    vi.mocked(inutilizacoesApi.criar).mockRejectedValue(new ApiError(422, 'Só é possível inutilizar números já alocados (até o 9).', {}, { codigo: 'FISCAL_FAIXA_NAO_ALOCADA' }));
+    renderizar(<FormInutilizacao />);
+
+    await preencher('8', '12');
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('já alocados');
+  });
+
+  it('lista o histórico com o status em texto', async () => {
+    vi.mocked(inutilizacoesApi.listar).mockResolvedValue({ data: [
+      { id: 'i1', serie: '1', numero_inicial: 3, numero_final: 5, justificativa: 'Queda', ambiente: 'HOMOLOGACAO', status: 'RECUSADA', cstat: '241', motivo: 'Um numero da faixa ja foi utilizado', protocolo: null, created_at: '2026-10-02T10:00:00-03:00' },
+    ] });
+    renderizar(<ListaDeInutilizacoes />);
+
+    expect(await screen.findByText(/Recusada pela SEFAZ/)).toBeInTheDocument();
+    expect(screen.getByText(/números 3 a 5/)).toBeInTheDocument();
+    expect(screen.getByText(/cStat 241/)).toBeInTheDocument();
+  });
+
+  it('mostra o estado vazio do histórico', async () => {
+    vi.mocked(inutilizacoesApi.listar).mockResolvedValue({ data: [] });
+    renderizar(<ListaDeInutilizacoes />);
+    expect(await screen.findByText('Nenhuma inutilização registrada.')).toBeInTheDocument();
   });
 });
