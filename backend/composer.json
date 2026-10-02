@@ -13,6 +13,7 @@
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
+        "nfephp-org/sped-nfe": "^5.2",
         "spatie/laravel-activitylog": "^4.10"
     },
     "require-dev": {
