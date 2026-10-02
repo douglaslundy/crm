@@ -1,0 +1,107 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Fiscal\Domain\Models;
+
+use App\Modules\Customers\Domain\Models\Cliente;
+use App\Modules\Fiscal\Domain\Enums\StatusNota;
+use App\Modules\Tenancy\Domain\Concerns\BelongsToTenant;
+use Carbon\CarbonInterface;
+use Database\Factories\NotaFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
+/**
+ * @property string $id
+ * @property string $emitente_id
+ * @property string $cliente_id
+ * @property StatusNota $status
+ * @property ?string $ambiente
+ * @property string $natureza_operacao
+ * @property ?bool $consumidor_final
+ * @property int $subtotal_centavos
+ * @property int $desconto_centavos
+ * @property int $total_centavos
+ * @property ?string $informacoes_complementares
+ * @property ?array<string, mixed> $destinatario
+ * @property ?string $serie
+ * @property ?int $numero
+ * @property int $tentativas_numero
+ * @property ?string $chave
+ * @property ?string $protocolo
+ * @property ?string $cstat
+ * @property ?string $motivo
+ * @property ?string $mensagem_erro
+ * @property ?string $xml_enviado
+ * @property ?string $xml_autorizado
+ * @property ?CarbonInterface $iniciada_em
+ * @property ?CarbonInterface $emitido_em
+ * @property CarbonInterface $created_at
+ */
+class Nota extends Model
+{
+    use BelongsToTenant;
+
+    /** @use HasFactory<NotaFactory> */
+    use HasFactory;
+
+    use HasUuids;
+
+    protected $table = 'notas';
+
+    /** Campos de retorno da SEFAZ só mudam pelas Actions (forceFill). */
+    protected $fillable = [
+        'emitente_id', 'cliente_id', 'consumidor_final', 'desconto_centavos', 'informacoes_complementares',
+        'subtotal_centavos', 'total_centavos',
+    ];
+
+    protected $hidden = ['xml_enviado', 'xml_autorizado'];
+
+    /** @var array<string, mixed> */
+    protected $attributes = ['status' => 'RASCUNHO', 'natureza_operacao' => 'Venda de mercadoria'];
+
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return [
+            'status' => StatusNota::class,
+            'consumidor_final' => 'boolean',
+            'destinatario' => 'array',
+            'iniciada_em' => 'datetime',
+            'emitido_em' => 'datetime',
+        ];
+    }
+
+    /** @return HasMany<NotaItem, $this> */
+    public function itens(): HasMany
+    {
+        return $this->hasMany(NotaItem::class)->orderBy('ordem');
+    }
+
+    /** @return HasMany<NotaPagamento, $this> */
+    public function pagamentos(): HasMany
+    {
+        return $this->hasMany(NotaPagamento::class);
+    }
+
+    /** @return HasMany<NotaEvento, $this> */
+    public function eventos(): HasMany
+    {
+        return $this->hasMany(NotaEvento::class)->orderBy('id');
+    }
+
+    /** @return BelongsTo<Cliente, $this> */
+    public function cliente(): BelongsTo
+    {
+        return $this->belongsTo(Cliente::class);
+    }
+
+    protected static function newFactory(): NotaFactory
+    {
+        return NotaFactory::new();
+    }
+}
