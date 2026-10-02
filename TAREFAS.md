@@ -5,7 +5,11 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
 - [x] **F0 Fundação:** repositório, Docker, CI, Laravel + Next, monólito modular, autenticação, tenancy com isolamento testado, layout responsivo com temas dark e light.
 - [x] **F1 Plataforma e planos:** admin do SaaS, planos (módulos e limites), onboarding de empresa, usuários e papéis, `EntitlementService`.
 - [x] **F2 Cadastros e emitente** (28 de 28, fechada em 2026-10-01): clientes, produtos, serviços, categorias fiscais, pendências, CSV, dados fiscais, certificado, CSC, séries.
-- [ ] **F3 NF-e e NFC-e** (NFePHP): emissão, fila, reconciliação, PDF, cancelamento, inutilização, contingência, dashboard fiscal.
+- [ ] **F3 NF-e e NFC-e** (NFePHP), dividida em três specs, cada uma com plano próprio:
+  - [ ] **F3a Núcleo da NF-e** (0 de 23 tarefas; spec e plano prontos, código não iniciado): modelo da nota, resolvers tributários, XML, emissão pela fila, numeração, polling, reconciliação, consulta, XML, confirmação de produção. Backend 1 a 16, frontend 17 a 22, fechamento 23. Plano: `docs/superpowers/plans/2026-10-02-f3a-nfe-emissao.md`.
+  - [ ] **F3b** (sem spec nem plano): NFC-e (CSC, QR Code), cancelamento, inutilização, PDF (DANFE e cupom).
+  - [ ] **F3c** (sem spec nem plano): contingência (EPEC e offline), retransmissão, alertas de prazo, dashboard fiscal.
+  - Critério de pronto da F3: nota autorizada em homologação para NF-e e NFC-e, com o XML validado contra o XSD.
 - [ ] **F4 NFS-e Nacional** (`nfse-php`): DANFSe, cancelamento, venda mista.
 - [ ] **F5 Cobrança** (Mercado Pago): checkout transparente, assinatura, webhooks, inadimplência, excedente.
 - [ ] **F6 API pública:** `/api/v1`, chaves live/test, idempotência, webhooks de saída, OpenAPI e guia.
@@ -58,3 +62,15 @@ Achados menores adiados e uma decisão de produto parcada durante a revisão das
 - [ ] `TrocarPlanoForm` sem tratamento de erro ao carregar planos.
 - [ ] `EditarUsuarioForm` sem teste.
 - [ ] Mensagem de convite inválido duplicada entre frontend e backend, sem teste de contrato entre os dois.
+
+## Pendências de infraestrutura e fechamento (2026-10-02)
+- [ ] **Publicar no remoto:** `origin` (github.com/douglaslundy/crm) existe, mas está em `a9dc666` (fim da F1). Faltam 35 commits (F2 e docs da F3a). O CI nunca rodou a F2, incluindo o job em PostgreSQL 16.
+- [ ] Conferência visual no navegador da F2 (passo 12 do fechamento, não feita): wizard `/onboarding`, `/configuracoes/fiscal`, produtos, serviços, pendências, clientes, CSV.
+- [ ] Teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado): aumentar timeout ou aliviar o teste.
+- [ ] Revisar o plano da F3a e escolher a execução (subagent-driven ou native). Em seguida, Tarefa 1.
+- [ ] Fora do código, ainda sem data: certificado A1 e CNPJ de homologação para a fumaça da F3a (Tarefa 23) e para a F8.
+
+## Verificado em 2026-10-02 (pendências da F1 que seguem abertas)
+- `CadastroForm` ainda usa `form.watch` (trocar por `useWatch`).
+- O workaround `forgetGuards`/`flushSession` segue repetido nos testes, sem helper no `TestCase`.
+- Os demais itens abertos da seção da F1 não foram reverificados nesta análise.

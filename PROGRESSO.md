@@ -1,13 +1,13 @@
 # Progresso do Projeto
 
 ## Última atualização
-2026-10-01
+2026-10-02
 
 ## Tarefa em andamento
 **F3a (emissão de NF-e): spec aprovado e plano escrito, aguardando revisão do usuário e escolha do método de execução.** Spec `docs/superpowers/specs/2026-10-01-f3a-nfe-emissao-design.md`; plano `docs/superpowers/plans/2026-10-02-f3a-nfe-emissao.md` (23 tarefas: backend 1 a 16, frontend 17 a 22, fechamento 23).
 
 ## Decisões pendentes com o usuário
-- **Remoto no GitHub:** o repositório não tem remoto; o CI (incluindo o job em PostgreSQL 16) só roda depois de configurar um.
+- **Remoto no GitHub:** `origin` existe, mas está em `a9dc666` (fim da F1); faltam 35 commits (F2 e docs da F3a). Fazer push para o CI rodar a F2, incluindo o job em PostgreSQL 16.
 
 ## Decisões já tomadas
 - **Papel PROPRIETARIO irreversível (2026-10-01):** mantido como está — ninguém altera nem desativa um proprietário pela aplicação; reversão só no banco.
