@@ -63,7 +63,7 @@ Value object único para cancelamento e inutilização: 15 a 255 caracteres apó
 - `inutilizar(Emitente $e, int $serie, int $ini, int $fin, string $justificativa, string $ambiente): ResultadoDeInutilizacao`.
 - `consultarPorChave` passa a receber o `ambiente` **da nota**. Hoje usa o ambiente atual do emitente, o que consultaria (ou cancelaria) no ambiente errado uma nota de homologação depois de "Ir para produção". A F3b1 corrige isso nos chamadores (reconciliação, job de emissão, tratamento do 539).
 
-`InterpretadorDeResposta` ganha `cancelamento(string $respostaXml, string $xmlAutorizado)` e `inutilizacao(string $respostaXml)`: puros, sem rede. No evento, o `cStat` vem de dentro de `retEvento` (o de topo é do lote). Aceitos: 135, 136, 155; o `procEventoNFe` é montado com `Complements` (conferir a função no vendor; se não montar, o XML do evento enviado e a resposta são guardados juntos). Inutilização homologada: cStat 102; 563 (duplicidade) vira "já inutilizada".
+`InterpretadorDeResposta` ganha `cancelamento(string $respostaXml, string $xmlAutorizado)` e `inutilizacao(string $respostaXml)`: puros, sem rede. No evento, o `cStat` vem de dentro de `retEvento` (o de topo é do lote). Aceitos: 135, 136, 155; o XML do cancelamento é o `nfeProc` autorizado com o `retEvento` anexado, montado por `Complements::cancelRegister` (conferido no vendor 5.2.8); se não puder ser montado, guarda-se a resposta crua do evento. O `cancelar` do emissor recebe também o `xmlAutorizado` para isso. Inutilização homologada: cStat 102; 563 (duplicidade) vira "já inutilizada".
 
 ### 3.5 Cancelamento (Actions e job)
 

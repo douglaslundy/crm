@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\Fiscal\Infrastructure\NfePhp;
 
+use App\Modules\Fiscal\Domain\Emissao\ResultadoDeCancelamento;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsulta;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEmissao;
+use App\Modules\Fiscal\Domain\Emissao\ResultadoDeInutilizacao;
 use NFePHP\NFe\Complements;
+use RuntimeException;
 use SimpleXMLElement;
 use Throwable;
 
@@ -66,6 +69,61 @@ final class InterpretadorDeResposta
             in_array($cStat, ['101', '151'], true) => ResultadoDeConsulta::cancelada($cStat),
             $cStat === '217' => ResultadoDeConsulta::naoEncontrada(),
             default => ResultadoDeConsulta::erro("cStat {$cStat}: {$motivo}"),
+        };
+    }
+
+    public function cancelamento(string $respostaXml, string $xmlAutorizado): ResultadoDeCancelamento
+    {
+        $resp = $this->carregar($respostaXml);
+        if ($resp === null) {
+            throw new RuntimeException('Resposta ilegível da SEFAZ ao cancelar a nota.');
+        }
+        $resp->registerXPathNamespace('n', 'http://www.portalfiscal.inf.br/nfe');
+        $evento = $resp->xpath('//n:retEvento/n:infEvento')[0] ?? null;
+
+        if ($evento === null) {
+            // Sem retEvento: o lote foi recusado antes de chegar ao evento (o cStat de topo é o do lote).
+            $cStat = (string) ($resp->xpath('//n:cStat')[0] ?? '');
+            if ($cStat === '') {
+                throw new RuntimeException('Resposta da SEFAZ sem status ao cancelar a nota.');
+            }
+
+            return ResultadoDeCancelamento::recusado($cStat, (string) ($resp->xpath('//n:xMotivo')[0] ?? ''));
+        }
+
+        // O cStat que vale é o de dentro de retEvento; o de topo é do lote.
+        $cStat = (string) $evento->cStat;
+        if (! in_array($cStat, ['135', '136', '155'], true)) {
+            return ResultadoDeCancelamento::recusado($cStat, (string) $evento->xMotivo);
+        }
+
+        try {
+            $xml = Complements::cancelRegister($xmlAutorizado, $respostaXml);
+        } catch (Throwable) {
+            // A SEFAZ aceitou: continua sendo cancelamento. Sem o nfeProc, guardamos a resposta crua do evento.
+            $xml = $respostaXml;
+        }
+
+        return ResultadoDeCancelamento::aceito((string) $evento->nProt, $xml, $cStat);
+    }
+
+    public function inutilizacao(string $respostaXml): ResultadoDeInutilizacao
+    {
+        $resp = $this->carregar($respostaXml);
+        if ($resp === null) {
+            throw new RuntimeException('Resposta ilegível da SEFAZ ao inutilizar a numeração.');
+        }
+        $resp->registerXPathNamespace('n', 'http://www.portalfiscal.inf.br/nfe');
+        $cStat = (string) ($resp->xpath('//n:infInut/n:cStat')[0] ?? '');
+        $motivo = (string) ($resp->xpath('//n:infInut/n:xMotivo')[0] ?? '');
+        if ($cStat === '') {
+            throw new RuntimeException('Resposta da SEFAZ sem status ao inutilizar a numeração.');
+        }
+
+        return match ($cStat) {
+            '102' => ResultadoDeInutilizacao::inutilizada((string) ($resp->xpath('//n:infInut/n:nProt')[0] ?? ''), $respostaXml),
+            '563' => ResultadoDeInutilizacao::jaInutilizada($motivo),
+            default => ResultadoDeInutilizacao::recusada($cStat, $motivo),
         };
     }
 
