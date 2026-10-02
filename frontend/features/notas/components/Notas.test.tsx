@@ -245,3 +245,89 @@ describe('DetalheDaNota', () => {
     vi.useRealTimers();
   });
 });
+
+describe('DetalheDaNota cancelamento', () => {
+  const justificativa = 'Cancelamento por erro de digitação do valor total';
+
+  it('cancela com confirmação em dois cliques e envia a justificativa', async () => {
+    comPapel('ADMIN');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: NOTA });
+    vi.mocked(notasApi.cancelar).mockResolvedValue({ data: { id: 'n1', status: 'CANCELANDO', numero: 7, serie: '1', chave: NOTA.chave, cstat: '100', motivo: null, mensagem_erro: null, cancelamento_cstat: null, cancelamento_motivo: null } });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Cancelar NF-e' }));
+    expect(screen.getByText(/prazo para cancelar é definido pela SEFAZ/)).toBeInTheDocument();
+    await userEvent.type(screen.getByLabelText('Justificativa do cancelamento'), justificativa);
+    expect(screen.getByText(`${justificativa.length}/255`)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar cancelamento' }));
+
+    await waitFor(() => expect(notasApi.cancelar).toHaveBeenCalledWith('n1', justificativa));
+  });
+
+  it('não deixa confirmar com justificativa curta', async () => {
+    comPapel('FISCAL');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: NOTA });
+    vi.mocked(notasApi.cancelar).mockClear();
+    renderizar(<DetalheDaNota id="n1" />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Cancelar NF-e' }));
+    await userEvent.type(screen.getByLabelText('Justificativa do cancelamento'), 'curta');
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar cancelamento' }));
+
+    expect(await screen.findByText('A justificativa deve ter de 15 a 255 caracteres.')).toBeInTheDocument();
+    expect(notasApi.cancelar).not.toHaveBeenCalled();
+  });
+
+  it('vendedor e leitura não veem o botão de cancelar', async () => {
+    comPapel('VENDEDOR');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: NOTA });
+    renderizar(<DetalheDaNota id="n1" />);
+    await screen.findByText(NOTA.chave as string);
+    expect(screen.queryByRole('button', { name: 'Cancelar NF-e' })).not.toBeInTheDocument();
+  });
+
+  it('mostra o bloqueio do servidor ao pedir o cancelamento', async () => {
+    comPapel('ADMIN');
+    const { ApiError } = await import('@/lib/api');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: NOTA });
+    vi.mocked(notasApi.cancelar).mockRejectedValue(new ApiError(409, 'Só é possível cancelar uma NF-e autorizada.', {}, { codigo: 'CANCELAMENTO_NAO_PERMITIDO' }));
+    renderizar(<DetalheDaNota id="n1" />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Cancelar NF-e' }));
+    await userEvent.type(screen.getByLabelText('Justificativa do cancelamento'), justificativa);
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar cancelamento' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Só é possível cancelar uma NF-e autorizada.');
+  });
+
+  it('em CANCELANDO mostra a espera e não oferece cancelar de novo', async () => {
+    comPapel('ADMIN');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: { ...NOTA, status: 'CANCELANDO' } });
+    vi.mocked(notasApi.status).mockResolvedValue({ data: { id: 'n1', status: 'CANCELANDO', numero: 7, serie: '1', chave: NOTA.chave, cstat: '100', motivo: null, mensagem_erro: null, cancelamento_cstat: null, cancelamento_motivo: null } });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    expect(await screen.findByText(/Aguardando a SEFAZ confirmar o cancelamento/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancelar NF-e' })).not.toBeInTheDocument();
+  });
+
+  it('mostra a recusa do cancelamento com cStat e motivo, e a nota segue autorizada', async () => {
+    comPapel('ADMIN');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: { ...NOTA, cancelamento_cstat: '501', cancelamento_motivo: 'Pedido de Cancelamento intempestivo' } });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Cancelamento recusado (cStat 501): Pedido de Cancelamento intempestivo');
+    expect(screen.getByRole('button', { name: 'Cancelar NF-e' })).toBeInTheDocument();
+  });
+
+  it('cancelada mostra protocolo, justificativa e o link do XML do cancelamento', async () => {
+    comPapel('LEITURA');
+    vi.mocked(notasApi.buscar).mockResolvedValue({
+      data: { ...NOTA, status: 'CANCELADA', cancelamento_protocolo: '135260000000555', cancelado_em: '2026-10-02T11:00:00-03:00', cancelamento_justificativa: justificativa },
+    });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    expect(await screen.findByText('135260000000555')).toBeInTheDocument();
+    expect(screen.getByText(justificativa)).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Baixar XML do cancelamento' })).toHaveAttribute('href', 'http://api.test/api/app/notas/n1/xml-cancelamento');
+  });
+});

@@ -1,16 +1,21 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
+import { Campo } from '@/components/form/Campo';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { TextareaNativo } from '@/components/ui/campos-nativos';
 import { useUsuario } from '@/features/auth/hooks/useUsuario';
 import { ApiError } from '@/lib/api';
 import { formatarCentavos } from '@/lib/formatos';
 import { useEnvioUnico } from '@/lib/useEnvioUnico';
-import { notasApi, QUERY_KEY_NOTAS, urlDoXml } from '../api';
+import { notasApi, QUERY_KEY_NOTAS, urlDoXml, urlDoXmlCancelamento } from '../api';
+import { cancelamentoSchema, type CancelamentoDados } from '../schemas';
 import { ROTULO_PAGAMENTO, ROTULO_STATUS } from '../types';
 import { NotaForm } from './NotaForm';
 import { StatusDaNota } from './StatusDaNota';
@@ -26,27 +31,44 @@ export function DetalheDaNota({ id }: { id: string }) {
   const [editando, setEditando] = useState(false);
   const [erroEmissao, setErroEmissao] = useState<string | null>(null);
   const [confirmandoExclusao, setConfirmandoExclusao] = useState(false);
+  const [cancelando, setCancelando] = useState(false);
   const envioUnico = useEnvioUnico();
+  const formCancelamento = useForm<CancelamentoDados>({ resolver: zodResolver(cancelamentoSchema), defaultValues: { justificativa: '' } });
+  const textoJustificativa = useWatch({ control: formCancelamento.control, name: 'justificativa' });
 
   const { data: nota, isPending, isError } = useQuery({
     queryKey: [...QUERY_KEY_NOTAS, id],
     queryFn: async () => (await notasApi.buscar(id)).data,
   });
 
-  // Polling leve só enquanto a SEFAZ não respondeu; qualquer outro status encerra.
+  // Polling leve só enquanto a SEFAZ não respondeu (emissão ou cancelamento); mudou o status, recarrega a nota.
+  const statusDaNota = nota?.status;
   const status = useQuery({
     queryKey: [...QUERY_KEY_NOTAS, id, 'status'],
     queryFn: async () => (await notasApi.status(id)).data,
-    enabled: nota?.status === 'PROCESSANDO',
+    enabled: statusDaNota === 'PROCESSANDO' || statusDaNota === 'CANCELANDO',
     refetchInterval: INTERVALO_DO_POLLING_MS,
   });
   const statusDoPolling = status.data?.status;
   useEffect(() => {
-    if (statusDoPolling !== undefined && statusDoPolling !== 'PROCESSANDO') {
+    if (statusDoPolling !== undefined && statusDoPolling !== statusDaNota) {
       void queryClient.invalidateQueries({ queryKey: [...QUERY_KEY_NOTAS, id] });
       void queryClient.invalidateQueries({ queryKey: QUERY_KEY_NOTAS });
     }
-  }, [statusDoPolling, id, queryClient]);
+  }, [statusDoPolling, statusDaNota, id, queryClient]);
+
+  const cancelar = useMutation({
+    mutationFn: (d: CancelamentoDados) => notasApi.cancelar(id, d.justificativa.trim()),
+    onSuccess: () => {
+      toast.info('Cancelamento solicitado.');
+      setCancelando(false);
+      formCancelamento.reset({ justificativa: '' });
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEY_NOTAS });
+    },
+    onError: (erro) => {
+      formCancelamento.setError('root', { message: erro instanceof ApiError ? erro.message : 'Não foi possível solicitar o cancelamento. Tente novamente.' });
+    },
+  });
 
   const emitir = useMutation({
     mutationFn: () => notasApi.emitir(id),
@@ -112,6 +134,66 @@ export function DetalheDaNota({ id }: { id: string }) {
 
       {nota.status === 'PROCESSANDO' ? (
         <p className="text-sm text-muted-foreground">Aguardando resposta da SEFAZ. Esta página atualiza sozinha.</p>
+      ) : null}
+
+      {nota.status === 'AUTORIZADA' && nota.cancelamento_cstat !== null ? (
+        <p role="alert" className="rounded-md bg-danger/10 p-3 text-sm text-danger">
+          Cancelamento recusado (cStat {nota.cancelamento_cstat}): {nota.cancelamento_motivo}
+        </p>
+      ) : null}
+      {nota.status === 'AUTORIZADA' && nota.cancelamento_cstat === null && nota.cancelamento_motivo !== null ? (
+        <p role="alert" className="rounded-md bg-danger/10 p-3 text-sm text-danger">{nota.cancelamento_motivo}</p>
+      ) : null}
+
+      {nota.status === 'CANCELANDO' ? (
+        <p className="text-sm text-muted-foreground">Aguardando a SEFAZ confirmar o cancelamento. Esta página atualiza sozinha.</p>
+      ) : null}
+
+      {nota.status === 'CANCELADA' ? (
+        <Card>
+          <CardHeader><CardTitle>Cancelamento</CardTitle></CardHeader>
+          <CardContent className="space-y-2 text-sm">
+            <p>Protocolo: <span className="font-mono">{nota.cancelamento_protocolo}</span></p>
+            {nota.cancelado_em ? <p>Cancelada em {new Date(nota.cancelado_em).toLocaleString('pt-BR')}</p> : null}
+            <p>Justificativa:</p>
+            <p>{nota.cancelamento_justificativa}</p>
+            <a href={urlDoXmlCancelamento(nota.id)} className={buttonVariants({ variant: 'outline' })}>Baixar XML do cancelamento</a>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {nota.status === 'AUTORIZADA' && podeEmitir ? (
+        cancelando ? (
+          <Card>
+            <CardHeader><CardTitle>Cancelar NF-e</CardTitle></CardHeader>
+            <CardContent>
+              <form
+                noValidate
+                className="space-y-3"
+                onSubmit={envioUnico(formCancelamento.handleSubmit(async (d) => { await cancelar.mutateAsync(d).catch(() => undefined); }))}
+              >
+                <p className="text-sm text-muted-foreground">O prazo para cancelar é definido pela SEFAZ. Se passou do prazo, ela recusa e a nota continua autorizada.</p>
+                <Campo
+                  id="cancelamento_justificativa"
+                  label="Justificativa do cancelamento"
+                  dica={`${(textoJustificativa ?? '').trim().length}/255`}
+                  erro={formCancelamento.formState.errors.justificativa?.message}
+                >
+                  {(a11y) => <TextareaNativo {...a11y} rows={3} {...formCancelamento.register('justificativa')} />}
+                </Campo>
+                {formCancelamento.formState.errors.root ? (
+                  <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{formCancelamento.formState.errors.root.message}</p>
+                ) : null}
+                <div className="flex gap-2">
+                  <Button type="submit" variant="destructive" disabled={cancelar.isPending}>Confirmar cancelamento</Button>
+                  <Button type="button" variant="outline" onClick={() => setCancelando(false)}>Voltar</Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        ) : (
+          <div><Button type="button" variant="outline" onClick={() => setCancelando(true)}>Cancelar NF-e</Button></div>
+        )
       ) : null}
 
       {editando && editavel ? (
