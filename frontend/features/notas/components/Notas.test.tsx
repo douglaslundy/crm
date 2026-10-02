@@ -16,7 +16,10 @@ import { StatusDaNota } from './StatusDaNota';
 vi.mock('../api', () => ({
   QUERY_KEY_NOTAS: ['notas'],
   urlDoXml: (id: string) => `http://api.test/api/app/notas/${id}/xml`,
-  notasApi: { listar: vi.fn(), buscar: vi.fn(), status: vi.fn(), criar: vi.fn(), editar: vi.fn(), excluir: vi.fn(), emitir: vi.fn() },
+  urlDoXmlCancelamento: (id: string) => `http://api.test/api/app/notas/${id}/xml-cancelamento`,
+  QUERY_KEY_INUTILIZACOES: ['inutilizacoes'],
+  inutilizacoesApi: { listar: vi.fn(), criar: vi.fn() },
+  notasApi: { listar: vi.fn(), buscar: vi.fn(), status: vi.fn(), criar: vi.fn(), editar: vi.fn(), excluir: vi.fn(), emitir: vi.fn(), cancelar: vi.fn() },
 }));
 
 vi.mock('@/features/clientes/api', () => ({ QUERY_KEY_CLIENTES: ['clientes'], clientesApi: { listar: vi.fn() } }));
@@ -31,11 +34,17 @@ export function renderizar(ui: ReactNode) {
 
 export const NOTA: Nota = {
   id: 'n1', status: 'AUTORIZADA', ambiente: 'HOMOLOGACAO', numero: 7, serie: '1', chave: '3'.repeat(44), protocolo: '135', cstat: '100', motivo: 'Autorizado',
+  cancelamento_justificativa: null, cancelado_em: null, cancelamento_protocolo: null, cancelamento_cstat: null, cancelamento_motivo: null,
   mensagem_erro: null, natureza_operacao: 'Venda de mercadoria', consumidor_final: true, subtotal_centavos: 2500, desconto_centavos: 0, total_centavos: 2500,
   informacoes_complementares: null, emitido_em: '2026-10-02T10:00:00-03:00', created_at: '2026-10-02T09:00:00-03:00', cliente: { id: 'c1', nome: 'Maria Teste' },
 };
 
 describe('StatusDaNota', () => {
+  it('mostra Cancelando como texto', () => {
+    render(<StatusDaNota status="CANCELANDO" ambiente="PRODUCAO" />);
+    expect(screen.getByText('Cancelando')).toBeInTheDocument();
+  });
+
   it('mostra o texto do status e o ambiente (nunca só cor)', () => {
     render(<StatusDaNota status="AUTORIZADA" ambiente="HOMOLOGACAO" />);
     expect(screen.getByText('Autorizada')).toBeInTheDocument();
@@ -166,7 +175,7 @@ describe('DetalheDaNota', () => {
   it('emite a nota e mostra o status de processamento', async () => {
     comPapel('ADMIN');
     vi.mocked(notasApi.buscar).mockResolvedValue({ data: rascunho });
-    vi.mocked(notasApi.emitir).mockResolvedValue({ data: { id: 'n1', status: 'PROCESSANDO', numero: 1, serie: '1', chave: null, cstat: null, motivo: null, mensagem_erro: null } });
+    vi.mocked(notasApi.emitir).mockResolvedValue({ data: { id: 'n1', status: 'PROCESSANDO', numero: 1, serie: '1', chave: null, cstat: null, motivo: null, mensagem_erro: null, cancelamento_cstat: null, cancelamento_motivo: null } });
     renderizar(<DetalheDaNota id="n1" />);
 
     await userEvent.click(await screen.findByRole('button', { name: 'Emitir NF-e' }));
@@ -225,8 +234,8 @@ describe('DetalheDaNota', () => {
     comPapel('ADMIN');
     vi.mocked(notasApi.buscar).mockResolvedValue({ data: { ...rascunho, status: 'PROCESSANDO', ambiente: 'HOMOLOGACAO', numero: 1, serie: '1' } });
     vi.mocked(notasApi.status)
-      .mockResolvedValueOnce({ data: { id: 'n1', status: 'PROCESSANDO', numero: 1, serie: '1', chave: null, cstat: null, motivo: null, mensagem_erro: null } })
-      .mockResolvedValue({ data: { id: 'n1', status: 'AUTORIZADA', numero: 1, serie: '1', chave: '3'.repeat(44), cstat: '100', motivo: 'Autorizado', mensagem_erro: null } });
+      .mockResolvedValueOnce({ data: { id: 'n1', status: 'PROCESSANDO', numero: 1, serie: '1', chave: null, cstat: null, motivo: null, mensagem_erro: null, cancelamento_cstat: null, cancelamento_motivo: null } })
+      .mockResolvedValue({ data: { id: 'n1', status: 'AUTORIZADA', numero: 1, serie: '1', chave: '3'.repeat(44), cstat: '100', motivo: 'Autorizado', mensagem_erro: null, cancelamento_cstat: null, cancelamento_motivo: null } });
     renderizar(<DetalheDaNota id="n1" />);
 
     await screen.findByText('Processando');

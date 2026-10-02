@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { notaSchema, paraPayload, type NotaFormDados } from './schemas';
+import { cancelamentoSchema, inutilizacaoSchema, notaSchema, paraPayload, paraPayloadInutilizacao, type NotaFormDados } from './schemas';
 
 const BASE: NotaFormDados = {
   cliente_id: '11111111-1111-4111-8111-111111111111',
@@ -44,5 +44,35 @@ describe('paraPayload', () => {
   it('mapeia consumidor final sim e não', () => {
     expect(paraPayload({ ...BASE, consumidor_final: 'sim' }).consumidor_final).toBe(true);
     expect(paraPayload({ ...BASE, consumidor_final: 'nao' }).consumidor_final).toBe(false);
+  });
+});
+
+describe('cancelamentoSchema', () => {
+  it('aceita de 15 a 255 caracteres depois de aparar', () => {
+    expect(cancelamentoSchema.safeParse({ justificativa: 'a'.repeat(15) }).success).toBe(true);
+    expect(cancelamentoSchema.safeParse({ justificativa: 'a'.repeat(255) }).success).toBe(true);
+    expect(cancelamentoSchema.safeParse({ justificativa: `  ${'a'.repeat(15)}  ` }).success).toBe(true);
+  });
+
+  it('recusa 14 e 256 caracteres e só espaços', () => {
+    expect(cancelamentoSchema.safeParse({ justificativa: 'a'.repeat(14) }).success).toBe(false);
+    expect(cancelamentoSchema.safeParse({ justificativa: 'a'.repeat(256) }).success).toBe(false);
+    expect(cancelamentoSchema.safeParse({ justificativa: ' '.repeat(40) }).success).toBe(false);
+  });
+});
+
+describe('inutilizacaoSchema', () => {
+  const BASE = { serie: '1', numero_inicial: '3', numero_final: '5', justificativa: 'Numeração perdida por queda' };
+
+  it('aceita uma faixa válida e converte para o payload', () => {
+    expect(inutilizacaoSchema.safeParse(BASE).success).toBe(true);
+    expect(paraPayloadInutilizacao(BASE)).toEqual({ serie: '1', numero_inicial: 3, numero_final: 5, justificativa: 'Numeração perdida por queda' });
+  });
+
+  it('recusa inicial maior que o final, zero e série inválida', () => {
+    expect(inutilizacaoSchema.safeParse({ ...BASE, numero_inicial: '6' }).success).toBe(false);
+    expect(inutilizacaoSchema.safeParse({ ...BASE, numero_inicial: '0' }).success).toBe(false);
+    expect(inutilizacaoSchema.safeParse({ ...BASE, serie: 'AB' }).success).toBe(false);
+    expect(inutilizacaoSchema.safeParse({ ...BASE, justificativa: 'curta' }).success).toBe(false);
   });
 });

@@ -1,4 +1,4 @@
-export type StatusNota = 'RASCUNHO' | 'PROCESSANDO' | 'AUTORIZADA' | 'REJEITADA' | 'ERRO' | 'CANCELADA';
+export type StatusNota = 'RASCUNHO' | 'PROCESSANDO' | 'AUTORIZADA' | 'REJEITADA' | 'ERRO' | 'CANCELADA' | 'CANCELANDO';
 export type FormaPagamento = '01' | '03' | '04' | '17' | '99';
 
 export const ROTULO_STATUS: Record<StatusNota, string> = {
@@ -8,6 +8,7 @@ export const ROTULO_STATUS: Record<StatusNota, string> = {
   REJEITADA: 'Rejeitada',
   ERRO: 'Erro',
   CANCELADA: 'Cancelada',
+  CANCELANDO: 'Cancelando',
 };
 
 export const ROTULO_PAGAMENTO: Record<FormaPagamento, string> = {
@@ -64,6 +65,11 @@ export interface Nota {
   total_centavos: number;
   informacoes_complementares: string | null;
   emitido_em: string | null;
+  cancelamento_justificativa: string | null;
+  cancelado_em: string | null;
+  cancelamento_protocolo: string | null;
+  cancelamento_cstat: string | null;
+  cancelamento_motivo: string | null;
   created_at: string;
   cliente?: { id: string; nome: string };
   itens?: NotaItem[];
@@ -71,7 +77,7 @@ export interface Nota {
   eventos?: NotaEvento[];
 }
 
-export type NotaStatus = Pick<Nota, 'id' | 'status' | 'numero' | 'serie' | 'chave' | 'cstat' | 'motivo' | 'mensagem_erro'>;
+export type NotaStatus = Pick<Nota, 'id' | 'status' | 'numero' | 'serie' | 'chave' | 'cstat' | 'motivo' | 'mensagem_erro' | 'cancelamento_cstat' | 'cancelamento_motivo'>;
 
 export interface NotaPayload {
   cliente_id: string;
@@ -80,4 +86,33 @@ export interface NotaPayload {
   informacoes_complementares: string | null;
   itens: { produto_id: string; quantidade: string; valor_unitario_centavos: number | null }[];
   pagamentos: { tpag: FormaPagamento; xpag: string | null; valor_centavos: number }[];
+}
+
+export type StatusInutilizacao = 'INUTILIZADA' | 'RECUSADA' | 'ERRO';
+
+export const ROTULO_STATUS_INUTILIZACAO: Record<StatusInutilizacao, string> = {
+  INUTILIZADA: 'Inutilizada',
+  RECUSADA: 'Recusada pela SEFAZ',
+  ERRO: 'Erro técnico',
+};
+
+export interface Inutilizacao {
+  id: string;
+  serie: string;
+  numero_inicial: number;
+  numero_final: number;
+  justificativa: string;
+  ambiente: 'HOMOLOGACAO' | 'PRODUCAO';
+  status: StatusInutilizacao;
+  cstat: string | null;
+  motivo: string | null;
+  protocolo: string | null;
+  created_at: string;
+}
+
+export interface InutilizacaoPayload {
+  serie: string;
+  numero_inicial: number;
+  numero_final: number;
+  justificativa: string;
 }

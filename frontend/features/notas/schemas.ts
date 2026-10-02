@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { reaisParaCentavos } from '@/lib/formatos';
-import type { NotaPayload } from './types';
+import type { InutilizacaoPayload, NotaPayload } from './types';
 
 const DINHEIRO = /^\d+(,\d{1,2})?$/;
 const QUANTIDADE = /^\d{1,9}([.,]\d{1,3})?$/;
@@ -50,4 +50,33 @@ export function paraPayload(d: NotaFormDados): NotaPayload {
       valor_centavos: reaisParaCentavos(p.valor),
     })),
   };
+}
+
+export const cancelamentoSchema = z.object({
+  justificativa: z
+    .string()
+    .transform((v) => v.trim())
+    .pipe(z.string().min(15, 'A justificativa deve ter de 15 a 255 caracteres.').max(255, 'A justificativa deve ter de 15 a 255 caracteres.')),
+});
+
+export type CancelamentoDados = z.input<typeof cancelamentoSchema>;
+
+const INTEIRO_POSITIVO = /^[1-9]\d{0,8}$/;
+
+export const inutilizacaoSchema = z
+  .object({
+    serie: z.string().regex(/^\d{1,3}$/, 'Informe a série (até 3 dígitos).'),
+    numero_inicial: z.string().regex(INTEIRO_POSITIVO, 'Informe um número maior que zero.'),
+    numero_final: z.string().regex(INTEIRO_POSITIVO, 'Informe um número maior que zero.'),
+    justificativa: z.string().trim().min(15, 'A justificativa deve ter de 15 a 255 caracteres.').max(255, 'A justificativa deve ter de 15 a 255 caracteres.'),
+  })
+  .refine((d) => !INTEIRO_POSITIVO.test(d.numero_inicial) || !INTEIRO_POSITIVO.test(d.numero_final) || Number(d.numero_inicial) <= Number(d.numero_final), {
+    message: 'O número inicial não pode passar do final.',
+    path: ['numero_inicial'],
+  });
+
+export type InutilizacaoDados = z.infer<typeof inutilizacaoSchema>;
+
+export function paraPayloadInutilizacao(d: InutilizacaoDados): InutilizacaoPayload {
+  return { serie: d.serie, numero_inicial: Number(d.numero_inicial), numero_final: Number(d.numero_final), justificativa: d.justificativa.trim() };
 }

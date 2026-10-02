@@ -8,6 +8,7 @@ const COR: Record<StatusNota, string> = {
   REJEITADA: 'bg-danger/15 text-danger',
   ERRO: 'bg-danger/15 text-danger',
   CANCELADA: 'bg-muted text-muted-foreground',
+  CANCELANDO: 'bg-warning/15 text-warning',
 };
 
 /** Texto sempre presente: a cor sozinha não basta (acessibilidade). O ambiente fica visível ao lado. */
