@@ -4,9 +4,9 @@
 2026-10-02
 
 ## Tarefa em andamento
-**F3b1 (cancelamento e inutilização da NF-e), execução inline na master (ledger em `.superpowers/sdd/2026-10-02-f3b1-cancelamento-inutilizacao/progress.md`).** Backend concluído (Tarefas 1 a 10): 436 testes, Pint e PHPStan verdes. Faltam o frontend (11 a 14) e o fechamento (15). Plano `docs/superpowers/plans/2026-10-02-f3b1-cancelamento-inutilizacao.md`; spec `docs/superpowers/specs/2026-10-02-f3b1-cancelamento-inutilizacao-design.md`. A F3a está concluída (23 tarefas). A F3b foi dividida: F3b1 (esta), F3b2 (PDF), F3b3 (NFC-e).
+**Nenhuma em andamento. F3b1 (cancelamento e inutilização da NF-e) concluída em 2026-10-02 (15 tarefas), pendente só da revisão final do branch e do push.** Próximo passo do produto: F3b2 (PDF da NF-e), começando pelo brainstorming do spec. A F3b foi dividida em F3b1 (feita), F3b2 (PDF) e F3b3 (NFC-e).
 
-Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é decisão da SEFAZ (sem número fixo); cancelada continua contando na cota `DOCUMENTOS_MES`; `consultarPorChave` usa o ambiente da nota; o XML do cancelamento é o `nfeProc` com `retEvento` (`Complements::cancelRegister`); aceitos 135/136/155; inutilização síncrona com guardas locais.
+Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é decisão da SEFAZ (sem número fixo no código); cancelada continua contando na cota `DOCUMENTOS_MES`; `consultarPorChave` usa o ambiente da **nota** (corrige consulta no ambiente errado depois de "Ir para produção"); o XML do cancelamento é o `nfeProc` com `retEvento` (`Complements::cancelRegister`); aceitos 135/136/155; inutilização síncrona com guardas locais (faixa já alocada, sem nota autorizada/em processamento/cancelada na faixa), resultado sempre gravado.
 
 ## Decisões pendentes com o usuário
 - **Push dos commits da F3a:** feitos na master; o último push foi `db2bc7d` (docs do backlog).
@@ -22,6 +22,22 @@ Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é dec
 - `cNF` como `12345678` é recusado pela `Make` (sequência); nos testes usar `47382915`.
 - Testes: helper `spaComo($usuario)` no `TestCase` troca de usuário sem o 401 espúrio.
 - `NfePhpEmissor` não tem teste automatizado (exige SEFAZ); coberto pela fumaça abaixo e pelo roteiro de homologação real.
+
+## Fechamento da F3b1 (2026-10-02)
+- Backend: 436 testes; frontend: 134; Pint, PHPStan 6, tsc e build verdes; eslint só com o warning antigo do `CadastroForm` (`form.watch`).
+- **Fumaça com o motor real** (HTTP de teste, `NfePhpEmissor` real, `.pfx` autoassinado, sem EmissorFake), nota `AUTORIZADA` criada por `forceFill`:
+  - `POST /cancelar` → 202; a nota ficou `CANCELANDO` com a justificativa gravada e o evento "Falha técnica ao cancelar: ...". A lib chegou a **montar o XML do evento** e a validação do schema recusou o autor como CPF com 14 dígitos: ela decide CNPJ ou CPF pelo OID ICP-Brasil do certificado, e o `.pfx` autoassinado não tem nenhum dos dois. Um A1 real tem o OID de CNPJ. A comunicação com a SEFAZ **não foi exercitada**.
+  - `fiscal:reconciliar-processando` não mudou a nota (consulta também sem SEFAZ): segue `CANCELANDO`, nunca `CANCELADA` nem volta a `AUTORIZADA` sem confirmação.
+  - Bloqueios: justificativa de 5 caracteres dá 422; nota em `RASCUNHO` dá 409 `CANCELAMENTO_NAO_PERMITIDO`; inutilização de faixa não alocada dá 422 `FISCAL_FAIXA_NAO_ALOCADA`.
+- Conferência visual no navegador (temas e celular) **não feita**, como na F2 e na F3a.
+
+## Roteiro de homologação real da F3b1 (para o usuário)
+1. Ter uma NF-e de teste autorizada (roteiro da F3a).
+2. Notas > abrir a nota autorizada > "Cancelar NF-e" com justificativa de 15+ caracteres; esperar `CANCELADA`; baixar o XML do cancelamento.
+3. Emitir outra NF-e de teste, deixar passar do prazo da UF e tentar cancelar: a SEFAZ deve recusar (cStat 501 ou similar), a nota continua autorizada e a tela mostra o motivo. **Não** contornar.
+4. Notas > Inutilizar numeração: inutilizar um número já alocado e não utilizado (ex.: emitir uma sequência de teste e inutilizar a faixa pulada).
+5. Conferir códigos desconhecidos em `assets/cstat-table.md` da skill.
+6. Worker (`php artisan queue:work`) e agendador (`php artisan schedule:work`) de pé; a reconciliação de 15 min agora também resolve `CANCELANDO`.
 
 ## Fechamento da F3a (2026-10-02)
 - Backend: 376 testes; frontend: 117; Pint, PHPStan 6, tsc e build verdes; eslint só com o warning antigo do `CadastroForm` (`form.watch`).
@@ -41,11 +57,12 @@ Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é dec
 6. Só então "Ir para produção".
 O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artisan schedule:work` (a reconciliação roda a cada 15 min).
 
-## Contexto necessário (F3b)
-- Spec da F3a, §1: a F3b cobre NFC-e (CSC e QR Code), cancelamento, inutilização e PDF (DANFE e cupom). `docs/superpowers/specs/2026-10-01-f3a-nfe-emissao-design.md`.
-- Base fiscal: `docs/referencia-fiscal/00-INDICE.md` (abrir só o arquivo do assunto) e a skill `br-fiscal-note-emission` (`assets/pdf-layouts/` tem DANFE e cupom NFC-e).
-- Padrões a seguir: `backend/app/Modules/Fiscal` (Actions, `EmissorDeNfe`, `AplicarResultadoDaEmissao`, `NotaResource`) e `frontend/features/notas`.
-- Pendências conhecidas da F3a (não bloqueiam a F3b): Regime Normal, DIFAL, IBS/CBS, IE `ISENTO` do emitente, outras naturezas de operação, contador de numeração compartilhado entre ambientes, cStat 150 (autorizado fora de prazo) não tratado como autorizada.
+## Contexto necessário (F3b2: PDF da NF-e)
+- Spec mestre §7 (PDF sempre a partir do XML autorizado) e `docs/superpowers/specs/2026-10-02-f3b1-cancelamento-inutilizacao-design.md` §1 (decomposição da F3b).
+- Skill `br-fiscal-note-emission`: `assets/pdf-layouts/danfe` (renderer e templates testados) e `assets/pdf-layouts/README.md`; avaliar `nfephp-org/sped-da` contra eles.
+- Dados disponíveis: `Nota::xml_autorizado` (nfeProc), `xml_cancelamento` (nfeProc com retEvento; o DANFE de nota cancelada deve sair com a marca "CANCELADA"), `NotaController::xml` como padrão de download.
+- Padrões a seguir: `backend/app/Modules/Fiscal` (Actions, Resources) e `frontend/features/notas` (`DetalheDaNota`).
+- Pendências conhecidas da F3a e da F3b1 (não bloqueiam a F3b2): em `TAREFAS.md`.
 
 ## Concluído
 - [x] Requisitos, decisões, base fiscal (`docs/referencia-fiscal/`) e pesquisa de CRM.
@@ -68,6 +85,7 @@ O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artis
 - Produto com `origem: 0` ainda aparece em pendências por faltar NCM/tributação, não por causa da origem (comportamento esperado).
 
 - [x] **F3a Núcleo da NF-e concluída (23 tarefas, 2026-10-02):** módulo `Fiscal` com `Nota`/`NotaItem`/`NotaPagamento`/`NotaEvento`, resolvers (CRT, CFOP, CSOSN, indIEDest), rateio de desconto, `IniciarEmissao`, `EmitirNotaJob` (fila `database`), `AplicarResultadoDaEmissao` (inclui cStat 539), reconciliação a cada 15 min, `NfePhpEmissor` (sped-nfe 5.2.8), contador `DOCUMENTOS_MES`, `/api/app/notas`, produção só após NF-e de teste autorizada; frontend `features/notas` (lista, formulário, detalhe com polling e XML) e `ConfirmarProducao`.
+- [x] **F3b1 Cancelamento e inutilização da NF-e concluída (15 tarefas, 2026-10-02):** status `CANCELANDO`, `Justificativa` (15 a 255), `IniciarCancelamento`/`CancelarNotaJob`/`AplicarResultadoDoCancelamento`, reconciliação de `CANCELANDO`, `InutilizarNumeracao`, `consultarPorChave` com o ambiente da nota, cota que continua contando canceladas, endpoints `/notas/{nota}/cancelar`, `/xml-cancelamento` e `/inutilizacoes`; frontend com cancelar no detalhe da nota e `/notas/inutilizar`.
 
 ## Decisões não óbvias
 - O `php.ini` global ganhou `pdo_sqlite`, `sqlite3`, `soap` e `intl`, com autorização do usuário e backup `php.ini.bak`.
@@ -85,4 +103,4 @@ O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artis
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-F3b: brainstorming do spec (NFC-e, cancelamento, inutilização, PDF). Antes, o usuário pode rodar o roteiro de homologação real da F3a. Contexto: só o que está em "Contexto necessário (F3b)". O teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado). Recomendo `/clear` antes de começar.
+F3b2: brainstorming do spec (PDF/DANFE da NF-e). Antes, o usuário pode rodar os roteiros de homologação real da F3a e da F3b1 (precisam de certificado A1). Contexto: só o que está em "Contexto necessário (F3b2)". O teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado). Recomendo `/clear` antes de começar.
