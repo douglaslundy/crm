@@ -9,7 +9,7 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
   - [x] **F3a Núcleo da NF-e** (23 de 23, fechada em 2026-10-02): modelo da nota, resolvers tributários, XML, emissão pela fila, numeração, polling, reconciliação, consulta, XML, confirmação de produção. Plano: `docs/superpowers/plans/2026-10-02-f3a-nfe-emissao.md`. Falta só a emissão real em homologação (precisa de certificado A1), roteiro no `PROGRESSO.md`.
   - [ ] **F3b**, dividida em três specs (2026-10-02), cada uma com plano próprio, nesta ordem:
     - [x] **F3b1 Cancelamento e inutilização da NF-e** (15 de 15, fechada em 2026-10-02): cancelamento por fila com `CANCELANDO`, reconciliação, inutilização síncrona, API e telas. Plano: `docs/superpowers/plans/2026-10-02-f3b1-cancelamento-inutilizacao.md`. Falta só o cancelamento e a inutilização reais em homologação (certificado A1), roteiro no `PROGRESSO.md`.
-    - [ ] **F3b2 PDF (DANFE) da NF-e** (spec escrita, aguardando revisão): `docs/superpowers/specs/2026-10-02-f3b2-pdf-danfe-design.md`; motor `sped-da` (decisão do usuário).
+    - [ ] **F3b2 PDF (DANFE) da NF-e** (spec aprovada, plano por escrever): `docs/superpowers/specs/2026-10-02-f3b2-pdf-danfe-design.md`; motor `sped-da` (decisão do usuário).
     - [ ] **F3b3 NFC-e** (emissão com CSC e QR Code, cupom 80 mm, cancelamento em 30 min): sem spec.
   - [ ] **F3c** (sem spec nem plano): contingência (EPEC e offline), retransmissão, alertas de prazo, dashboard fiscal.
   - Critério de pronto da F3: nota autorizada em homologação para NF-e e NFC-e, com o XML validado contra o XSD.

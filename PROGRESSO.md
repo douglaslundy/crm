@@ -4,7 +4,7 @@
 2026-10-02
 
 ## Tarefa em andamento
-**Nenhuma em andamento. F3b1 (cancelamento e inutilização da NF-e) concluída em 2026-10-02 (15 tarefas), pendente só da revisão final do branch e do push.** Próximo passo do produto: F3b2 (PDF da NF-e), começando pelo brainstorming do spec. A F3b foi dividida em F3b1 (feita), F3b2 (PDF) e F3b3 (NFC-e).
+**Nenhuma execução em andamento. F3b1 (cancelamento e inutilização da NF-e) concluída em 2026-10-02 (15 tarefas). F3b2 (PDF/DANFE da NF-e): spec escrita, commitada e aprovada pelo usuário (`docs/superpowers/specs/2026-10-02-f3b2-pdf-danfe-design.md`, motor `sped-da`); FALTA escrever o plano (skill writing-plans, ~7 tarefas) e executar em modo Native.** A F3b está dividida em F3b1 (feita), F3b2 (em andamento) e F3b3 (NFC-e).
 
 Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é decisão da SEFAZ (sem número fixo no código); cancelada continua contando na cota `DOCUMENTOS_MES`; `consultarPorChave` usa o ambiente da **nota** (corrige consulta no ambiente errado depois de "Ir para produção"); o XML do cancelamento é o `nfeProc` com `retEvento` (`Complements::cancelRegister`); aceitos 135/136/155; inutilização síncrona com guardas locais (faixa já alocada, sem nota autorizada/em processamento/cancelada na faixa), resultado sempre gravado.
 
@@ -103,4 +103,4 @@ O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artis
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-F3b2: brainstorming do spec (PDF/DANFE da NF-e). Antes, o usuário pode rodar os roteiros de homologação real da F3a e da F3b1 (precisam de certificado A1). Contexto: só o que está em "Contexto necessário (F3b2)". O teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado). Recomendo `/clear` antes de começar.
+F3b2: escrever o plano de implementação a partir da spec aprovada (`docs/superpowers/specs/2026-10-02-f3b2-pdf-danfe-design.md`) e executar. Decisões já tomadas: motor `sped-da ^1.1` (v1.1.6, spike OK no PHP 8.2), interface `GeradorDeDanfe`, Action `GerarDanfe` (PDF sempre do XML: AUTORIZADA e CANCELANDO usam `xml_autorizado`; CANCELADA usa `xml_cancelamento` com `cancelada=true`), `GET /api/app/notas/{nota}/pdf` inline, link "Abrir DANFE (PDF)" no detalhe, sem logo e sem armazenar PDF. Antes ou em paralelo, o usuário pode fazer o push (39 commits locais) e rodar os roteiros de homologação real da F3a e da F3b1 (certificado A1). O teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado).
