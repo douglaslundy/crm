@@ -6,6 +6,7 @@ use App\Modules\Fiscal\Http\Controllers\CertificadoController;
 use App\Modules\Fiscal\Http\Controllers\ConfiguracaoFiscalController;
 use App\Modules\Fiscal\Http\Controllers\ConsultarCepController;
 use App\Modules\Fiscal\Http\Controllers\EmitenteController;
+use App\Modules\Fiscal\Http\Controllers\NotaController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('empresa')->group(function (): void {
@@ -17,4 +18,13 @@ Route::middleware('empresa')->group(function (): void {
     Route::put('emitente/csc', [ConfiguracaoFiscalController::class, 'atualizarCsc'])->name('app.emitente.csc');
     Route::put('emitente/series/{modelo}', [ConfiguracaoFiscalController::class, 'atualizarSerie'])->whereIn('modelo', ['NFE', 'NFCE', 'DPS'])->name('app.emitente.series');
     Route::post('emitente/ambiente/producao', [ConfiguracaoFiscalController::class, 'confirmarProducao'])->name('app.emitente.producao');
+
+    Route::get('notas', [NotaController::class, 'index'])->name('app.notas.index');
+    Route::post('notas', [NotaController::class, 'store'])->name('app.notas.store');
+    Route::get('notas/{nota}', [NotaController::class, 'show'])->name('app.notas.show');
+    Route::put('notas/{nota}', [NotaController::class, 'update'])->name('app.notas.update');
+    Route::delete('notas/{nota}', [NotaController::class, 'destroy'])->name('app.notas.destroy');
+    Route::get('notas/{nota}/status', [NotaController::class, 'status'])->name('app.notas.status');
+    Route::post('notas/{nota}/emitir', [NotaController::class, 'emitir'])->name('app.notas.emitir');
+    Route::get('notas/{nota}/xml', [NotaController::class, 'xml'])->name('app.notas.xml');
 });
