@@ -4,21 +4,27 @@
 2026-10-02
 
 ## Tarefa em andamento
-**F3a (emissão de NF-e): spec aprovado e plano escrito, aguardando revisão do usuário e escolha do método de execução.** Spec `docs/superpowers/specs/2026-10-01-f3a-nfe-emissao-design.md`; plano `docs/superpowers/plans/2026-10-02-f3a-nfe-emissao.md` (23 tarefas: backend 1 a 16, frontend 17 a 22, fechamento 23).
+**F3a (emissão de NF-e), execução inline na master (ledger em `.superpowers/sdd/2026-10-02-f3a-nfe-emissao/progress.md`, git-ignorado).** Backend concluído (Tarefas 1 a 16): backend 376 testes, Pint e PHPStan verdes. Faltam o frontend (17 a 22) e o fechamento (23). Plano `docs/superpowers/plans/2026-10-02-f3a-nfe-emissao.md`; spec `docs/superpowers/specs/2026-10-01-f3a-nfe-emissao-design.md`.
 
 ## Decisões pendentes com o usuário
-- **Remoto no GitHub:** `origin` existe, mas está em `a9dc666` (fim da F1); faltam 35 commits (F2 e docs da F3a). Fazer push para o CI rodar a F2, incluindo o job em PostgreSQL 16.
+- Nenhuma. O push de 2026-10-02 levou a F2 e os docs da F3a ao `origin`; os commits da F3a ainda não foram enviados.
 
 ## Decisões já tomadas
 - **Papel PROPRIETARIO irreversível (2026-10-01):** mantido como está — ninguém altera nem desativa um proprietário pela aplicação; reversão só no banco.
+- **Execução da F3a (2026-10-02):** inline (native), direto na master, sem worktree (escolha do usuário).
+- **Numeração (F3a):** o contador `proximo_numero` da série é único e compartilhado entre homologação e produção (spec).
+- **`sped-nfe` v5.2.8** instalado; assinaturas `tag*()` conferidas no vendor (um `stdClass` cada).
+- **Retry de ERRO:** `IniciarEmissao` preserva `chave`/`xml_enviado` quando o status anterior é ERRO e o número é reaproveitado, para o job consultar a SEFAZ antes de reenviar (evita duplicata). REJEITADA zera.
+- `EmitirNotaJob` restaura o `TenantContext` anterior (com fila `sync` o job redespachado limparia o do chamador).
+- `cNF` como `12345678` é recusado pela `Make` (sequência); nos testes usar `47382915`.
+- Testes: helper `spaComo($usuario)` no `TestCase` troca de usuário sem o 401 espúrio.
+- `NfePhpEmissor` não tem teste automatizado (exige SEFAZ); coberto pela fumaça de homologação (Tarefa 23, precisa de certificado A1 e CNPJ de homologação).
 
 ## Contexto necessário
-- Spec mestre: `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`, linha F2 do §15 (clientes, produtos, serviços, categorias fiscais, pendências, importação CSV, dados fiscais do emitente, certificado, CSC, séries).
-- Base fiscal: `docs/referencia-fiscal/00-INDICE.md` — abrir só o arquivo do assunto necessário.
-- Skill fiscal: `br-fiscal-note-emission` — ler antes de qualquer código ou spec que toque regra fiscal.
-- Padrões já estabelecidos na F1 (seguir): `docs/adr/0004-planos-situacao-e-limites.md` (EntitlementService, contadores por módulo, erros `{message, codigo}`), grupo de middleware `empresa`, `Campo`/`useEnvioUnico` no frontend.
-- F3 (NF-e e NFC-e): ainda sem spec nem plano. Ler a linha F3 do §15 do spec mestre e a skill fiscal, depois brainstorming.
-- Pendências da revisão da F1 (não bloqueiam a F2): `TAREFAS.md`, seção "Pendências da revisão da F1".
+- Frontend da F3a (Tarefas 17 a 22): ler só as tarefas no plano (`task-start` gera o brief) e os padrões de `frontend/features/produtos` ou `clientes` (tipos, schemas, api, `Campo`, `useEnvioUnico`, TanStack Query, zod 4).
+- Contrato da API de notas: `backend/app/Modules/Fiscal/Http/Resources/NotaResource.php` e `routes-app.php`.
+- Skill fiscal: `br-fiscal-note-emission` — ler antes de qualquer código que toque regra fiscal.
+- Pendências antigas: `TAREFAS.md`.
 
 ## Concluído
 - [x] Requisitos, decisões, base fiscal (`docs/referencia-fiscal/`) e pesquisa de CRM.
@@ -56,4 +62,4 @@
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-Usuário revisa o plano da F3a e escolhe a execução (subagent-driven ou native). Depois: Tarefa 1 (instalar `sped-nfe`, fila `database`, `config/fiscal.php`). Contexto: só o plano e o spec da F3a; abrir `docs/referencia-fiscal/03-nfephp-nfe.md` e `~/.claude/skills/br-fiscal-note-emission/references/pitfalls.md` nas Tarefas 12 e 13. Observação: o teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado).
+Tarefa 17 da F3a (frontend: tipos, schemas e API de notas). Contexto: só o plano e os padrões de `frontend/features/clientes`. O teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado).

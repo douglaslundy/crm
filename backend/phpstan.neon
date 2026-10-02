@@ -8,3 +8,8 @@ parameters:
         - database/factories
         - database/seeders
         - tests/Fixtures
+    ignoreErrors:
+        # Traits de teste (CenarioDeNota, AssinaNfeDeTeste) são usadas só por testes, que não estão em `paths`.
+        -
+            identifier: trait.unused
+            path: tests/Fixtures/*

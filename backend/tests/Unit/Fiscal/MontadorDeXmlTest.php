@@ -58,7 +58,7 @@ class MontadorDeXmlTest extends TestCase
         $this->assinarEValidar($xml);
     }
 
-    public function test_desconto_do_item_vai_em_vDesc(): void
+    public function test_desconto_do_item_vai_em_v_desc(): void
     {
         ['xml' => $xml] = (new MontadorDeXml)->montar($this->notaDeTeste(descontoItem: 100), '47382915');
         $this->assertStringContainsString('<vDesc>1.00</vDesc>', $xml);
