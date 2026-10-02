@@ -40,6 +40,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property ?string $xml_autorizado
  * @property ?CarbonInterface $iniciada_em
  * @property ?CarbonInterface $emitido_em
+ * @property ?CarbonInterface $cancelamento_solicitado_em
+ * @property ?string $cancelamento_justificativa
+ * @property ?string $cancelamento_protocolo
+ * @property ?CarbonInterface $cancelado_em
+ * @property ?string $cancelamento_cstat
+ * @property ?string $cancelamento_motivo
+ * @property ?string $xml_cancelamento
  * @property CarbonInterface $created_at
  */
 class Nota extends Model
@@ -59,7 +66,7 @@ class Nota extends Model
         'subtotal_centavos', 'total_centavos',
     ];
 
-    protected $hidden = ['xml_enviado', 'xml_autorizado'];
+    protected $hidden = ['xml_enviado', 'xml_autorizado', 'xml_cancelamento'];
 
     /** @var array<string, mixed> */
     protected $attributes = [
@@ -76,6 +83,8 @@ class Nota extends Model
             'destinatario' => 'array',
             'iniciada_em' => 'datetime',
             'emitido_em' => 'datetime',
+            'cancelamento_solicitado_em' => 'datetime',
+            'cancelado_em' => 'datetime',
         ];
     }
 
