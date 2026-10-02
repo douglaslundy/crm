@@ -37,7 +37,7 @@ A F3 do spec mestre foi dividida em três specs, cada um com plano próprio:
   - `NotaEvento`: histórico de transições (`status_de`, `status_para`, `detalhe`, `usuario_id` nulável).
 - **Enum `StatusNota`:** `RASCUNHO | PROCESSANDO | AUTORIZADA | REJEITADA | ERRO | CANCELADA`. Na F3a `CANCELADA` só é atingida pela reconciliação (nota cancelada fora do sistema); a ação de cancelar é F3b. `REJEITADA` é decisão da SEFAZ; `ERRO` é falha técnica ou incerteza. Nunca misturar.
 - **Resolvers puros** (lançam exceção fora das saídas conhecidas): `CrtResolver`, `CfopSaidaResolver` (5102, 5405, 6102, 6404), `TributacaoIcmsSaidaResolver` (CSOSN 102 e 500), `IndicadorIeDestinatarioResolver`, `TabelaIbge` (UF para `cUF`), `RateioDeDesconto` (resíduo no último item; porta de `reference-calculations.php`).
-- **Interface `EmissorDeNfe`:** `emitir(NotaParaEmissao): ResultadoDeEmissao` e `consultarPorChave(string, Emitente): ResultadoDeConsulta`. Implementação `NfePhpEmissor` (monta com `Make`, assina, envia, interpreta `cStat`). Testes usam `EmissorFake`. A regra tributária fica fora do emissor; ele só traduz formato.
+- **Interface `EmissorDeNfe`:** `preparar` (monta e assina, devolve a chave), `transmitir` (envia e interpreta) e `consultarPorChave`. Implementação `NfePhpEmissor` (monta com `Make`, assina, envia, interpreta `cStat`). Testes usam `EmissorFake`. A regra tributária fica fora do emissor; ele só traduz formato.
 - **Actions:** `CriarRascunhoDeNota`, `AtualizarRascunhoDeNota`, `ExcluirRascunhoDeNota`, `IniciarEmissao`, `AplicarResultadoDaEmissao`, `ConciliarNota`, e `ConfirmarProducao` (existente, ganha a pré-condição).
 - **Job `EmitirNotaJob`:** fila `database`, `tries=1`; só age se a nota está `PROCESSANDO`; exceção inesperada vira `ERRO`.
 - **Comando `fiscal:reconciliar-processando`:** a cada 15 minutos, `withoutOverlapping`.
@@ -52,7 +52,7 @@ A F3 do spec mestre foi dividida em três specs, cada um com plano próprio:
 ### 3.3 Fluxo de emissão
 
 1. `IniciarEmissao`: dentro de uma transação, trava a nota (`lockForUpdate`), valida todos os bloqueios (3.4), trava a `EmitenteSerie`, aloca o número (ou reaproveita o da nota), grava `ambiente`, série e número, marca `PROCESSANDO` e registra o evento. O dispatch do job acontece **fora** da transação.
-2. `EmitirNotaJob`: decifra o certificado em memória, monta o `NotaParaEmissao`, chama o `EmissorDeNfe` e entrega o resultado a `AplicarResultadoDaEmissao`.
+2. `EmitirNotaJob`: decifra o certificado em memória, monta o `NotaParaEmissao`, chama o `EmissorDeNfe` e entrega o resultado a `AplicarResultadoDaEmissao`. O job grava `chave` e `xml_enviado` entre `preparar` e `transmitir`, antes de qualquer chamada de rede, para a reconciliação sempre conseguir consultar a SEFAZ por chave.
 3. `AplicarResultadoDaEmissao`: trava a nota e grava `status`, `chave`, `protocolo`, `cstat`, `motivo`, `xml_enviado`, `xml_autorizado` e `emitido_em`. Só transita a partir de `PROCESSANDO`.
 4. O frontend faz polling em `GET /notas/{id}/status` enquanto `PROCESSANDO`.
 

@@ -62,7 +62,10 @@ class Nota extends Model
     protected $hidden = ['xml_enviado', 'xml_autorizado'];
 
     /** @var array<string, mixed> */
-    protected $attributes = ['status' => 'RASCUNHO', 'natureza_operacao' => 'Venda de mercadoria'];
+    protected $attributes = [
+        'status' => 'RASCUNHO', 'natureza_operacao' => 'Venda de mercadoria',
+        'subtotal_centavos' => 0, 'desconto_centavos' => 0, 'total_centavos' => 0, 'tentativas_numero' => 0,
+    ];
 
     /** @return array<string, string> */
     protected function casts(): array
