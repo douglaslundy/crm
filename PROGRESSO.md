@@ -4,10 +4,11 @@
 2026-10-02
 
 ## Tarefa em andamento
-**F3a (emissão de NF-e), execução inline na master (ledger em `.superpowers/sdd/2026-10-02-f3a-nfe-emissao/progress.md`, git-ignorado).** Backend concluído (Tarefas 1 a 16): backend 376 testes, Pint e PHPStan verdes. Faltam o frontend (17 a 22) e o fechamento (23). Plano `docs/superpowers/plans/2026-10-02-f3a-nfe-emissao.md`; spec `docs/superpowers/specs/2026-10-01-f3a-nfe-emissao-design.md`.
+**Nenhuma em andamento. F3a (emissão de NF-e) concluída em 2026-10-02 (23 tarefas), pendente só da revisão final do branch e do push.** Próximo passo do produto: F3b (brainstorming do spec).
 
 ## Decisões pendentes com o usuário
-- Nenhuma. O push de 2026-10-02 levou a F2 e os docs da F3a ao `origin`; os commits da F3a ainda não foram enviados.
+- **Push dos commits da F3a:** feitos na master; o último push foi `db2bc7d` (docs do backlog).
+- **Roteiro de homologação real da F3a** (abaixo): só o usuário consegue, com certificado A1 e CNPJ de teste.
 
 ## Decisões já tomadas
 - **Papel PROPRIETARIO irreversível (2026-10-01):** mantido como está — ninguém altera nem desativa um proprietário pela aplicação; reversão só no banco.
@@ -18,13 +19,31 @@
 - `EmitirNotaJob` restaura o `TenantContext` anterior (com fila `sync` o job redespachado limparia o do chamador).
 - `cNF` como `12345678` é recusado pela `Make` (sequência); nos testes usar `47382915`.
 - Testes: helper `spaComo($usuario)` no `TestCase` troca de usuário sem o 401 espúrio.
-- `NfePhpEmissor` não tem teste automatizado (exige SEFAZ); coberto pela fumaça de homologação (Tarefa 23, precisa de certificado A1 e CNPJ de homologação).
+- `NfePhpEmissor` não tem teste automatizado (exige SEFAZ); coberto pela fumaça abaixo e pelo roteiro de homologação real.
 
-## Contexto necessário
-- Frontend da F3a (Tarefas 17 a 22): ler só as tarefas no plano (`task-start` gera o brief) e os padrões de `frontend/features/produtos` ou `clientes` (tipos, schemas, api, `Campo`, `useEnvioUnico`, TanStack Query, zod 4).
-- Contrato da API de notas: `backend/app/Modules/Fiscal/Http/Resources/NotaResource.php` e `routes-app.php`.
-- Skill fiscal: `br-fiscal-note-emission` — ler antes de qualquer código que toque regra fiscal.
-- Pendências antigas: `TAREFAS.md`.
+## Fechamento da F3a (2026-10-02)
+- Backend: 376 testes; frontend: 117; Pint, PHPStan 6, tsc e build verdes; eslint só com o warning antigo do `CadastroForm` (`form.watch`).
+- **Fumaça com o motor real** (HTTP de teste, `NfePhpEmissor` real, `.pfx` autoassinado gerado no openssl, sem EmissorFake):
+  - Upload do certificado: 200, `VALIDO`. Rascunho: 201. `POST /emitir`: 202.
+  - Resultado: `status=ERRO`, nunca `REJEITADA`; `chave` de 44 dígitos gravada, `xml_enviado` assinado (`<Signature`), número 1 preservado, trilha `RASCUNHO → PROCESSANDO → ERRO`.
+  - O erro foi `Foi impossivel identificar o OID do CNPJ ou do CPF`: o certificado autoassinado não tem o OID ICP-Brasil do CNPJ que um A1 real tem. A comunicação com a SEFAZ **não foi exercitada** (precisa de A1 real).
+  - Bloqueios: produto sem NCM dá 422 `FISCAL_PRODUTO_INCOMPLETO`; certificado vencido dá 422 `FISCAL_CERTIFICADO_INVALIDO`; a nota continua em RASCUNHO nos dois.
+- Conferência visual no navegador (temas e celular) **não feita**, como na F2.
+
+## Roteiro de homologação real da F3a (para o usuário)
+1. Ter um certificado A1 do CNPJ de teste e a IE habilitada para NF-e em homologação na UF.
+2. Em Configurações > Fiscal: endereço com IBGE, regime Simples, IE, CNAE, certificado, série NF-e (série 1, próximo número 1).
+3. Cadastrar cliente PF com CPF, endereço e IBGE; produto com NCM real, origem, tributação ICMS.
+4. Em Notas > Nova NF-e, emitir; esperar `AUTORIZADA`; baixar o XML.
+5. Se vier `REJEITADA`, anotar `cStat` e `motivo` e conferir em `assets/cstat-table.md` da skill; **não** contornar a regra.
+6. Só então "Ir para produção".
+O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artisan schedule:work` (a reconciliação roda a cada 15 min).
+
+## Contexto necessário (F3b)
+- Spec da F3a, §1: a F3b cobre NFC-e (CSC e QR Code), cancelamento, inutilização e PDF (DANFE e cupom). `docs/superpowers/specs/2026-10-01-f3a-nfe-emissao-design.md`.
+- Base fiscal: `docs/referencia-fiscal/00-INDICE.md` (abrir só o arquivo do assunto) e a skill `br-fiscal-note-emission` (`assets/pdf-layouts/` tem DANFE e cupom NFC-e).
+- Padrões a seguir: `backend/app/Modules/Fiscal` (Actions, `EmissorDeNfe`, `AplicarResultadoDaEmissao`, `NotaResource`) e `frontend/features/notas`.
+- Pendências conhecidas da F3a (não bloqueiam a F3b): Regime Normal, DIFAL, IBS/CBS, IE `ISENTO` do emitente, outras naturezas de operação, contador de numeração compartilhado entre ambientes, cStat 150 (autorizado fora de prazo) não tratado como autorizada.
 
 ## Concluído
 - [x] Requisitos, decisões, base fiscal (`docs/referencia-fiscal/`) e pesquisa de CRM.
@@ -46,6 +65,8 @@
 - Fumaça: JSON com acentos via curl no Git Bash chega corrompido; usar escapes `ç` no corpo.
 - Produto com `origem: 0` ainda aparece em pendências por faltar NCM/tributação, não por causa da origem (comportamento esperado).
 
+- [x] **F3a Núcleo da NF-e concluída (23 tarefas, 2026-10-02):** módulo `Fiscal` com `Nota`/`NotaItem`/`NotaPagamento`/`NotaEvento`, resolvers (CRT, CFOP, CSOSN, indIEDest), rateio de desconto, `IniciarEmissao`, `EmitirNotaJob` (fila `database`), `AplicarResultadoDaEmissao` (inclui cStat 539), reconciliação a cada 15 min, `NfePhpEmissor` (sped-nfe 5.2.8), contador `DOCUMENTOS_MES`, `/api/app/notas`, produção só após NF-e de teste autorizada; frontend `features/notas` (lista, formulário, detalhe com polling e XML) e `ConfirmarProducao`.
+
 ## Decisões não óbvias
 - O `php.ini` global ganhou `pdo_sqlite`, `sqlite3`, `soap` e `intl`, com autorização do usuário e backup `php.ini.bak`.
 - Versões do frontend: `zod ^4`, `@vitejs/plugin-react ^5` (a v6 conflita com o peer do Babel 8) e `@types/node ^24`.
@@ -62,4 +83,4 @@
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-Tarefa 17 da F3a (frontend: tipos, schemas e API de notas). Contexto: só o plano e os padrões de `frontend/features/clientes`. O teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado).
+F3b: brainstorming do spec (NFC-e, cancelamento, inutilização, PDF). Antes, o usuário pode rodar o roteiro de homologação real da F3a. Contexto: só o que está em "Contexto necessário (F3b)". O teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado). Recomendo `/clear` antes de começar.
