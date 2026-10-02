@@ -17,6 +17,7 @@ final class NotaStatusResource extends JsonResource
         return [
             'id' => $this->id, 'status' => $this->status->value, 'numero' => $this->numero, 'serie' => $this->serie,
             'chave' => $this->chave, 'cstat' => $this->cstat, 'motivo' => $this->motivo, 'mensagem_erro' => $this->mensagem_erro,
+            'cancelamento_cstat' => $this->cancelamento_cstat, 'cancelamento_motivo' => $this->cancelamento_motivo,
         ];
     }
 }

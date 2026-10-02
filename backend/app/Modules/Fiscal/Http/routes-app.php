@@ -6,6 +6,7 @@ use App\Modules\Fiscal\Http\Controllers\CertificadoController;
 use App\Modules\Fiscal\Http\Controllers\ConfiguracaoFiscalController;
 use App\Modules\Fiscal\Http\Controllers\ConsultarCepController;
 use App\Modules\Fiscal\Http\Controllers\EmitenteController;
+use App\Modules\Fiscal\Http\Controllers\InutilizacaoController;
 use App\Modules\Fiscal\Http\Controllers\NotaController;
 use Illuminate\Support\Facades\Route;
 
@@ -27,4 +28,8 @@ Route::middleware('empresa')->group(function (): void {
     Route::get('notas/{nota}/status', [NotaController::class, 'status'])->name('app.notas.status');
     Route::post('notas/{nota}/emitir', [NotaController::class, 'emitir'])->name('app.notas.emitir');
     Route::get('notas/{nota}/xml', [NotaController::class, 'xml'])->name('app.notas.xml');
+    Route::post('notas/{nota}/cancelar', [NotaController::class, 'cancelar'])->name('app.notas.cancelar');
+    Route::get('notas/{nota}/xml-cancelamento', [NotaController::class, 'xmlCancelamento'])->name('app.notas.xml-cancelamento');
+    Route::get('inutilizacoes', [InutilizacaoController::class, 'index'])->name('app.inutilizacoes.index');
+    Route::post('inutilizacoes', [InutilizacaoController::class, 'store'])->name('app.inutilizacoes.store');
 });

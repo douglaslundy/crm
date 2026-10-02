@@ -33,6 +33,11 @@ final class NotaResource extends JsonResource
             'total_centavos' => $this->total_centavos,
             'informacoes_complementares' => $this->informacoes_complementares,
             'emitido_em' => $this->emitido_em?->toIso8601String(),
+            'cancelamento_justificativa' => $this->cancelamento_justificativa,
+            'cancelado_em' => $this->cancelado_em?->toIso8601String(),
+            'cancelamento_protocolo' => $this->cancelamento_protocolo,
+            'cancelamento_cstat' => $this->cancelamento_cstat,
+            'cancelamento_motivo' => $this->cancelamento_motivo,
             'created_at' => $this->created_at->toIso8601String(),
             'cliente' => $this->whenLoaded('cliente', fn (): array => ['id' => $this->cliente->id, 'nome' => $this->cliente->nome]),
             'itens' => $this->whenLoaded('itens', fn () => $this->itens->map(fn ($i): array => [

@@ -7,11 +7,14 @@ namespace App\Modules\Fiscal\Http\Controllers;
 use App\Modules\Fiscal\Application\Actions\AtualizarRascunhoDeNota;
 use App\Modules\Fiscal\Application\Actions\CriarRascunhoDeNota;
 use App\Modules\Fiscal\Application\Actions\ExcluirRascunhoDeNota;
+use App\Modules\Fiscal\Application\Actions\IniciarCancelamento;
 use App\Modules\Fiscal\Application\Actions\IniciarEmissao;
 use App\Modules\Fiscal\Application\PoliticaDeNotas;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
+use App\Modules\Fiscal\Domain\Exceptions\NotaSemXmlCancelamentoException;
 use App\Modules\Fiscal\Domain\Exceptions\NotaSemXmlException;
 use App\Modules\Fiscal\Domain\Models\Nota;
+use App\Modules\Fiscal\Http\Requests\CancelarNotaRequest;
 use App\Modules\Fiscal\Http\Requests\SalvarNotaRequest;
 use App\Modules\Fiscal\Http\Resources\NotaResource;
 use App\Modules\Fiscal\Http\Resources\NotaStatusResource;
@@ -92,6 +95,26 @@ final class NotaController
         return response($nota->xml_autorizado, 200, [
             'Content-Type' => 'application/xml',
             'Content-Disposition' => 'attachment; filename="NFe-'.$nota->numero.'.xml"',
+        ]);
+    }
+
+    public function cancelar(CancelarNotaRequest $request, Nota $nota, IniciarCancelamento $acao): JsonResponse
+    {
+        $nota = $acao->executar($nota->id, $request->justificativa(), $this->autor($request));
+
+        return (new NotaStatusResource($nota))->response()->setStatusCode(202);
+    }
+
+    public function xmlCancelamento(Nota $nota): Response
+    {
+        $nota->makeVisible('xml_cancelamento');
+        if ($nota->status !== StatusNota::Cancelada || $nota->xml_cancelamento === null) {
+            throw new NotaSemXmlCancelamentoException;
+        }
+
+        return response($nota->xml_cancelamento, 200, [
+            'Content-Type' => 'application/xml',
+            'Content-Disposition' => 'attachment; filename="NFe-'.$nota->numero.'-cancelamento.xml"',
         ]);
     }
 
