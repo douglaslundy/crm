@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Fiscal;
 
+use App\Modules\Customers\Domain\Models\Cliente;
+use App\Modules\Fiscal\Domain\Enums\StatusNota;
+use App\Modules\Fiscal\Domain\Models\Emitente;
+use App\Modules\Fiscal\Domain\Models\Nota;
 use App\Modules\Identity\Domain\Enums\Papel;
 use App\Modules\Identity\Domain\Models\Usuario;
 use App\Modules\Platform\Domain\Models\Plano;
 use App\Modules\Tenancy\Domain\Models\Tenant;
+use App\Modules\Tenancy\Domain\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
@@ -64,12 +69,45 @@ class ConfiguracaoFiscalTest extends TestCase
             ->assertStatus(422)->assertJsonValidationErrors('confirmo');
     }
 
+    private function nfeDeTesteAutorizada(): void
+    {
+        app(TenantContext::class)->set($this->tenant->id);
+        $emitente = Emitente::query()->firstOrCreate([], []);
+        $nota = Nota::factory()->create([
+            'emitente_id' => $emitente->id, 'cliente_id' => Cliente::factory()->create()->id,
+        ]);
+        $nota->forceFill(['status' => StatusNota::Autorizada, 'ambiente' => 'HOMOLOGACAO'])->save();
+    }
+
     public function test_confirmar_producao_muda_o_ambiente_e_audita(): void
     {
+        $this->nfeDeTesteAutorizada();
+
         $this->spa()->actingAs($this->admin)->postJson('/api/app/emitente/ambiente/producao', ['confirmo' => true])
             ->assertOk()->assertJsonPath('data.ambiente_fiscal', 'PRODUCAO');
 
         $this->assertSame(1, Activity::query()->where('event', 'ambiente_producao_confirmado')->count());
+    }
+
+    public function test_confirmar_producao_sem_emissao_de_teste_bloqueia(): void
+    {
+        $this->spa()->actingAs($this->admin)->postJson('/api/app/emitente/ambiente/producao', ['confirmo' => true])
+            ->assertStatus(422)->assertJsonPath('codigo', 'FISCAL_SEM_EMISSAO_DE_TESTE');
+        $this->spa()->actingAs($this->admin)->getJson('/api/app/emitente')->assertJsonPath('data.ambiente_fiscal', 'HOMOLOGACAO')
+            ->assertJsonPath('data.emissao_de_teste_autorizada', false);
+    }
+
+    public function test_nota_autorizada_em_producao_nao_conta_como_emissao_de_teste(): void
+    {
+        $this->nfeDeTesteAutorizada();
+        Nota::query()->update(['ambiente' => 'PRODUCAO']);
+        $this->spa()->actingAs($this->admin)->postJson('/api/app/emitente/ambiente/producao', ['confirmo' => true])->assertStatus(422);
+    }
+
+    public function test_resource_indica_emissao_de_teste_autorizada(): void
+    {
+        $this->nfeDeTesteAutorizada();
+        $this->spa()->actingAs($this->admin)->getJson('/api/app/emitente')->assertJsonPath('data.emissao_de_teste_autorizada', true);
     }
 
     public function test_vendedor_nao_altera_csc_serie_ou_ambiente(): void

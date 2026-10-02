@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace App\Modules\Fiscal\Http\Resources;
 
+use App\Modules\Fiscal\Domain\Enums\AmbienteFiscal;
+use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Models\Emitente;
+use App\Modules\Fiscal\Domain\Models\Nota;
 use App\Modules\Platform\Application\EntitlementService;
 use App\Modules\Platform\Domain\Enums\Modulo;
 use Illuminate\Http\Request;
@@ -35,6 +38,7 @@ final class EmitenteResource extends JsonResource
             'csc_homologacao_configurado' => $this->csc_id_homologacao !== null,
             'csc_producao_configurado' => $this->csc_id_producao !== null,
             'exige_csc' => app(EntitlementService::class)->temModulo($this->tenant, Modulo::FiscalNfce),
+            'emissao_de_teste_autorizada' => Nota::query()->where('status', StatusNota::Autorizada)->where('ambiente', AmbienteFiscal::Homologacao->value)->exists(),
             'series' => EmitenteSerieResource::collection($this->whenLoaded('series')),
         ];
     }
