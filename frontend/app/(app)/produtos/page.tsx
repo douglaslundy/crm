@@ -1,6 +1,8 @@
 'use client';
 
+import { ImportarCsvForm } from '@/components/form/ImportarCsvForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { QUERY_KEY_PRODUTOS } from '@/features/produtos/api';
 import { CategoriaFiscalForm } from '@/features/produtos/components/CategoriaFiscalForm';
 import { ListaDeProdutos } from '@/features/produtos/components/ListaDeProdutos';
 import { ProdutoForm } from '@/features/produtos/components/ProdutoForm';
@@ -18,6 +20,10 @@ export default function ProdutosPage() {
           <Card>
             <CardHeader><CardTitle>Novo produto</CardTitle></CardHeader>
             <CardContent><ProdutoForm /></CardContent>
+          </Card>
+          <Card>
+            <CardHeader><CardTitle>Importar CSV</CardTitle></CardHeader>
+            <CardContent><ImportarCsvForm endpoint="/api/app/produtos/importar" queryKey={QUERY_KEY_PRODUTOS} /></CardContent>
           </Card>
           <Card>
             <CardHeader><CardTitle>Categorias fiscais padrão</CardTitle></CardHeader>

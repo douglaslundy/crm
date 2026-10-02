@@ -1,7 +1,9 @@
 'use client';
 
+import { ImportarCsvForm } from '@/components/form/ImportarCsvForm';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useUsuario } from '@/features/auth/hooks/useUsuario';
+import { QUERY_KEY_CLIENTES } from '@/features/clientes/api';
 import { ClienteForm } from '@/features/clientes/components/ClienteForm';
 import { ListaDeClientes } from '@/features/clientes/components/ListaDeClientes';
 
@@ -20,10 +22,16 @@ export default function ClientesPage() {
           <CardContent><ListaDeClientes podeEscrever={podeEscrever} /></CardContent>
         </Card>
         {podeEscrever ? (
-          <Card>
-            <CardHeader><CardTitle>Novo cliente</CardTitle></CardHeader>
-            <CardContent><ClienteForm /></CardContent>
-          </Card>
+          <div className="space-y-4">
+            <Card>
+              <CardHeader><CardTitle>Novo cliente</CardTitle></CardHeader>
+              <CardContent><ClienteForm /></CardContent>
+            </Card>
+            <Card>
+              <CardHeader><CardTitle>Importar CSV</CardTitle></CardHeader>
+              <CardContent><ImportarCsvForm endpoint="/api/app/clientes/importar" queryKey={QUERY_KEY_CLIENTES} /></CardContent>
+            </Card>
+          </div>
         ) : null}
       </div>
     </div>
