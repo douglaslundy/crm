@@ -4,7 +4,9 @@
 2026-10-02
 
 ## Tarefa em andamento
-**Nenhuma em andamento. F3a (emissão de NF-e) concluída em 2026-10-02 (23 tarefas), pendente só da revisão final do branch e do push.** Próximo passo do produto: F3b (brainstorming do spec).
+**F3b1 (cancelamento e inutilização da NF-e), execução inline na master (ledger em `.superpowers/sdd/2026-10-02-f3b1-cancelamento-inutilizacao/progress.md`).** Backend concluído (Tarefas 1 a 10): 436 testes, Pint e PHPStan verdes. Faltam o frontend (11 a 14) e o fechamento (15). Plano `docs/superpowers/plans/2026-10-02-f3b1-cancelamento-inutilizacao.md`; spec `docs/superpowers/specs/2026-10-02-f3b1-cancelamento-inutilizacao-design.md`. A F3a está concluída (23 tarefas). A F3b foi dividida: F3b1 (esta), F3b2 (PDF), F3b3 (NFC-e).
+
+Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é decisão da SEFAZ (sem número fixo); cancelada continua contando na cota `DOCUMENTOS_MES`; `consultarPorChave` usa o ambiente da nota; o XML do cancelamento é o `nfeProc` com `retEvento` (`Complements::cancelRegister`); aceitos 135/136/155; inutilização síncrona com guardas locais.
 
 ## Decisões pendentes com o usuário
 - **Push dos commits da F3a:** feitos na master; o último push foi `db2bc7d` (docs do backlog).
