@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { describe, expect, it, vi } from 'vitest';
 import { emitenteApi } from '../api';
 import { CertificadoForm } from './CertificadoForm';
+import { ConfirmarProducao } from './ConfirmarProducao';
 import { CscForm } from './CscForm';
 import { DadosDaEmpresaForm } from './DadosDaEmpresaForm';
 import { SeriesForm } from './SeriesForm';
@@ -26,7 +27,7 @@ const EMITENTE_VAZIO = {
   logradouro: null, numero: null, bairro: null, cidade: null, uf: null, cep: null, codigo_ibge: null,
   regime_tributario: null, inscricao_estadual: null, inscricao_municipal: null, cnae: null,
   ambiente_fiscal: 'HOMOLOGACAO' as const, certificado_status: 'PENDENTE' as const, certificado_validade: null, certificado_titular: null,
-  csc_homologacao_configurado: false, csc_producao_configurado: false, exige_csc: false, series: [],
+  csc_homologacao_configurado: false, csc_producao_configurado: false, exige_csc: false, emissao_de_teste_autorizada: false, series: [],
 };
 
 describe('emitente', () => {
@@ -74,5 +75,32 @@ describe('emitente', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Salvar série (NF-e)' }));
 
     await waitFor(() => expect(emitenteApi.atualizarSerie).toHaveBeenCalledWith('NFE', '1', 1));
+  });
+});
+
+describe('ConfirmarProducao', () => {
+  it('bloqueia a ida para produção sem emissão de teste autorizada', () => {
+    renderizar(<ConfirmarProducao emitente={{ ...EMITENTE_VAZIO, emissao_de_teste_autorizada: false }} />);
+    expect(screen.getByText(/Emita ao menos uma NF-e de teste/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ir para produção' })).not.toBeInTheDocument();
+  });
+
+  it('exige a caixa de entendimento e então confirma', async () => {
+    vi.mocked(emitenteApi.confirmarProducao).mockResolvedValue({ data: { ...EMITENTE_VAZIO, ambiente_fiscal: 'PRODUCAO', emissao_de_teste_autorizada: true } });
+    renderizar(<ConfirmarProducao emitente={{ ...EMITENTE_VAZIO, emissao_de_teste_autorizada: true }} />);
+
+    const botao = screen.getByRole('button', { name: 'Ir para produção' });
+    expect(botao).toBeDisabled();
+    await userEvent.click(screen.getByLabelText(/valor fiscal/));
+    expect(botao).toBeEnabled();
+    await userEvent.click(botao);
+
+    await waitFor(() => expect(emitenteApi.confirmarProducao).toHaveBeenCalled());
+  });
+
+  it('em produção mostra só a faixa de ambiente', () => {
+    renderizar(<ConfirmarProducao emitente={{ ...EMITENTE_VAZIO, ambiente_fiscal: 'PRODUCAO', emissao_de_teste_autorizada: true }} />);
+    expect(screen.getByText(/PRODUÇÃO/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Ir para produção' })).not.toBeInTheDocument();
   });
 });

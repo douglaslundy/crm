@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { emitenteApi, QUERY_KEY_EMITENTE } from '@/features/emitente/api';
 import { CertificadoForm } from '@/features/emitente/components/CertificadoForm';
+import { ConfirmarProducao } from '@/features/emitente/components/ConfirmarProducao';
 import { CscForm } from '@/features/emitente/components/CscForm';
 import { DadosDaEmpresaForm } from '@/features/emitente/components/DadosDaEmpresaForm';
 import { DadosFiscaisForm } from '@/features/emitente/components/DadosFiscaisForm';
@@ -19,6 +20,7 @@ export default function ConfiguracoesFiscalPage() {
     <div className="space-y-4">
       <h1 className="text-xl font-semibold">Configurações fiscais</h1>
       <div className="grid gap-4 md:grid-cols-2">
+        <Card><CardHeader><CardTitle>Ambiente de emissão</CardTitle></CardHeader><CardContent><ConfirmarProducao emitente={emitente} /></CardContent></Card>
         <Card><CardHeader><CardTitle>Empresa</CardTitle></CardHeader><CardContent><DadosDaEmpresaForm emitente={emitente} /></CardContent></Card>
         <Card><CardHeader><CardTitle>Dados fiscais</CardTitle></CardHeader><CardContent><DadosFiscaisForm emitente={emitente} /></CardContent></Card>
         <Card><CardHeader><CardTitle>Certificado A1</CardTitle></CardHeader><CardContent><CertificadoForm emitente={emitente} /></CardContent></Card>

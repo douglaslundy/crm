@@ -27,5 +27,6 @@ export interface Emitente {
   csc_homologacao_configurado: boolean;
   csc_producao_configurado: boolean;
   exige_csc: boolean;
+  emissao_de_teste_autorizada: boolean;
   series: EmitenteSerie[];
 }
