@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Fiscal\Domain\Models;
 
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusInutilizacao;
 use App\Modules\Tenancy\Domain\Concerns\BelongsToTenant;
 use Carbon\CarbonInterface;
@@ -40,7 +41,7 @@ class Inutilizacao extends Model
     protected $table = 'inutilizacoes';
 
     protected $fillable = [
-        'emitente_id', 'serie', 'numero_inicial', 'numero_final', 'justificativa', 'ambiente',
+        'emitente_id', 'modelo', 'serie', 'numero_inicial', 'numero_final', 'justificativa', 'ambiente',
         'status', 'cstat', 'motivo', 'protocolo', 'xml_resposta', 'usuario_id',
     ];
 
@@ -49,7 +50,7 @@ class Inutilizacao extends Model
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['status' => StatusInutilizacao::class];
+        return ['status' => StatusInutilizacao::class, 'modelo' => ModeloDocumento::class];
     }
 
     protected static function newFactory(): InutilizacaoFactory

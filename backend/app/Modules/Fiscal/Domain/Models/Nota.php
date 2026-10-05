@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Domain\Models;
 
 use App\Modules\Customers\Domain\Models\Cliente;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Tenancy\Domain\Concerns\BelongsToTenant;
 use Carbon\CarbonInterface;
@@ -18,7 +19,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @property string $id
  * @property string $emitente_id
- * @property string $cliente_id
+ * @property ModeloDocumento $modelo
+ * @property ?string $cliente_id
  * @property StatusNota $status
  * @property ?string $ambiente
  * @property string $natureza_operacao
@@ -70,7 +72,7 @@ class Nota extends Model
 
     /** @var array<string, mixed> */
     protected $attributes = [
-        'status' => 'RASCUNHO', 'natureza_operacao' => 'Venda de mercadoria',
+        'modelo' => 'NFE', 'status' => 'RASCUNHO', 'natureza_operacao' => 'Venda de mercadoria',
         'subtotal_centavos' => 0, 'desconto_centavos' => 0, 'total_centavos' => 0, 'tentativas_numero' => 0,
     ];
 
@@ -79,6 +81,7 @@ class Nota extends Model
     {
         return [
             'status' => StatusNota::class,
+            'modelo' => ModeloDocumento::class,
             'consumidor_final' => 'boolean',
             'destinatario' => 'array',
             'iniciada_em' => 'datetime',
