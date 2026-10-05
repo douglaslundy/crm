@@ -8,11 +8,14 @@ RUN install-php-extensions soap intl gd zip bcmath
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
 WORKDIR /var/www/html
+# INSTALL_DEV=1 (staging) instala as dependências de desenvolvimento: o seeder de demonstração usa o Faker.
+# Em produção de verdade use INSTALL_DEV=0 e não rode o seeder.
+ARG INSTALL_DEV=0
 COPY --chown=www-data:www-data backend/composer.json backend/composer.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction
+RUN composer install $( [ "$INSTALL_DEV" = "1" ] || echo --no-dev ) --no-scripts --no-autoloader --prefer-dist --no-interaction
 
 COPY --chown=www-data:www-data backend/ ./
-RUN composer dump-autoload --optimize --no-dev \
+RUN composer dump-autoload --optimize $( [ "$INSTALL_DEV" = "1" ] || echo --no-dev ) \
     && php artisan package:discover --ansi \
     && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache
