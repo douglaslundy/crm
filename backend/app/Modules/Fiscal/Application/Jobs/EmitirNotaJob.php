@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Application\Jobs;
 
 use App\Modules\Fiscal\Application\Actions\AplicarResultadoDaEmissao;
+use App\Modules\Fiscal\Application\Actions\EntrarEmContingencia;
 use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfe;
 use App\Modules\Fiscal\Domain\Emissao\NotaParaEmissao;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEmissao;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\SituacaoNaSefaz;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
+use App\Modules\Fiscal\Domain\Exceptions\FalhaDeComunicacaoException;
 use App\Modules\Fiscal\Domain\Models\Emitente;
 use App\Modules\Fiscal\Domain\Models\Nota;
 use App\Modules\Tenancy\Domain\Models\Tenant;
@@ -64,6 +67,20 @@ final class EmitirNotaJob implements ShouldQueue
             $nota->forceFill(['chave' => $xml->chave, 'xml_enviado' => $xml->xml])->save();
 
             $aplicar->executar($nota->id, $emissor->transmitir($emitente, $dto, $xml));
+        } catch (FalhaDeComunicacaoException $e) {
+            // Só a NFC-e vai para contingência offline; a NF-e (EPEC/SVC é outra fatia) continua em ERRO.
+            $nota = Nota::query()->find($this->notaId);
+            if ($nota !== null && $nota->modelo === ModeloDocumento::Nfce) {
+                try {
+                    app(EntrarEmContingencia::class)->executar($this->notaId);
+                } catch (Throwable $e2) {
+                    report($e2);
+                    $aplicar->executar($this->notaId, ResultadoDeEmissao::erro('Falha técnica ao entrar em contingência: '.mb_substr($e2->getMessage(), 0, 300)));
+                }
+            } else {
+                report($e);
+                $aplicar->executar($this->notaId, ResultadoDeEmissao::erro('Falha de comunicação com a SEFAZ ao emitir. Tente novamente: o número foi preservado.'));
+            }
         } catch (Throwable $e) {
             report($e);
             $aplicar->executar($this->notaId, ResultadoDeEmissao::erro('Falha técnica ao emitir: '.mb_substr($e->getMessage(), 0, 300)));
