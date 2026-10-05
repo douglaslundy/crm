@@ -4,7 +4,7 @@
 2026-10-05
 
 ## Tarefa em andamento
-**Nenhuma execução em andamento. F3b1, F3b2 (DANFE), F3b3a (emissão da NFC-e) e F3b3b (cupom 80 mm e rótulos de cancelamento, 2026-10-05) feitas; a F3 só tem a F3c pela frente (contingência, retransmissão, dashboard fiscal).** A F3b está dividida em F3b1 (feita), F3b2 (em andamento) e F3b3 (NFC-e).
+**Nenhuma execução em andamento. F3b1, F3b2, F3b3a, F3b3b e F3c1 (dashboard fiscal, 6 tarefas, 2026-10-05) feitas; a F3 só tem F3c2 (contingência offline da NFC-e, retransmissão, prazo) e F3c3 (EPEC da NF-e) pela frente.** A F3b está dividida em F3b1 (feita), F3b2 (em andamento) e F3b3 (NFC-e).
 
 Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é decisão da SEFAZ (sem número fixo no código); cancelada continua contando na cota `DOCUMENTOS_MES`; `consultarPorChave` usa o ambiente da **nota** (corrige consulta no ambiente errado depois de "Ir para produção"); o XML do cancelamento é o `nfeProc` com `retEvento` (`Complements::cancelRegister`); aceitos 135/136/155; inutilização síncrona com guardas locais (faixa já alocada, sem nota autorizada/em processamento/cancelada na faixa), resultado sempre gravado.
 
@@ -34,6 +34,11 @@ Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é dec
 - **Verificado:** build, migrations de todas as fases no PostgreSQL 16 (primeira vez fora do SQLite), login com sessão pela API, CORS, URL da API embutida no front, worker e agendador de pé, API ~35 ms. **Não verificado:** as telas no navegador.
 - **Reimplantar:** `git -c core.autocrlf=false archive --format=tar.gz -o crm.tar.gz HEAD`, enviar para `~/crm-plataforma/`, extrair em `src/` (NÃO apagar `src/deploy/.env`: tem a senha do banco) e rodar `bash src/deploy/deploy.sh`. Detalhes em `deploy/README.md`.
 - **Diferenças para produção real:** HTTP sem domínio, `INSTALL_DEV=1` (Faker para o seeder), `SESSION_SECURE_COOKIE=false`. Antes de expor à internet: HTTPS, domínio, trocar a senha do usuário SSH e as contas de demonstração.
+
+## Fechamento da F3c1 (2026-10-05)
+- **Feito:** `ResumoFiscal` (Action) + `GET /api/app/dashboard/fiscal` (qualquer papel da empresa; exige `FISCAL_NFE` ou `FISCAL_NFCE`; só o ambiente atual; meses em São Paulo; 12 meses sempre preenchidos; valor = AUTORIZADA + CANCELANDO; rejeições = REJEITADA/ERRO, 5 recentes); `features/dashboard-fiscal` (tipos, helpers, hook, `PainelFiscal`, `GraficoDeFaturamento` com `recharts` e tabela `sr-only`); bloco "Fiscal" no painel, só com módulo fiscal no plano. Nova dependência: `recharts ^3.10.1` (as vulnerabilidades do `npm audit` são pré-existentes, em `braces`/`fast-glob`).
+- **Verificado:** backend 525 testes e frontend 259, Pint/PHPStan/tsc/lint/build limpos. **Não verificado:** o desenho do gráfico e do painel no navegador (temas e 360 px) e com dados reais do staging.
+- Auto-revisão (sem subagente). Decisão: rejeições e notas do mês seguem o ambiente atual do emitente.
 
 ## Fechamento da F3b3b (2026-10-05)
 - **Feito:** `GeradorDeDanfe::gerar(xml, cancelada, modelo = NFE)`; `SpedDaGeradorDeDanfe` usa `Danfce` com `setPaperWidth(80)` e `setAsCanceled()` para NFC-e; `GerarDanfe` passa o modelo e nomeia `CUPOM-<n>.pdf`; mesmo endpoint de PDF; link "Abrir cupom (PDF)"; botões e títulos de emissão e cancelamento seguem o modelo; lista de inutilizações mostra o modelo. O cancelamento da NFC-e já funcionava desde a F3b3a (módulo e modelo 65 pela chave); o prazo segue sendo decisão da SEFAZ.
@@ -86,10 +91,11 @@ Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é dec
 6. Só então "Ir para produção".
 O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artisan schedule:work` (a reconciliação roda a cada 15 min).
 
-## Contexto necessário (F3c: contingência, retransmissão, dashboard fiscal)
-- Spec mestre §7 (contingência: EPEC na NF-e, offline `tpEmis=9` na NFC-e, prazo de 7 dias com alerta) e `docs/referencia-fiscal/04-nfephp-nfce.md` (contingência offline: a chave muda, remontar o XML; `retransmitir` reenvia o mesmo XML).
-- Reuso: `EmissorDeNfe`/`NfePhpEmissor` (modelo pela nota/chave), `InterpretadorDeResposta`, `ReconciliarNotasCommand`, `SpedDaGeradorDeDanfe` (o cupom em contingência imprime duas vias com `setOffLineDoublePrint`).
-- A F3c ainda **não tem spec**: começar por brainstorming (arquitetural).
+## Contexto necessário (F3c2: contingência offline da NFC-e e retransmissão)
+- Spec mestre §7 (contingência: offline `tpEmis=9` na NFC-e, prazo de 7 dias com alerta, reconciliação horária) e `docs/referencia-fiscal/04-nfephp-nfce.md` (item 5 de Emitir: em falha de comunicação remonta com `tpEmis=9`, a chave muda; `retransmitir` reenvia o mesmo XML offline, consultando a chave antes).
+- Decisão do usuário: contingência entra **só automaticamente** em falha real de comunicação (timeout, conexão recusada, HTTP diferente de 200), nunca por rejeição/schema/configuração.
+- Reuso: `NfePhpEmissor`/`MontadorDeXml` (`tpEmis` fixo 1 hoje), `EmitirNotaJob`, `AplicarResultadoDaEmissao`, `ReconciliarNotasCommand`, `SpedDaGeradorDeDanfe` (`setOffLineDoublePrint`), `ResumoFiscal` (acrescentar contingências com prazo no painel).
+- A F3c2 ainda **não tem spec**: começar por brainstorming (arquitetural). Skill `br-fiscal-note-emission`: `references/reliability-patterns.md` e `pitfalls.md` (558 `dhCont`, fuso UTC).
 ## Concluído
 - [x] Requisitos, decisões, base fiscal (`docs/referencia-fiscal/`) e pesquisa de CRM.
 - [x] Projeto mestre (spec) aprovado.
@@ -129,4 +135,4 @@ O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artis
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-F3c: brainstorming para a spec de contingência (EPEC e offline), retransmissão e dashboard fiscal. Antes ou em paralelo, o usuário pode: fazer o push (muitos commits locais), rodar os roteiros de homologação real (F3a, F3b1, F3b2, F3b3a e abrir o cupom da NFC-e de teste) e conferir o design system no navegador (Fase 5 do plano `2026-10-04-design-system`, tarefas 21 e 22 pendentes). O teste `CadastroForm` estoura 5 s às vezes na suíte completa do frontend (passa isolado).
+F3c2: brainstorming para a spec da contingência offline da NFC-e com retransmissão e prazo (depois F3c3, EPEC da NF-e). Antes ou em paralelo, o usuário pode: fazer o push (muitos commits locais), reimplantar o staging (está desatualizado: tem o design system até a Fase 4, mas não DANFE, NFC-e, cupom nem o painel fiscal), rodar os roteiros de homologação real e conferir o design system no navegador (Fase 5, tarefas 21 e 22). O teste `CadastroForm` estoura 5 s às vezes na suíte completa do frontend (passa isolado).
