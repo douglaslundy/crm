@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Fiscal;
 
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Models\Nota;
 use App\Modules\Identity\Domain\Enums\Papel;
@@ -29,12 +30,12 @@ class DanfeApiTest extends TestCase
         $this->montarCenario();
     }
 
-    private function nota(StatusNota $status, bool $comXml = true, bool $cancelada = false): string
+    private function nota(StatusNota $status, bool $comXml = true, bool $cancelada = false, ModeloDocumento $modelo = ModeloDocumento::Nfe): string
     {
-        ['xml' => $proc, 'chave' => $chave] = $this->nfeProcDeTeste();
+        ['xml' => $proc, 'chave' => $chave] = $this->nfeProcDeTeste('2', $modelo);
         $nota = Nota::factory()->create(['emitente_id' => $this->emitente->id, 'cliente_id' => $this->cliente->id]);
         $nota->forceFill([
-            'status' => $status, 'ambiente' => 'HOMOLOGACAO', 'serie' => '1', 'numero' => $status === StatusNota::Rascunho ? null : 1, 'chave' => $status === StatusNota::Rascunho ? null : $chave,
+            'modelo' => $modelo, 'status' => $status, 'ambiente' => 'HOMOLOGACAO', 'serie' => '1', 'numero' => $status === StatusNota::Rascunho ? null : 1, 'chave' => $status === StatusNota::Rascunho ? null : $chave,
             'protocolo' => '135260000000001', 'xml_autorizado' => $comXml ? $proc : null,
             'xml_cancelamento' => $cancelada ? $this->nfeProcCancelado($proc, $chave) : null,
         ])->save();
@@ -91,5 +92,30 @@ class DanfeApiTest extends TestCase
         $intruso = Usuario::factory()->for($outro)->create(['papel' => Papel::Admin]);
 
         $this->spaComo($intruso)->getJson("/api/app/notas/{$id}/pdf")->assertNotFound();
+    }
+
+    public function test_nfce_autorizada_abre_o_cupom_inline(): void
+    {
+        $id = $this->nota(StatusNota::Autorizada, modelo: ModeloDocumento::Nfce);
+
+        $resp = $this->spaComo($this->admin)->get("/api/app/notas/{$id}/pdf")->assertOk();
+
+        $this->assertStringContainsString('application/pdf', (string) $resp->headers->get('Content-Type'));
+        $this->assertSame('inline; filename="CUPOM-1.pdf"', $resp->headers->get('Content-Disposition'));
+        $this->assertStringStartsWith('%PDF', (string) $resp->getContent());
+    }
+
+    public function test_nfce_cancelada_tambem_tem_cupom(): void
+    {
+        $id = $this->nota(StatusNota::Cancelada, cancelada: true, modelo: ModeloDocumento::Nfce);
+
+        $this->spaComo($this->admin)->get("/api/app/notas/{$id}/pdf")->assertOk();
+    }
+
+    public function test_nfce_rascunho_da_409(): void
+    {
+        $id = $this->nota(StatusNota::Rascunho, modelo: ModeloDocumento::Nfce);
+
+        $this->spaComo($this->admin)->getJson("/api/app/notas/{$id}/pdf")->assertStatus(409)->assertJsonPath('codigo', 'NOTA_SEM_PDF');
     }
 }

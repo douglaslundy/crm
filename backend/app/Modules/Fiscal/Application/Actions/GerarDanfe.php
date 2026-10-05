@@ -6,6 +6,7 @@ namespace App\Modules\Fiscal\Application\Actions;
 
 use App\Modules\Fiscal\Application\Emissao\ArquivoPdf;
 use App\Modules\Fiscal\Domain\Contracts\GeradorDeDanfe;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Exceptions\NotaSemPdfException;
 use App\Modules\Fiscal\Domain\Models\Nota;
@@ -26,10 +27,12 @@ final class GerarDanfe
         };
 
         if (! is_string($xml) || $xml === '') {
-            throw new NotaSemPdfException('O XML desta nota não está disponível para gerar o DANFE.');
+            throw new NotaSemPdfException('O XML desta nota não está disponível para gerar o DANFE ou o cupom.');
         }
 
-        return new ArquivoPdf('DANFE-'.($nota->numero ?? 'sem-numero').'.pdf', $this->gerador->gerar($xml, $cancelada));
+        $prefixo = $nota->modelo === ModeloDocumento::Nfce ? 'CUPOM' : 'DANFE';
+
+        return new ArquivoPdf($prefixo.'-'.($nota->numero ?? 'sem-numero').'.pdf', $this->gerador->gerar($xml, $cancelada, $nota->modelo));
     }
 
     /** O fallback cru da F3b1 (só o retorno do evento) não serve de base: usa o autorizado, ainda com a marca. */

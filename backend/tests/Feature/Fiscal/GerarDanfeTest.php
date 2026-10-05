@@ -6,6 +6,7 @@ namespace Tests\Feature\Fiscal;
 
 use App\Modules\Fiscal\Application\Actions\GerarDanfe;
 use App\Modules\Fiscal\Domain\Contracts\GeradorDeDanfe;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Exceptions\NotaSemPdfException;
 use App\Modules\Fiscal\Domain\Models\Nota;
@@ -22,30 +23,38 @@ class GerarDanfeTest extends TestCase
     /** @var list<array{string, bool}> */
     private array $chamadas = [];
 
+    /** @var list<ModeloDocumento> */
+    private array $modelos = [];
+
     protected function setUp(): void
     {
         parent::setUp();
         $this->montarCenario();
         $chamadas = &$this->chamadas;
-        $this->app->instance(GeradorDeDanfe::class, new class($chamadas) implements GeradorDeDanfe
+        $modelos = &$this->modelos;
+        $this->app->instance(GeradorDeDanfe::class, new class($chamadas, $modelos) implements GeradorDeDanfe
         {
-            /** @param list<array{string, bool}> $chamadas */
-            public function __construct(private array &$chamadas) {}
+            /**
+             * @param  list<array{string, bool}>  $chamadas
+             * @param  list<ModeloDocumento>  $modelos
+             */
+            public function __construct(private array &$chamadas, private array &$modelos) {}
 
-            public function gerar(string $xml, bool $cancelada): string
+            public function gerar(string $xml, bool $cancelada, ModeloDocumento $modelo = ModeloDocumento::Nfe): string
             {
                 $this->chamadas[] = [$xml, $cancelada];
+                $this->modelos[] = $modelo;
 
                 return '%PDF-fake';
             }
         });
     }
 
-    private function nota(StatusNota $status, ?string $autorizado = '<nfeProc>aut</nfeProc>', ?string $cancelamento = null, int $numero = 7): Nota
+    private function nota(StatusNota $status, ?string $autorizado = '<nfeProc>aut</nfeProc>', ?string $cancelamento = null, int $numero = 7, ModeloDocumento $modelo = ModeloDocumento::Nfe): Nota
     {
         $nota = Nota::factory()->create(['emitente_id' => $this->emitente->id, 'cliente_id' => $this->cliente->id]);
         $nota->forceFill([
-            'status' => $status, 'ambiente' => 'HOMOLOGACAO', 'serie' => '1', 'numero' => $numero,
+            'modelo' => $modelo, 'status' => $status, 'ambiente' => 'HOMOLOGACAO', 'serie' => '1', 'numero' => $numero,
             'chave' => str_pad((string) $numero, 44, '0', STR_PAD_LEFT), 'protocolo' => '135260000000001',
             'xml_autorizado' => $autorizado, 'xml_cancelamento' => $cancelamento,
         ])->save();
@@ -113,5 +122,29 @@ class GerarDanfeTest extends TestCase
         $depois = Nota::query()->whereKey($nota->id)->first();
         $this->assertEquals($antes, $depois?->updated_at);
         $this->assertFalse($nota->isDirty());
+    }
+
+    public function test_nfce_gera_o_cupom_com_o_modelo_repassado_e_nome_proprio(): void
+    {
+        $arquivo = app(GerarDanfe::class)->executar($this->nota(StatusNota::Autorizada, modelo: ModeloDocumento::Nfce));
+
+        $this->assertSame('CUPOM-7.pdf', $arquivo->nome);
+        $this->assertSame([ModeloDocumento::Nfce], $this->modelos);
+    }
+
+    public function test_nfce_cancelada_leva_a_marca_e_o_modelo(): void
+    {
+        $arquivo = app(GerarDanfe::class)->executar($this->nota(StatusNota::Cancelada, '<nfeProc>aut</nfeProc>', '<nfeProc>canc</nfeProc>', 9, ModeloDocumento::Nfce));
+
+        $this->assertSame('CUPOM-9.pdf', $arquivo->nome);
+        $this->assertSame([['<nfeProc>canc</nfeProc>', true]], $this->chamadas);
+        $this->assertSame([ModeloDocumento::Nfce], $this->modelos);
+    }
+
+    public function test_nfe_continua_com_o_modelo_nfe(): void
+    {
+        app(GerarDanfe::class)->executar($this->nota(StatusNota::Autorizada));
+
+        $this->assertSame([ModeloDocumento::Nfe], $this->modelos);
     }
 }

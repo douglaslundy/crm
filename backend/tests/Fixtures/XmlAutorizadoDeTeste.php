@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Fixtures;
 
+use App\Modules\Fiscal\Domain\Emissao\ConsumidorParaEmissao;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Infrastructure\NfePhp\MontadorDeXml;
 use NFePHP\NFe\Complements;
 
@@ -11,14 +13,16 @@ use NFePHP\NFe\Complements;
 trait XmlAutorizadoDeTeste
 {
     /** @return array{xml: string, chave: string} */
-    private function nfeProcDeTeste(string $tpAmb = '2'): array
+    private function nfeProcDeTeste(string $tpAmb = '2', ModeloDocumento $modelo = ModeloDocumento::Nfe): array
     {
-        $xml = (new MontadorDeXml)->montar($this->notaDeTeste(), '47382915')['xml'];
+        $nfce = $modelo === ModeloDocumento::Nfce;
+        $nota = $nfce ? $this->notaDeTeste(modelo: $modelo, consumidor: new ConsumidorParaEmissao('52998224725', 'Joana Consumidora')) : $this->notaDeTeste();
+        $xml = (new MontadorDeXml)->montar($nota, '47382915')['xml'];
         if ($tpAmb !== '2') {
             // Em homologação o montador troca o nome do destinatário pelo texto legal; em produção ele é o nome real.
             $xml = str_replace(['<tpAmb>2</tpAmb>', 'NF-E EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL', 'NOTA FISCAL EMITIDA EM AMBIENTE DE HOMOLOGACAO - SEM VALOR FISCAL'], ["<tpAmb>{$tpAmb}</tpAmb>", 'Maria Teste', 'Produto Um'], $xml);
         }
-        $assinado = $this->assinar($xml);
+        $assinado = $this->assinar($xml, $nfce ? 65 : 55);
         preg_match('/Id="NFe(\d{44})"/', $assinado, $m);
         $chave = $m[1];
         $resposta = '<retEnviNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><tpAmb>'.$tpAmb.'</tpAmb><verAplic>SP</verAplic><cStat>104</cStat><xMotivo>Lote processado</xMotivo><cUF>35</cUF><dhRecbto>2026-10-02T10:00:00-03:00</dhRecbto>'

@@ -8,7 +8,7 @@ use App\Modules\Shared\Domain\Exceptions\ErroDeNegocio;
 
 final class NotaSemPdfException extends ErroDeNegocio
 {
-    public function __construct(string $mensagem = 'Só notas autorizadas ou canceladas têm DANFE.')
+    public function __construct(string $mensagem = 'Só notas autorizadas ou canceladas têm DANFE ou cupom.')
     {
         parent::__construct($mensagem);
     }
