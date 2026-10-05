@@ -7,6 +7,7 @@ namespace App\Modules\Fiscal\Http\Controllers;
 use App\Modules\Fiscal\Application\Actions\AtualizarRascunhoDeNota;
 use App\Modules\Fiscal\Application\Actions\CriarRascunhoDeNota;
 use App\Modules\Fiscal\Application\Actions\ExcluirRascunhoDeNota;
+use App\Modules\Fiscal\Application\Actions\GerarDanfe;
 use App\Modules\Fiscal\Application\Actions\IniciarCancelamento;
 use App\Modules\Fiscal\Application\Actions\IniciarEmissao;
 use App\Modules\Fiscal\Application\PoliticaDeNotas;
@@ -95,6 +96,16 @@ final class NotaController
         return response($nota->xml_autorizado, 200, [
             'Content-Type' => 'application/xml',
             'Content-Disposition' => 'attachment; filename="NFe-'.$nota->numero.'.xml"',
+        ]);
+    }
+
+    public function pdf(Nota $nota, GerarDanfe $acao): Response
+    {
+        $arquivo = $acao->executar($nota);
+
+        return response($arquivo->conteudo, 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$arquivo->nome.'"',
         ]);
     }
 
