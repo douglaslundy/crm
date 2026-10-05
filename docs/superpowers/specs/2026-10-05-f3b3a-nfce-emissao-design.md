@@ -43,7 +43,7 @@ Decisões do usuário (2026-10-05):
 
 - `NotaParaEmissao` ganha `modelo` e `destinatario` opcional (`?DestinatarioParaEmissao`); `idDest` vem fixo 1 para NFC-e.
 - `MontadorDeXml::montar` lê o modelo: `mod`, `tpImp`, `indFinal`, `dest`/`enderDest` condicionais, CFOP já resolvido. Sem regra tributária no montador.
-- `NfePhpEmissor::tools` recebe o modelo e, no 65, acrescenta `CSC` e `CSCid` ao JSON do `Tools` e chama `$tools->model(65)`. A biblioteca insere o QR Code (`infNFeSupl`) ao assinar. Consulta por chave, cancelamento e inutilização usam o modelo da nota (a `chave` já o carrega nas posições 21–22; o contrato `EmissorDeNfe` recebe `string $modelo` onde hoje assume 55).
+- `NfePhpEmissor::tools` recebe o modelo e, no 65, acrescenta `CSC` e `CSCid` ao JSON do `Tools` e chama `$tools->model(65)`. A biblioteca insere o QR Code (`infNFeSupl`) ao assinar. Consulta por chave e cancelamento derivam o modelo da própria `chave` (posições 21–22: 55 ou 65), sem mudar o contrato; só `inutilizar` ganha o parâmetro `ModeloDocumento $modelo`, porque não há chave.
 - `InterpretadorDeResposta`: sem mudança de regra; o `denegado` já cai em `ERRO` pelos cStat mapeados.
 - `EmissorFake` passa a aceitar o modelo e registra qual foi pedido.
 
