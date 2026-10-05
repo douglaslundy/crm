@@ -49,6 +49,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property ?string $cancelamento_cstat
  * @property ?string $cancelamento_motivo
  * @property ?string $xml_cancelamento
+ * @property ?CarbonInterface $contingencia_desde
+ * @property ?CarbonInterface $contingencia_limite_em
+ * @property ?CarbonInterface $ultima_retransmissao_em
+ * @property ?string $contingencia_motivo
  * @property CarbonInterface $created_at
  */
 class Nota extends Model
@@ -82,6 +86,9 @@ class Nota extends Model
         return [
             'status' => StatusNota::class,
             'modelo' => ModeloDocumento::class,
+            'contingencia_desde' => 'datetime',
+            'contingencia_limite_em' => 'datetime',
+            'ultima_retransmissao_em' => 'datetime',
             'consumidor_final' => 'boolean',
             'destinatario' => 'array',
             'iniciada_em' => 'datetime',
