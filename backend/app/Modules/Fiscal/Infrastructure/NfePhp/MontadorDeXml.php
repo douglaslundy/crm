@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Fiscal\Infrastructure\NfePhp;
 
+use App\Modules\Fiscal\Domain\Emissao\ContingenciaDeEmissao;
 use App\Modules\Fiscal\Domain\Emissao\NotaParaEmissao;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Quantidade;
@@ -16,7 +17,7 @@ use stdClass;
 final class MontadorDeXml
 {
     /** @return array{xml: string, chave: string} */
-    public function montar(NotaParaEmissao $nota, ?string $cNF = null): array
+    public function montar(NotaParaEmissao $nota, ?string $cNF = null, ?ContingenciaDeEmissao $contingencia = null): array
     {
         $e = $nota->emitente;
         if (trim($e->cnpj) === '') {
@@ -26,6 +27,10 @@ final class MontadorDeXml
         $tpAmb = $nota->ambiente === 'PRODUCAO' ? 1 : 2;
         $nfce = $nota->modelo === ModeloDocumento::Nfce;
         $destinatario = $nota->destinatario;
+        if ($contingencia !== null && ! $nfce) {
+            // O EPEC/SVC da NF-e é outra fatia; só a NFC-e remonta em contingência offline.
+            throw new RuntimeException('Contingência offline só se aplica à NFC-e.');
+        }
         if (! $nfce && $destinatario === null) {
             throw new RuntimeException('NF-e sem destinatário: o Preparador deveria ter bloqueado.');
         }
@@ -35,10 +40,14 @@ final class MontadorDeXml
 
         $ide = ['cUF' => $cUF, 'natOp' => $this->texto($nota->naturezaOperacao, 60), 'mod' => $nfce ? 65 : 55, 'serie' => (int) $nota->serie, 'nNF' => $nota->numero,
             'dhEmi' => now()->setTimezone('America/Sao_Paulo')->format('c'), 'tpNF' => 1, 'idDest' => $nota->idDest, 'cMunFG' => $e->codigoIbge,
-            'tpImp' => $nfce ? 4 : 1, 'tpEmis' => 1, 'tpAmb' => $tpAmb, 'finNFe' => 1, 'indFinal' => $nfce ? 1 : $destinatario->indFinal, 'indPres' => 1,
+            'tpImp' => $nfce ? 4 : 1, 'tpEmis' => $contingencia === null ? 1 : 9, 'tpAmb' => $tpAmb, 'finNFe' => 1, 'indFinal' => $nfce ? 1 : $destinatario->indFinal, 'indPres' => 1,
             'procEmi' => 0, 'verProc' => config('fiscal.ver_proc')];
         if ($cNF !== null) {
             $ide['cNF'] = $cNF;
+        }
+        if ($contingencia !== null) {
+            $ide['dhCont'] = $contingencia->em->setTimezone('America/Sao_Paulo')->format('c');
+            $ide['xJust'] = $this->texto($contingencia->justificativa, 255);
         }
         $make->tagide($this->std($ide));
 

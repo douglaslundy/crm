@@ -13,6 +13,7 @@ use App\Modules\Fiscal\Domain\Emissao\ResultadoDeInutilizacao;
 use App\Modules\Fiscal\Domain\Emissao\XmlAssinado;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Models\Emitente;
+use Carbon\CarbonImmutable;
 use Throwable;
 
 final class EmissorFake implements EmissorDeNfe
@@ -29,6 +30,11 @@ final class EmissorFake implements EmissorDeNfe
     public ?Throwable $falharEmPreparar = null;
 
     public ?Throwable $falharEmTransmitir = null;
+
+    public ?Throwable $falharEmConsultar = null;
+
+    /** @var list<string> XMLs gerados em contingência, em ordem. */
+    public array $contingencias = [];
 
     public ?Throwable $falharEmCancelar = null;
 
@@ -76,6 +82,14 @@ final class EmissorFake implements EmissorDeNfe
         return new XmlAssinado('35'.str_pad((string) $nota->numero, 42, '0', STR_PAD_LEFT), '<NFe>fake</NFe>');
     }
 
+    public function prepararContingencia(Emitente $emitente, NotaParaEmissao $nota, string $justificativa, CarbonImmutable $em): XmlAssinado
+    {
+        $this->chamadas[] = 'prepararContingencia';
+        $this->contingencias[] = $justificativa;
+
+        return new XmlAssinado('35'.str_pad((string) $nota->numero, 33, '0', STR_PAD_LEFT).'9'.str_repeat('7', 9), '<NFe>contingencia</NFe>');
+    }
+
     public function transmitir(Emitente $emitente, NotaParaEmissao $nota, XmlAssinado $xml): ResultadoDeEmissao
     {
         $this->chamadas[] = 'transmitir';
@@ -89,6 +103,9 @@ final class EmissorFake implements EmissorDeNfe
     public function consultarPorChave(Emitente $emitente, string $chave, ?string $xmlEnviado, string $ambiente): ResultadoDeConsulta
     {
         $this->chamadas[] = 'consultar';
+        if ($this->falharEmConsultar !== null) {
+            throw $this->falharEmConsultar;
+        }
         $this->ambientes[] = $ambiente;
 
         return array_shift($this->consultas) ?? ResultadoDeConsulta::naoEncontrada();

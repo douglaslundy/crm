@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Infrastructure\NfePhp;
 
 use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfe;
+use App\Modules\Fiscal\Domain\Emissao\ContingenciaDeEmissao;
 use App\Modules\Fiscal\Domain\Emissao\NotaParaEmissao;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeCancelamento;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsulta;
@@ -13,14 +14,17 @@ use App\Modules\Fiscal\Domain\Emissao\ResultadoDeInutilizacao;
 use App\Modules\Fiscal\Domain\Emissao\XmlAssinado;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Exceptions\EmissaoBloqueadaException;
+use App\Modules\Fiscal\Domain\Exceptions\FalhaDeComunicacaoException;
 use App\Modules\Fiscal\Domain\Models\Emitente;
 use App\Modules\Tenancy\Domain\Models\Tenant;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Crypt;
+use NFePHP\Common\Exception\SoapException;
 use NFePHP\NFe\Tools;
 
 /**
  * Fala direto com a SEFAZ da UF do emitente, com o certificado A1 do próprio CNPJ.
- * Falha de comunicação (SoapException, timeout) propaga como exceção: o job a transforma em ERRO.
+ * Falha de comunicação (SoapException) vira FalhaDeComunicacaoException: NFC-e entra em contingência, NF-e vira ERRO no job.
  * O modelo (55 ou 65) vem da nota; consulta e cancelamento o leem da própria chave.
  */
 final class NfePhpEmissor implements EmissorDeNfe
@@ -39,10 +43,23 @@ final class NfePhpEmissor implements EmissorDeNfe
         return new XmlAssinado($chave, $assinado);
     }
 
+    public function prepararContingencia(Emitente $emitente, NotaParaEmissao $nota, string $justificativa, CarbonImmutable $em): XmlAssinado
+    {
+        // A biblioteca recusa o modelo 65 em contingência: o XML é remontado aqui (tpEmis 9, dhCont, xJust, chave nova).
+        ['xml' => $xml, 'chave' => $chave] = $this->montador->montar($nota, null, new ContingenciaDeEmissao($justificativa, $em));
+        $assinado = $this->tools($emitente, $nota->emitente->razaoSocial, $nota->emitente->cnpj, $nota->ambiente, 65)->signNFe($xml);
+
+        return new XmlAssinado($chave, $assinado);
+    }
+
     public function transmitir(Emitente $emitente, NotaParaEmissao $nota, XmlAssinado $xml): ResultadoDeEmissao
     {
         $tools = $this->tools($emitente, $nota->emitente->razaoSocial, $nota->emitente->cnpj, $nota->ambiente, $this->numeroDoModelo($nota->modelo));
-        $resposta = $tools->sefazEnviaLote([$xml->xml], (string) $nota->numero, 1);
+        try {
+            $resposta = $tools->sefazEnviaLote([$xml->xml], (string) $nota->numero, 1);
+        } catch (SoapException $e) { // @phpstan-ignore catch.neverThrown (a biblioteca lança SoapException sem declarar @throws)
+            throw new FalhaDeComunicacaoException($e);
+        }
 
         return $this->interpretador->emissao($xml->xml, $resposta);
     }
@@ -51,7 +68,13 @@ final class NfePhpEmissor implements EmissorDeNfe
     {
         $tools = $this->toolsDoTenant($emitente, $ambiente, ModeloDaChave::de($chave));
 
-        return $this->interpretador->consulta($tools->sefazConsultaChave($chave, $this->tpAmb($ambiente)), $xmlEnviado);
+        try {
+            $resposta = $tools->sefazConsultaChave($chave, $this->tpAmb($ambiente));
+        } catch (SoapException $e) {
+            throw new FalhaDeComunicacaoException($e);
+        }
+
+        return $this->interpretador->consulta($resposta, $xmlEnviado);
     }
 
     public function cancelar(Emitente $emitente, string $chave, string $protocolo, string $justificativa, string $ambiente, string $xmlAutorizado): ResultadoDeCancelamento
