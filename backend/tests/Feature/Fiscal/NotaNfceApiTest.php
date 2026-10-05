@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Fiscal;
 
+use App\Modules\Fiscal\Domain\Models\Nota;
 use App\Modules\Identity\Domain\Enums\Papel;
 use App\Modules\Identity\Domain\Models\Usuario;
 use App\Modules\Platform\Domain\Enums\Modulo;
@@ -102,5 +103,22 @@ class NotaNfceApiTest extends TestCase
 
         $this->spaComo($this->admin)->getJson('/api/app/notas?modelo=NFCE')->assertOk()
             ->assertJsonCount(1, 'data')->assertJsonPath('data.0.id', $nfce);
+    }
+
+    public function test_nota_em_contingencia_expoe_limite_e_motivo(): void
+    {
+        $this->montarCenario(Modulo::FiscalNfe, Modulo::FiscalNfce);
+        $nota = Nota::factory()->create(['emitente_id' => $this->emitente->id, 'cliente_id' => null]);
+        $nota->forceFill([
+            'modelo' => 'NFCE', 'status' => 'CONTINGENCIA', 'ambiente' => 'HOMOLOGACAO', 'serie' => '1', 'numero' => 1, 'chave' => str_repeat('9', 44),
+            'contingencia_desde' => '2026-10-05 10:00:00', 'contingencia_limite_em' => '2026-10-06 10:00:00', 'contingencia_motivo' => 'Falha de comunicação',
+        ])->save();
+
+        $this->spaComo($this->admin)->getJson("/api/app/notas/{$nota->id}")->assertOk()
+            ->assertJsonPath('data.status', 'CONTINGENCIA')
+            ->assertJsonPath('data.contingencia_limite_em', '2026-10-06T10:00:00+00:00')
+            ->assertJsonPath('data.contingencia_motivo', 'Falha de comunicação');
+
+        $this->spaComo($this->admin)->getJson('/api/app/notas?status=CONTINGENCIA')->assertOk()->assertJsonCount(1, 'data');
     }
 }
