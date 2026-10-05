@@ -6,6 +6,7 @@ namespace App\Modules\Fiscal\Application\Actions;
 
 use App\Modules\Fiscal\Application\Jobs\CancelarNotaJob;
 use App\Modules\Fiscal\Application\PoliticaDeNotas;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Exceptions\CancelamentoNaoPermitidoException;
 use App\Modules\Fiscal\Domain\Justificativa;
@@ -40,10 +41,11 @@ final class IniciarCancelamento
             if (! $tenant->situacao->permiteEscrita()) {
                 throw AssinaturaSemEscritaException::para($tenant->situacao);
             }
-            $this->planos->garantirModulo($tenant, Modulo::FiscalNfe);
+            $nfce = $nota->modelo === ModeloDocumento::Nfce;
+            $this->planos->garantirModulo($tenant, $nfce ? Modulo::FiscalNfce : Modulo::FiscalNfe);
 
             if ($nota->status !== StatusNota::Autorizada) {
-                throw new CancelamentoNaoPermitidoException('Só é possível cancelar uma NF-e autorizada. Status atual: '.$nota->status->value.'.');
+                throw new CancelamentoNaoPermitidoException('Só é possível cancelar uma '.($nfce ? 'NFC-e' : 'NF-e').' autorizada. Status atual: '.$nota->status->value.'.');
             }
             $nota->makeVisible('xml_autorizado');
             if ($nota->chave === null || $nota->protocolo === null || $nota->xml_autorizado === null) {

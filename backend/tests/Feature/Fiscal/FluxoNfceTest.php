@@ -109,4 +109,20 @@ class FluxoNfceTest extends TestCase
 
         $this->assertSame(1, app(EntitlementService::class)->uso($this->tenant, Recurso::DocumentosMes));
     }
+
+    public function test_tenant_so_com_nfce_cancela_a_propria_nfce(): void
+    {
+        $this->tenant->plano->modulos()->where('modulo', Modulo::FiscalNfe)->delete();
+        $this->tenant->plano->unsetRelation('modulos');
+        $nota = Nota::factory()->create(['emitente_id' => $this->emitente->id, 'cliente_id' => null]);
+        $nota->forceFill([
+            'modelo' => ModeloDocumento::Nfce, 'status' => StatusNota::Autorizada, 'ambiente' => 'HOMOLOGACAO', 'serie' => '1', 'numero' => 1,
+            'chave' => str_repeat('6', 44), 'protocolo' => '135260000000001', 'xml_autorizado' => '<nfeProc>x</nfeProc>', 'emitido_em' => now(),
+        ])->save();
+
+        $this->spaComo($this->admin)->postJson("/api/app/notas/{$nota->id}/cancelar", ['justificativa' => 'Cancelamento por erro de digitação do valor total'])
+            ->assertStatus(202);
+
+        $this->assertSame(StatusNota::Cancelada, $nota->refresh()->status);
+    }
 }
