@@ -14,6 +14,7 @@ import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { QUERY_KEY_USUARIOS, usuariosApi } from '../api';
 import { conviteSchema, type ConviteDados } from '../schemas';
 import { papeisAtribuiveis, ROTULO_PAPEL } from '../types';
+import { Banner } from '@/components/ui/banner';
 
 const VAZIO: ConviteDados = { nome: '', email: '', papel: 'VENDEDOR' };
 
@@ -62,7 +63,7 @@ export function ConviteForm({ autor }: { autor: Papel }) {
           </SelectNativo>
         )}
       </Campo>
-      {erros.root ? <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{erros.root.message}</p> : null}
+      {erros.root ? <Banner tom="perigo">{erros.root.message}</Banner> : null}
       <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
         {form.formState.isSubmitting ? 'Enviando...' : 'Enviar convite'}
       </Button>

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { buttonVariants } from '@/components/ui/button';
 import { formatarCentavos } from '@/lib/formatos';
 import { adminApi } from '../api';
+import { Banner } from '@/components/ui/banner';
 
 export function ListaDePlanosAdmin() {
   const { data, isPending, isError } = useQuery({
@@ -19,7 +20,7 @@ export function ListaDePlanosAdmin() {
         <Link href="/admin/planos/novo" className={buttonVariants()}>Novo plano</Link>
       </div>
       {isPending ? <p className="text-muted-foreground">Carregando...</p> : null}
-      {isError ? <p role="alert">Não foi possível carregar os planos.</p> : null}
+      {isError ? <Banner tom="perigo">Não foi possível carregar os planos.</Banner> : null}
       {data ? (
         <ul className="divide-y rounded-lg border">
           {data.map((plano) => (

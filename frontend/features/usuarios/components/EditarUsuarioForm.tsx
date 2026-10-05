@@ -6,6 +6,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Campo } from '@/components/form/Campo';
 import { Button } from '@/components/ui/button';
+import { Banner } from '@/components/ui/banner';
 import { SelectNativo } from '@/components/ui/campos-nativos';
 import { Input } from '@/components/ui/input';
 import type { Papel } from '@/features/auth/types';
@@ -54,7 +55,7 @@ export function EditarUsuarioForm({ usuario, autor, onFechar }: Props) {
       </Campo>
       <Button type="submit" disabled={form.formState.isSubmitting}>Salvar</Button>
       <Button type="button" variant="ghost" onClick={onFechar}>Cancelar</Button>
-      {erros.root ? <p role="alert" className="text-sm text-danger sm:col-span-4">{erros.root.message}</p> : null}
+      {erros.root ? <div className="sm:col-span-4"><Banner tom="perigo">{erros.root.message}</Banner></div> : null}
     </form>
   );
 }

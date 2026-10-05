@@ -5,13 +5,14 @@ import { useUsuario } from '@/features/auth/hooks/useUsuario';
 import { ConviteForm } from '@/features/usuarios/components/ConviteForm';
 import { ListaDeUsuarios } from '@/features/usuarios/components/ListaDeUsuarios';
 import { podeGerenciar } from '@/features/usuarios/types';
+import { Banner } from '@/components/ui/banner';
 
 export default function UsuariosPage() {
   const { data: usuario } = useUsuario();
 
   if (!usuario) return null;
   if (!podeGerenciar(usuario.papel)) {
-    return <p role="alert">Você não tem permissão para gerenciar usuários.</p>;
+    return <Banner tom="perigo">Você não tem permissão para gerenciar usuários.</Banner>;
   }
 
   return (

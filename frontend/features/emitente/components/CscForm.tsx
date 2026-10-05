@@ -12,6 +12,7 @@ import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { emitenteApi, QUERY_KEY_EMITENTE } from '../api';
 import { cscSchema, type CscFormDados } from '../schemas';
 import type { Emitente } from '../types';
+import { Banner } from '@/components/ui/banner';
 
 export function CscForm({ emitente, onSalvar }: { emitente: Emitente; onSalvar?: () => void }) {
   const queryClient = useQueryClient();
@@ -54,7 +55,7 @@ export function CscForm({ emitente, onSalvar }: { emitente: Emitente; onSalvar?:
         {emitente.csc_homologacao_configurado ? 'Homologação já configurada. ' : ''}
         {emitente.csc_producao_configurado ? 'Produção já configurada.' : ''}
       </p>
-      {erros.root ? <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{erros.root.message}</p> : null}
+      {erros.root ? <Banner tom="perigo">{erros.root.message}</Banner> : null}
       <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>Salvar CSC</Button>
     </form>
   );

@@ -11,6 +11,7 @@ import { ApiError } from '@/lib/api';
 import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { campoDoFormulario, formParaEntrada, planoFormSchema, planoParaForm, type PlanoFormDados } from '../planos';
 import type { PlanoEntrada } from '../types';
+import { Banner } from '@/components/ui/banner';
 
 interface Props {
   inicial?: Plano;
@@ -125,7 +126,7 @@ export function PlanoForm({ inicial, rotuloBotao, onSalvar }: Props) {
         <p className="text-xs text-muted-foreground">0 bloqueia o recurso. Recursos de módulos ainda não lançados já podem ser configurados.</p>
       </fieldset>
 
-      {erros.root ? <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{erros.root.message}</p> : null}
+      {erros.root ? <Banner tom="perigo">{erros.root.message}</Banner> : null}
       <Button type="submit" disabled={form.formState.isSubmitting}>
         {form.formState.isSubmitting ? 'Salvando...' : rotuloBotao}
       </Button>

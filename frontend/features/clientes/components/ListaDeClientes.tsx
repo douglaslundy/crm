@@ -8,6 +8,7 @@ import { ApiError } from '@/lib/api';
 import { clientesApi, QUERY_KEY_CLIENTES } from '../api';
 import { ClienteForm } from './ClienteForm';
 import { ContatoForm } from './ContatoForm';
+import { Banner } from '@/components/ui/banner';
 
 export function ListaDeClientes({ podeEscrever }: { podeEscrever: boolean }) {
   const queryClient = useQueryClient();
@@ -23,7 +24,7 @@ export function ListaDeClientes({ podeEscrever }: { podeEscrever: boolean }) {
   });
 
   if (isPending) return <p className="text-muted-foreground">Carregando...</p>;
-  if (isError) return <p role="alert">Não foi possível carregar os clientes.</p>;
+  if (isError) return <Banner tom="perigo">Não foi possível carregar os clientes.</Banner>;
 
   return (
     <ul className="divide-y">

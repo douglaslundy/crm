@@ -9,6 +9,7 @@ import { ApiError } from '@/lib/api';
 import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { emitenteApi, QUERY_KEY_EMITENTE } from '../api';
 import type { Emitente } from '../types';
+import { Banner } from '@/components/ui/banner';
 
 /** Faixa de ambiente inconfundível + a ida para produção, que só abre depois de uma NF-e de teste autorizada. */
 export function ConfirmarProducao({ emitente }: { emitente: Emitente }) {
@@ -53,7 +54,7 @@ export function ConfirmarProducao({ emitente }: { emitente: Emitente }) {
             <input id="entendo_producao" type="checkbox" className="mt-1" checked={entendo} onChange={(e) => setEntendo(e.target.checked)} />
             <label htmlFor="entendo_producao" className="text-sm">Entendo que as notas emitidas em produção têm valor fiscal</label>
           </div>
-          {erro ? <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{erro}</p> : null}
+          {erro ? <Banner tom="perigo">{erro}</Banner> : null}
           <Button type="submit" disabled={!entendo || confirmar.isPending}>Ir para produção</Button>
         </form>
       ) : null}

@@ -9,6 +9,7 @@ import { formatarCentavos } from '@/lib/formatos';
 import { notasApi, QUERY_KEY_NOTAS } from '../api';
 import { ROTULO_STATUS, type StatusNota } from '../types';
 import { StatusDaNota } from './StatusDaNota';
+import { Banner } from '@/components/ui/banner';
 
 export function ListaDeNotas() {
   const [status, setStatus] = useState<StatusNota | ''>('');
@@ -30,7 +31,7 @@ export function ListaDeNotas() {
       </div>
 
       {isPending ? <p className="text-muted-foreground">Carregando...</p> : null}
-      {isError ? <p role="alert">Não foi possível carregar as notas.</p> : null}
+      {isError ? <Banner tom="perigo">Não foi possível carregar as notas.</Banner> : null}
       {data && data.length === 0 ? <p className="text-muted-foreground">Nenhuma nota encontrada.</p> : null}
       {data && data.length > 0 ? (
         <ul className="divide-y">

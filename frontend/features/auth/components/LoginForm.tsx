@@ -13,6 +13,7 @@ import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { authApi } from '../api';
 import { QUERY_KEY_USUARIO } from '../hooks/useUsuario';
 import { loginSchema, type LoginDados } from '../schemas';
+import { Banner } from '@/components/ui/banner';
 
 export function LoginForm() {
   const router = useRouter();
@@ -51,7 +52,7 @@ export function LoginForm() {
         {(a11y) => <Input {...a11y} type="password" autoComplete="current-password" {...form.register('password')} />}
       </Campo>
       {erros.root ? (
-        <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{erros.root.message}</p>
+        <Banner tom="perigo">{erros.root.message}</Banner>
       ) : null}
       <Button type="submit" className="w-full" disabled={enviando}>
         {enviando ? 'Entrando...' : 'Entrar'}

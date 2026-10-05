@@ -9,6 +9,7 @@ import { ApiError } from '@/lib/api';
 import { QUERY_KEY_USUARIOS, usuariosApi } from '../api';
 import { ROTULO_PAPEL, type UsuarioDaEmpresa } from '../types';
 import { EditarUsuarioForm } from './EditarUsuarioForm';
+import { Banner } from '@/components/ui/banner';
 
 export function ListaDeUsuarios({ autor }: { autor: Usuario }) {
   const queryClient = useQueryClient();
@@ -28,7 +29,7 @@ export function ListaDeUsuarios({ autor }: { autor: Usuario }) {
   });
 
   if (isPending) return <p className="text-muted-foreground">Carregando...</p>;
-  if (isError) return <p role="alert">Não foi possível carregar os usuários.</p>;
+  if (isError) return <Banner tom="perigo">Não foi possível carregar os usuários.</Banner>;
 
   return (
     <ul className="divide-y">

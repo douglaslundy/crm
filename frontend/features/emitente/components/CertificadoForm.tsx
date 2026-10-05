@@ -13,6 +13,7 @@ import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { emitenteApi, QUERY_KEY_EMITENTE } from '../api';
 import { certificadoSchema, type CertificadoFormDados } from '../schemas';
 import type { Emitente } from '../types';
+import { Banner } from '@/components/ui/banner';
 
 const ROTULO_STATUS: Record<Emitente['certificado_status'], string> = {
   PENDENTE: 'Nenhum certificado enviado ainda.',
@@ -51,7 +52,7 @@ export function CertificadoForm({ emitente, onSalvar }: { emitente: Emitente; on
       <Campo id="certificado_senha" label="Senha do certificado" erro={erros.senha?.message}>
         {(a11y) => <Input {...a11y} type="password" {...form.register('senha')} />}
       </Campo>
-      {erros.root ? <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{erros.root.message}</p> : null}
+      {erros.root ? <Banner tom="perigo">{erros.root.message}</Banner> : null}
       <Button type="submit" className="w-full" disabled={form.formState.isSubmitting || !arquivo}>Enviar certificado</Button>
     </form>
   );

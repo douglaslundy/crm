@@ -17,6 +17,7 @@ import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { notasApi, QUERY_KEY_NOTAS } from '../api';
 import { notaSchema, paraPayload, type NotaFormDados } from '../schemas';
 import { ROTULO_PAGAMENTO, type FormaPagamento, type Nota } from '../types';
+import { Banner } from '@/components/ui/banner';
 
 const ITEM_VAZIO = { produto_id: '', quantidade: '1', valor_unitario: '' };
 const PAGAMENTO_VAZIO = { tpag: '01' as FormaPagamento, xpag: '', valor: '0,00' };
@@ -112,7 +113,7 @@ export function NotaForm({ nota, onSalvo }: { nota?: Nota; onSalvo?: (nota: Nota
   const somaPagamentos = (pagamentosValores ?? []).reduce((soma, p) => soma + (DINHEIRO.test(p.valor) ? reaisParaCentavos(p.valor) : 0), 0);
 
   if (clientes.isError || produtos.isError) {
-    return <p role="alert" className="text-sm text-danger">Não foi possível carregar clientes e produtos. Recarregue a página.</p>;
+    return <Banner tom="perigo">Não foi possível carregar clientes e produtos. Recarregue a página.</Banner>;
   }
   if (clientes.isPending || produtos.isPending) {
     return <p className="text-muted-foreground">Carregando...</p>;
@@ -220,7 +221,7 @@ export function NotaForm({ nota, onSalvo }: { nota?: Nota; onSalvo?: (nota: Nota
         ) : null}
       </div>
 
-      {erros.root ? <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{erros.root.message}</p> : null}
+      {erros.root ? <Banner tom="perigo">{erros.root.message}</Banner> : null}
       <Button type="submit" disabled={form.formState.isSubmitting}>Salvar rascunho</Button>
     </form>
   );

@@ -13,6 +13,7 @@ import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { paraPayload, produtosApi, QUERY_KEY_PRODUTOS } from '../api';
 import { produtoSchema, type ProdutoFormDados } from '../schemas';
 import type { Produto } from '../types';
+import { Banner } from '@/components/ui/banner';
 
 const VAZIO: ProdutoFormDados = { sku: '', nome: '', unidade: '', preco_centavos: 0, gtin: '', ncm: '', cest: '', origem: '', tributacao_icms: '' };
 
@@ -79,7 +80,7 @@ export function ProdutoForm({ produto, onSalvar }: { produto?: Produto; onSalvar
           </SelectNativo>
         )}
       </Campo>
-      {erros.root ? <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{erros.root.message}</p> : null}
+      {erros.root ? <Banner tom="perigo">{erros.root.message}</Banner> : null}
       <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>Salvar produto</Button>
     </form>
   );

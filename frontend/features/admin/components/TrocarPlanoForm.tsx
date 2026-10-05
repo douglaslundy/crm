@@ -12,6 +12,7 @@ import { ApiError } from '@/lib/api';
 import { formatarCentavos } from '@/lib/formatos';
 import { adminApi } from '../api';
 import type { Empresa, Excesso } from '../types';
+import { Banner } from '@/components/ui/banner';
 
 export function TrocarPlanoForm({ empresa }: { empresa: Empresa }) {
   const queryClient = useQueryClient();
@@ -56,14 +57,14 @@ export function TrocarPlanoForm({ empresa }: { empresa: Empresa }) {
           }
         </Campo>
         {falha ? (
-          <div role="alert" className="space-y-1 rounded-md bg-danger/10 p-2 text-sm text-danger">
+          <Banner tom="perigo">
             <p>{falha.mensagem}</p>
             {falha.excessos.length > 0 ? (
               <ul className="list-inside list-disc">
                 {falha.excessos.map((x) => <li key={x.recurso}>{ROTULO_RECURSO[x.recurso]}: uso {x.uso}, limite {x.limite}</li>)}
               </ul>
             ) : null}
-          </div>
+          </Banner>
         ) : null}
         <Button onClick={() => trocar.mutate()} disabled={!planoId || trocar.isPending}>Trocar plano</Button>
       </CardContent>

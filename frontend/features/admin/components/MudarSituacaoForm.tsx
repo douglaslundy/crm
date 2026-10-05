@@ -15,6 +15,7 @@ import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { adminApi } from '../api';
 import { destinosPermitidos } from '../situacoes';
 import { SITUACOES, type Empresa } from '../types';
+import { Banner } from '@/components/ui/banner';
 
 const schema = z.object({
   situacao: z.enum(SITUACOES, { error: 'Escolha a nova situação.' }),
@@ -62,7 +63,7 @@ export function MudarSituacaoForm({ empresa }: { empresa: Empresa }) {
             <Campo id="motivo" label="Motivo" erro={erros.motivo?.message}>
               {(a11y) => <TextareaNativo {...a11y} rows={3} {...form.register('motivo')} />}
             </Campo>
-            {erros.root ? <p role="alert" className="text-sm text-danger">{erros.root.message}</p> : null}
+            {erros.root ? <Banner tom="perigo">{erros.root.message}</Banner> : null}
             <Button type="submit" disabled={form.formState.isSubmitting}>Aplicar</Button>
           </form>
         )}

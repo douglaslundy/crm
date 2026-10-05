@@ -3,12 +3,13 @@
 import { useQuery } from '@tanstack/react-query';
 import { inutilizacoesApi, QUERY_KEY_INUTILIZACOES } from '../api';
 import { ROTULO_STATUS_INUTILIZACAO } from '../types';
+import { Banner } from '@/components/ui/banner';
 
 export function ListaDeInutilizacoes() {
   const { data, isPending, isError } = useQuery({ queryKey: QUERY_KEY_INUTILIZACOES, queryFn: async () => (await inutilizacoesApi.listar()).data });
 
   if (isPending) return <p className="text-muted-foreground">Carregando...</p>;
-  if (isError) return <p role="alert">Não foi possível carregar as inutilizações.</p>;
+  if (isError) return <Banner tom="perigo">Não foi possível carregar as inutilizações.</Banner>;
   if (data.length === 0) return <p className="text-muted-foreground">Nenhuma inutilização registrada.</p>;
 
   return (

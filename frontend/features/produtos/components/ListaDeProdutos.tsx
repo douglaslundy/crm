@@ -5,13 +5,14 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { produtosApi, QUERY_KEY_PRODUTOS } from '../api';
 import { ProdutoForm } from './ProdutoForm';
+import { Banner } from '@/components/ui/banner';
 
 export function ListaDeProdutos() {
   const [editando, setEditando] = useState<string | null>(null);
   const { data, isPending, isError } = useQuery({ queryKey: QUERY_KEY_PRODUTOS, queryFn: async () => (await produtosApi.listar()).data });
 
   if (isPending) return <p className="text-muted-foreground">Carregando...</p>;
-  if (isError) return <p role="alert">Não foi possível carregar os produtos.</p>;
+  if (isError) return <Banner tom="perigo">Não foi possível carregar os produtos.</Banner>;
 
   return (
     <ul className="divide-y">

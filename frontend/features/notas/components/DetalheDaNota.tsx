@@ -19,6 +19,7 @@ import { cancelamentoSchema, type CancelamentoDados } from '../schemas';
 import { ROTULO_PAGAMENTO, ROTULO_STATUS } from '../types';
 import { NotaForm } from './NotaForm';
 import { StatusDaNota } from './StatusDaNota';
+import { Banner } from '@/components/ui/banner';
 
 const PAPEIS_QUE_EMITEM = ['PROPRIETARIO', 'ADMIN', 'FISCAL'];
 const PAPEIS_QUE_RASCUNHAM = ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR'];
@@ -95,7 +96,7 @@ export function DetalheDaNota({ id }: { id: string }) {
   });
 
   if (isPending) return <p className="text-muted-foreground">Carregando...</p>;
-  if (isError || !nota) return <p role="alert">Não foi possível carregar a nota.</p>;
+  if (isError || !nota) return <Banner tom="perigo">Não foi possível carregar a nota.</Banner>;
 
   const podeEmitir = Boolean(usuario && PAPEIS_QUE_EMITEM.includes(usuario.papel));
   const podeRascunhar = Boolean(usuario && PAPEIS_QUE_RASCUNHAM.includes(usuario.papel));
@@ -113,12 +114,12 @@ export function DetalheDaNota({ id }: { id: string }) {
       </div>
 
       {nota.status === 'REJEITADA' ? (
-        <p role="alert" className="rounded-md bg-danger/10 p-3 text-sm text-danger">cStat {nota.cstat}: {nota.motivo}</p>
+        <Banner tom="perigo">cStat {nota.cstat}: {nota.motivo}</Banner>
       ) : null}
       {nota.status === 'ERRO' ? (
-        <p role="alert" className="rounded-md bg-danger/10 p-3 text-sm text-danger">{nota.mensagem_erro}</p>
+        <Banner tom="perigo">{nota.mensagem_erro}</Banner>
       ) : null}
-      {erroEmissao ? <p role="alert" className="rounded-md bg-danger/10 p-3 text-sm text-danger">{erroEmissao}</p> : null}
+      {erroEmissao ? <Banner tom="perigo">{erroEmissao}</Banner> : null}
 
       {nota.status === 'AUTORIZADA' ? (
         <Card>
@@ -137,12 +138,12 @@ export function DetalheDaNota({ id }: { id: string }) {
       ) : null}
 
       {nota.status === 'AUTORIZADA' && nota.cancelamento_cstat !== null ? (
-        <p role="alert" className="rounded-md bg-danger/10 p-3 text-sm text-danger">
+        <Banner tom="perigo">
           Cancelamento recusado (cStat {nota.cancelamento_cstat}): {nota.cancelamento_motivo}
-        </p>
+        </Banner>
       ) : null}
       {nota.status === 'AUTORIZADA' && nota.cancelamento_cstat === null && nota.cancelamento_motivo !== null ? (
-        <p role="alert" className="rounded-md bg-danger/10 p-3 text-sm text-danger">{nota.cancelamento_motivo}</p>
+        <Banner tom="perigo">{nota.cancelamento_motivo}</Banner>
       ) : null}
 
       {nota.status === 'CANCELANDO' ? (
@@ -182,7 +183,7 @@ export function DetalheDaNota({ id }: { id: string }) {
                   {(a11y) => <TextareaNativo {...a11y} rows={3} {...formCancelamento.register('justificativa')} />}
                 </Campo>
                 {formCancelamento.formState.errors.root ? (
-                  <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{formCancelamento.formState.errors.root.message}</p>
+                  <Banner tom="perigo">{formCancelamento.formState.errors.root.message}</Banner>
                 ) : null}
                 <div className="flex gap-2">
                   <Button type="submit" variant="destructive" disabled={cancelar.isPending}>Confirmar cancelamento</Button>

@@ -12,6 +12,7 @@ import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { paraPayload, QUERY_KEY_SERVICOS, servicosApi } from '../api';
 import { servicoSchema, type ServicoFormDados } from '../schemas';
 import type { Servico } from '../types';
+import { Banner } from '@/components/ui/banner';
 
 const VAZIO: ServicoFormDados = { nome: '', preco_centavos: 0, codigo_lc116: '', c_trib_nac: '', codigo_municipal: '', aliquota_iss: '', nbs: '' };
 
@@ -61,7 +62,7 @@ export function ServicoForm({ servico, onSalvar }: { servico?: Servico; onSalvar
       <Campo id="servico_iss" label="Alíquota de ISS (%)" erro={erros.aliquota_iss?.message}>
         {(a11y) => <Input {...a11y} {...form.register('aliquota_iss')} />}
       </Campo>
-      {erros.root ? <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{erros.root.message}</p> : null}
+      {erros.root ? <Banner tom="perigo">{erros.root.message}</Banner> : null}
       <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>Salvar serviço</Button>
     </form>
   );

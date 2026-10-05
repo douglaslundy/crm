@@ -13,6 +13,7 @@ import { ApiError } from '@/lib/api';
 import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { authApi } from '../api';
 import { redefinirSenhaSchema, type RedefinirSenhaDados } from '../schemas';
+import { Banner } from '@/components/ui/banner';
 
 type Modo = 'redefinir' | 'convite';
 
@@ -55,7 +56,7 @@ export function RedefinirSenhaForm({
   if (!token || !email) {
     return (
       <div className="space-y-4 text-center">
-        <p role="alert" className="text-danger">{MENSAGEM_LINK_INVALIDO[modo]}</p>
+        <Banner tom="perigo">{MENSAGEM_LINK_INVALIDO[modo]}</Banner>
         <Link href="/esqueci-senha" className="text-sm underline">{ROTULO_LINK[modo]}</Link>
       </div>
     );
@@ -78,11 +79,11 @@ export function RedefinirSenhaForm({
         )}
       </Campo>
       {erros.token || erros.email ? (
-        <p role="alert" className="text-sm text-danger">
+        <Banner tom="perigo">
           {MENSAGEM_LINK_INVALIDO[modo]} <Link href="/esqueci-senha" className="underline">{ROTULO_LINK[modo]}</Link>
-        </p>
+        </Banner>
       ) : null}
-      {erros.root ? <p role="alert" className="text-sm text-danger">{erros.root.message}</p> : null}
+      {erros.root ? <Banner tom="perigo">{erros.root.message}</Banner> : null}
       <Button type="submit" className="w-full" disabled={enviando}>
         {enviando ? 'Salvando...' : modo === 'convite' ? 'Definir senha' : 'Redefinir senha'}
       </Button>

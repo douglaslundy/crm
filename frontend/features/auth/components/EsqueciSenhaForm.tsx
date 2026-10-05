@@ -11,6 +11,7 @@ import { ApiError } from '@/lib/api';
 import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { authApi } from '../api';
 import { esqueciSenhaSchema, type EsqueciSenhaDados } from '../schemas';
+import { Banner } from '@/components/ui/banner';
 
 export function EsqueciSenhaForm() {
   const form = useForm<EsqueciSenhaDados>({ resolver: zodResolver(esqueciSenhaSchema), defaultValues: { email: '' } });
@@ -42,7 +43,7 @@ export function EsqueciSenhaForm() {
       <Campo id="email" label="E-mail cadastrado" erro={erros.email?.message}>
         {(a11y) => <Input {...a11y} type="email" autoComplete="email" {...form.register('email')} />}
       </Campo>
-      {erros.root ? <p role="alert" className="text-sm text-danger">{erros.root.message}</p> : null}
+      {erros.root ? <Banner tom="perigo">{erros.root.message}</Banner> : null}
       <Button type="submit" className="w-full" disabled={enviando}>
         {enviando ? 'Enviando...' : 'Enviar link'}
       </Button>

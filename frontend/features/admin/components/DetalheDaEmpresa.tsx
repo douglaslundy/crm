@@ -10,6 +10,7 @@ import { adminApi } from '../api';
 import { BadgeSituacao } from './BadgeSituacao';
 import { MudarSituacaoForm } from './MudarSituacaoForm';
 import { TrocarPlanoForm } from './TrocarPlanoForm';
+import { Banner } from '@/components/ui/banner';
 
 export function DetalheDaEmpresa({ id }: { id: string }) {
   const { data: usuario } = useUsuario();
@@ -19,7 +20,7 @@ export function DetalheDaEmpresa({ id }: { id: string }) {
   });
 
   if (isPending) return <p className="text-muted-foreground">Carregando...</p>;
-  if (isError) return <p role="alert">Não foi possível carregar a empresa.</p>;
+  if (isError) return <Banner tom="perigo">Não foi possível carregar a empresa.</Banner>;
 
   const podeAgir = usuario?.papel === 'SUPERADMIN';
 

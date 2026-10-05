@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api';
 import { pendenciasFiscaisApi, QUERY_KEY_PENDENCIAS_FISCAIS } from '../api';
+import { Banner } from '@/components/ui/banner';
 
 export function PendenciasFiscais({ podeRevisar }: { podeRevisar: boolean }) {
   const queryClient = useQueryClient();
@@ -19,7 +20,7 @@ export function PendenciasFiscais({ podeRevisar }: { podeRevisar: boolean }) {
   });
 
   if (isPending) return <p className="text-muted-foreground">Carregando...</p>;
-  if (isError) return <p role="alert">Não foi possível carregar as pendências.</p>;
+  if (isError) return <Banner tom="perigo">Não foi possível carregar as pendências.</Banner>;
 
   const semPendencias = data.produtos.length === 0 && data.servicos.length === 0;
   if (semPendencias) return <p className="text-muted-foreground">Nenhuma pendência fiscal. Tudo revisado.</p>;

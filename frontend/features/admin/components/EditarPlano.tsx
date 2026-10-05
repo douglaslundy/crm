@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { ApiError } from '@/lib/api';
 import { adminApi } from '../api';
 import { PlanoForm } from './PlanoForm';
+import { Banner } from '@/components/ui/banner';
 
 export function EditarPlano({ id }: { id: string }) {
   const queryClient = useQueryClient();
@@ -26,7 +27,7 @@ export function EditarPlano({ id }: { id: string }) {
   });
 
   if (isPending) return <p className="text-muted-foreground">Carregando...</p>;
-  if (isError) return <p role="alert">Não foi possível carregar o plano.</p>;
+  if (isError) return <Banner tom="perigo">Não foi possível carregar o plano.</Banner>;
 
   const empresas = plano.empresas ?? 0;
 

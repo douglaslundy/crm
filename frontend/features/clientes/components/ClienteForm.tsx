@@ -13,6 +13,7 @@ import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { clientesApi, consultarCep, paraPayload, QUERY_KEY_CLIENTES } from '../api';
 import { clienteSchema, type ClienteFormDados } from '../schemas';
 import type { Cliente } from '../types';
+import { Banner } from '@/components/ui/banner';
 
 const VAZIO: ClienteFormDados = {
   tipo: 'PF', nome: '', cpf_cnpj: '', inscricao_estadual: '', ie_isento: false, email: '', telefone: '',
@@ -118,7 +119,7 @@ export function ClienteForm({ cliente, onSalvar }: { cliente?: Cliente; onSalvar
       <Campo id="cliente_origem" label="Origem" dica="Ex.: WhatsApp, indicação." erro={erros.origem?.message}>
         {(a11y) => <Input {...a11y} {...form.register('origem')} />}
       </Campo>
-      {erros.root ? <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{erros.root.message}</p> : null}
+      {erros.root ? <Banner tom="perigo">{erros.root.message}</Banner> : null}
       <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>Salvar cliente</Button>
     </form>
   );

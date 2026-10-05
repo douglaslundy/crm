@@ -6,6 +6,7 @@ import { ROTULO_SITUACAO } from '@/features/assinatura/types';
 import { formatarCentavos } from '@/lib/formatos';
 import { adminApi } from '../api';
 import { SITUACOES } from '../types';
+import { Banner } from '@/components/ui/banner';
 
 function Metrica({ titulo, valor }: { titulo: string; valor: string }) {
   return (
@@ -25,7 +26,7 @@ export function PainelMetricas() {
   });
 
   if (isPending) return <p className="text-muted-foreground">Carregando...</p>;
-  if (isError) return <p role="alert">Não foi possível carregar as métricas.</p>;
+  if (isError) return <Banner tom="perigo">Não foi possível carregar as métricas.</Banner>;
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

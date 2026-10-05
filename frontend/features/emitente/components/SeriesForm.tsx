@@ -12,6 +12,7 @@ import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { emitenteApi, QUERY_KEY_EMITENTE } from '../api';
 import { serieSchema, type SerieFormDados } from '../schemas';
 import type { Emitente, ModeloDocumento } from '../types';
+import { Banner } from '@/components/ui/banner';
 
 export function SeriesForm({ emitente, modelo, rotulo, onSalvar }: { emitente: Emitente; modelo: ModeloDocumento; rotulo: string; onSalvar?: () => void }) {
   const queryClient = useQueryClient();
@@ -40,7 +41,7 @@ export function SeriesForm({ emitente, modelo, rotulo, onSalvar }: { emitente: E
       <Campo id={`proximo_${modelo}`} label={`Próximo número (${rotulo})`} erro={erros.proximo_numero?.message}>
         {(a11y) => <Input {...a11y} type="number" min={1} {...form.register('proximo_numero')} />}
       </Campo>
-      {erros.root ? <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{erros.root.message}</p> : null}
+      {erros.root ? <Banner tom="perigo">{erros.root.message}</Banner> : null}
       <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>{`Salvar série (${rotulo})`}</Button>
     </form>
   );

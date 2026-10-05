@@ -9,12 +9,13 @@ import { CscForm } from '@/features/emitente/components/CscForm';
 import { DadosDaEmpresaForm } from '@/features/emitente/components/DadosDaEmpresaForm';
 import { DadosFiscaisForm } from '@/features/emitente/components/DadosFiscaisForm';
 import { SeriesForm } from '@/features/emitente/components/SeriesForm';
+import { Banner } from '@/components/ui/banner';
 
 export default function ConfiguracoesFiscalPage() {
   const { data: emitente, isPending, isError } = useQuery({ queryKey: QUERY_KEY_EMITENTE, queryFn: async () => (await emitenteApi.buscar()).data });
 
   if (isPending) return <p className="text-muted-foreground">Carregando...</p>;
-  if (isError || !emitente) return <p role="alert">Não foi possível carregar os dados fiscais.</p>;
+  if (isError || !emitente) return <Banner tom="perigo">Não foi possível carregar os dados fiscais.</Banner>;
 
   return (
     <div className="space-y-4">

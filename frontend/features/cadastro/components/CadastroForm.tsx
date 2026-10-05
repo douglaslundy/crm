@@ -18,6 +18,7 @@ import { cadastroApi, type CadastroEntrada } from '../api';
 import { forcaDaSenha } from '../forcaDaSenha';
 import { usePlanosPublicos } from '../hooks/usePlanosPublicos';
 import { CAMPOS_EMPRESA, cadastroSchema, type CadastroDados } from '../schemas';
+import { Banner } from '@/components/ui/banner';
 
 const VALORES_INICIAIS: CadastroDados = {
   cnpj: '', razao_social: '', nome_fantasia: '', responsavel_nome: '', email: '',
@@ -103,7 +104,7 @@ export function CadastroForm({ planoId }: { planoId: string }) {
   if (planos.isSuccess && !plano) {
     return (
       <div className="space-y-2 text-center">
-        <p role="alert">Plano não encontrado ou indisponível.</p>
+        <Banner tom="perigo">Plano não encontrado ou indisponível.</Banner>
         <Link href="/planos" className="underline">Ver planos</Link>
       </div>
     );
@@ -195,7 +196,7 @@ export function CadastroForm({ planoId }: { planoId: string }) {
         </>
       )}
 
-      {erros.root ? <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{erros.root.message}</p> : null}
+      {erros.root ? <Banner tom="perigo">{erros.root.message}</Banner> : null}
     </form>
   );
 }

@@ -12,6 +12,7 @@ import { formatarData } from '@/lib/formatos';
 import { adminApi } from '../api';
 import { SITUACOES, type FiltrosEmpresas } from '../types';
 import { BadgeSituacao } from './BadgeSituacao';
+import { Banner } from '@/components/ui/banner';
 
 export function ListaDeEmpresas() {
   const [filtros, setFiltros] = useState<FiltrosEmpresas>({ situacao: '', plano_id: '', busca: '' });
@@ -53,7 +54,7 @@ export function ListaDeEmpresas() {
       </form>
 
       {consulta.isPending ? <p className="text-muted-foreground">Carregando...</p> : null}
-      {consulta.isError ? <p role="alert">Não foi possível carregar as empresas.</p> : null}
+      {consulta.isError ? <Banner tom="perigo">Não foi possível carregar as empresas.</Banner> : null}
       {consulta.isSuccess && empresas.length === 0 ? <p className="text-muted-foreground">Nenhuma empresa encontrada.</p> : null}
 
       {empresas.length > 0 ? (

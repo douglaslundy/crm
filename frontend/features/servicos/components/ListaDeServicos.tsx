@@ -5,13 +5,14 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { QUERY_KEY_SERVICOS, servicosApi } from '../api';
 import { ServicoForm } from './ServicoForm';
+import { Banner } from '@/components/ui/banner';
 
 export function ListaDeServicos() {
   const [editando, setEditando] = useState<string | null>(null);
   const { data, isPending, isError } = useQuery({ queryKey: QUERY_KEY_SERVICOS, queryFn: async () => (await servicosApi.listar()).data });
 
   if (isPending) return <p className="text-muted-foreground">Carregando...</p>;
-  if (isError) return <p role="alert">Não foi possível carregar os serviços.</p>;
+  if (isError) return <Banner tom="perigo">Não foi possível carregar os serviços.</Banner>;
 
   return (
     <ul className="divide-y">

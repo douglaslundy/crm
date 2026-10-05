@@ -13,6 +13,7 @@ import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { inutilizacoesApi, QUERY_KEY_INUTILIZACOES } from '../api';
 import { inutilizacaoSchema, paraPayloadInutilizacao, type InutilizacaoDados } from '../schemas';
 import { ROTULO_STATUS_INUTILIZACAO } from '../types';
+import { Banner } from '@/components/ui/banner';
 
 const VAZIO: InutilizacaoDados = { serie: '', numero_inicial: '', numero_final: '', justificativa: '' };
 
@@ -47,7 +48,7 @@ export function FormInutilizacao() {
       <Campo id="inut_justificativa" label="Justificativa" dica="De 15 a 255 caracteres." erro={erros.justificativa?.message}>
         {(a11y) => <TextareaNativo {...a11y} rows={3} {...form.register('justificativa')} />}
       </Campo>
-      {erros.root ? <p role="alert" className="rounded-md bg-danger/10 p-2 text-sm text-danger">{erros.root.message}</p> : null}
+      {erros.root ? <Banner tom="perigo">{erros.root.message}</Banner> : null}
       <Button type="submit" disabled={form.formState.isSubmitting}>Inutilizar numeração</Button>
     </form>
   );
