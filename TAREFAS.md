@@ -10,7 +10,8 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
   - [ ] **F3b**, dividida em três specs (2026-10-02), cada uma com plano próprio, nesta ordem:
     - [x] **F3b1 Cancelamento e inutilização da NF-e** (15 de 15, fechada em 2026-10-02): cancelamento por fila com `CANCELANDO`, reconciliação, inutilização síncrona, API e telas. Plano: `docs/superpowers/plans/2026-10-02-f3b1-cancelamento-inutilizacao.md`. Falta só o cancelamento e a inutilização reais em homologação (certificado A1), roteiro no `PROGRESSO.md`.
     - [x] **F3b2 PDF (DANFE) da NF-e** (concluída em 2026-10-05): `GET /api/app/notas/{id}/pdf` inline, gerado do XML com `sped-da`, sem armazenar; link "Abrir DANFE (PDF)" no detalhe. Pendências: logo do emitente, DANFE da NFC-e (F3b3), e-mail com PDF e XML, ZIP em lote, cache se o volume pedir, DANFE simplificado, conferência visual do PDF contra o DANFE oficial (depende do usuário, ver PROGRESSO).
-    - [ ] **F3b3 NFC-e** (emissão com CSC e QR Code, cupom 80 mm, cancelamento em 30 min): sem spec.
+    - [x] **F3b3a Emissão da NFC-e** (concluída em 2026-10-05): `notas.modelo`, destinatário opcional, CSC, QR Code, série por modelo, inutilização por modelo, seletor na tela. Spec `docs/superpowers/specs/2026-10-05-f3b3a-nfce-emissao-design.md`.
+    - [ ] **F3b3b Cupom 80 mm (sped-da DANFCE) e cancelamento da NFC-e**: sem spec. Pendências da F3b3a: denegação como status próprio (hoje REJEITADA com cStat), lista de inutilizações sem o modelo, texto "NF-e" nos avisos de cancelamento da tela.
   - [ ] **F3c** (sem spec nem plano): contingência (EPEC e offline), retransmissão, alertas de prazo, dashboard fiscal.
   - Critério de pronto da F3: nota autorizada em homologação para NF-e e NFC-e, com o XML validado contra o XSD.
 - [ ] **F4 NFS-e Nacional** (`nfse-php`): DANFSe, cancelamento, venda mista.

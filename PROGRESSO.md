@@ -4,7 +4,7 @@
 2026-10-05
 
 ## Tarefa em andamento
-**Nenhuma execução em andamento. F3b1 (cancelamento e inutilização) e F3b2 (PDF/DANFE da NF-e, 5 tarefas, concluída em 2026-10-05) feitas; próxima é a F3b3 (NFC-e).** A F3b está dividida em F3b1 (feita), F3b2 (em andamento) e F3b3 (NFC-e).
+**Nenhuma execução em andamento. F3b1, F3b2 (PDF/DANFE) e F3b3a (emissão da NFC-e, 9 tarefas, concluída em 2026-10-05) feitas; próxima é a F3b3b (cupom 80 mm e cancelamento da NFC-e).** A F3b está dividida em F3b1 (feita), F3b2 (em andamento) e F3b3 (NFC-e).
 
 Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é decisão da SEFAZ (sem número fixo no código); cancelada continua contando na cota `DOCUMENTOS_MES`; `consultarPorChave` usa o ambiente da **nota** (corrige consulta no ambiente errado depois de "Ir para produção"); o XML do cancelamento é o `nfeProc` com `retEvento` (`Complements::cancelRegister`); aceitos 135/136/155; inutilização síncrona com guardas locais (faixa já alocada, sem nota autorizada/em processamento/cancelada na faixa), resultado sempre gravado.
 
@@ -34,6 +34,12 @@ Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é dec
 - **Verificado:** build, migrations de todas as fases no PostgreSQL 16 (primeira vez fora do SQLite), login com sessão pela API, CORS, URL da API embutida no front, worker e agendador de pé, API ~35 ms. **Não verificado:** as telas no navegador.
 - **Reimplantar:** `git -c core.autocrlf=false archive --format=tar.gz -o crm.tar.gz HEAD`, enviar para `~/crm-plataforma/`, extrair em `src/` (NÃO apagar `src/deploy/.env`: tem a senha do banco) e rodar `bash src/deploy/deploy.sh`. Detalhes em `deploy/README.md`.
 - **Diferenças para produção real:** HTTP sem domínio, `INSTALL_DEV=1` (Faker para o seeder), `SESSION_SECURE_COOKIE=false`. Antes de expor à internet: HTTPS, domínio, trocar a senha do usuário SSH e as contas de demonstração.
+
+## Fechamento da F3b3a (2026-10-05)
+- **Feito:** migration (`notas.modelo`, `cliente_id` nulável, índice único com modelo, `inutilizacoes.modelo`); `CfopConsumidorResolver` (5102/5405; outra UF bloqueia com `FISCAL_NFCE_INTERESTADUAL`); `NotaParaEmissao` com `modelo` e `ConsumidorParaEmissao` (só documento e nome); Preparador/Verificador/IniciarEmissao (módulo `FISCAL_NFCE`, série por modelo, `FISCAL_CSC_AUSENTE` antes de alocar número, destinatário opcional); rascunho de NFC-e pela API (`modelo`, `cliente_id` opcional, filtro `?modelo=`); motor modelo 65 (`mod=65`, `tpImp=4`, CSC no `Tools`, QR Code ao assinar, `ModeloDaChave` deriva o modelo da chave em consulta e cancelamento); inutilização por modelo; cancelamento exige o módulo do modelo da nota; frontend (seletor de modelo só com `FISCAL_NFCE`, cliente opcional, lista/detalhe/inutilização por modelo; DANFE só para NF-e).
+- **Verificado:** backend 502 testes e frontend 226, Pint, PHPStan, `tsc` e build limpos. XML 65 assinado com certificado e CSC de teste tem `infNFeSupl/qrCode` e valida no XSD; sem cliente não há `dest`; identificada leva só CPF e nome.
+- **Decisões não óbvias:** uso denegado (cStat 110) cai em REJEITADA com cStat/motivo (spec previa ERRO; fica assim até a F3c); em homologação a biblioteca troca o `xNome` do destinatário pelo texto legal da SEFAZ; consulta/cancelamento NÃO mudaram o contrato (modelo vem da chave), só `inutilizar` ganhou parâmetro; a revisão final foi auto-revisão (sem subagente) e achou uma lacuna real (cancelamento exigia `FISCAL_NFE`), já corrigida com teste.
+- **Roteiro de homologação real (usuário, precisa de A1 e CSC de teste da UF):** cadastrar CSC de homologação e série NFC-e; emitir uma NFC-e sem cliente e uma com CPF; conferir autorização, o QR Code no XML (`infNFeSupl`) e a consulta pública; tentar uma NFC-e para cliente de outra UF (deve bloquear).
 
 ## Fechamento da F3b2 (2026-10-05)
 - **Feito:** `GeradorDeDanfe` (interface) + `SpedDaGeradorDeDanfe` (sped-da 1.1.x; falha vira `PdfIndisponivelException` 422 `PDF_INDISPONIVEL`), Action `GerarDanfe` (AUTORIZADA/CANCELANDO usam `xml_autorizado`; CANCELADA usa o `nfeProc` de `xml_cancelamento` com a marca, ou o autorizado se o fallback for cru; outros status ou XML ausente: 409 `NOTA_SEM_PDF`), `GET /api/app/notas/{nota}/pdf` (inline, `DANFE-<numero>.pdf`), link "Abrir DANFE (PDF)". PDF nunca é gravado.
@@ -75,11 +81,10 @@ Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é dec
 6. Só então "Ir para produção".
 O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artisan schedule:work` (a reconciliação roda a cada 15 min).
 
-## Contexto necessário (F3b3: NFC-e)
-- Spec mestre §7 e a decomposição da F3b em `docs/superpowers/specs/2026-10-02-f3b1-cancelamento-inutilizacao-design.md` §1. A F3b3 ainda **não tem spec**: começar pela skill brainstorming (emissão com CSC e QR Code, cupom 80 mm, cancelamento em 30 min, modelo 65).
-- Skill `br-fiscal-note-emission`: `assets/pdf-layouts` (template do cupom NFC-e) e `references/domain-concepts.md` (CFOP/CST do consumidor final).
-- Reuso: `EmissorDeNfe`/`NfePhpEmissor`/`MontadorDeXml` (modelo 55 hoje), `GeradorDeDanfe` (a interface existe para acrescentar o cupom), `Emitente` com CSC por ambiente (F2), séries por modelo.
-- Padrões: `backend/app/Modules/Fiscal` (Actions, jobs, Resources) e `frontend/features/notas`.
+## Contexto necessário (F3b3b: cupom e cancelamento da NFC-e)
+- Spec da F3b3a (`docs/superpowers/specs/2026-10-05-f3b3a-nfce-emissao-design.md`) §1 e §9; a F3b3b ainda **não tem spec**: começar pela skill brainstorming (cupom 80 mm com `sped-da` DANFCE, cancelamento da NFC-e, link do cupom no detalhe).
+- Reuso: `GeradorDeDanfe`/`SpedDaGeradorDeDanfe` e `GerarDanfe` (F3b2; hoje só NF-e), `IniciarCancelamento` (já escolhe o módulo pelo modelo e o emissor deriva o modelo 65 da chave), `DetalheDaNota` (o link do DANFE hoje só aparece para NF-e).
+- Skill `br-fiscal-note-emission`: `assets/pdf-layouts` (template do cupom NFC-e) e `references/danfse-clone.md`.
 ## Concluído
 - [x] Requisitos, decisões, base fiscal (`docs/referencia-fiscal/`) e pesquisa de CRM.
 - [x] Projeto mestre (spec) aprovado.
@@ -119,4 +124,4 @@ O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artis
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-F3b3 NFC-e: brainstorming para escrever a spec (ainda não existe), depois plano e execução. Antes ou em paralelo, o usuário pode: fazer o push (muitos commits locais), rodar os roteiros de homologação real da F3a, da F3b1 e da F3b2 (certificado A1), e conferir o design system no navegador (Fase 5 do plano `2026-10-04-design-system`, tarefas 21 e 22 pendentes). O teste `CadastroForm` estoura 5 s às vezes na suíte completa do frontend (passa isolado).
+F3b3b: brainstorming para escrever a spec do cupom 80 mm e do cancelamento da NFC-e, depois plano e execução. Antes ou em paralelo, o usuário pode: fazer o push (muitos commits locais), rodar os roteiros de homologação real da F3a, F3b1, F3b2 e F3b3a (certificado A1 e CSC de teste), e conferir o design system no navegador (Fase 5 do plano `2026-10-04-design-system`, tarefas 21 e 22 pendentes). O teste `CadastroForm` estoura 5 s às vezes na suíte completa do frontend (passa isolado).
