@@ -19,3 +19,12 @@ describe('Campo', () => {
     expect(campo).toHaveAccessibleDescription('Mínimo de 8 caracteres.');
   });
 });
+
+describe('Campo obrigatório', () => {
+  it('mostra asterisco e anuncia "obrigatório" ao leitor de tela', () => {
+    render(<Campo id="nome" label="Nome" obrigatorio>{(a11y) => <input {...a11y} />}</Campo>);
+
+    expect(screen.getByText('(obrigatório)')).toHaveClass('sr-only');
+    expect(screen.getByText('*')).toHaveAttribute('aria-hidden', 'true');
+  });
+});
