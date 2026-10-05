@@ -33,7 +33,7 @@ export function EditarPlano({ id }: { id: string }) {
 
   return (
     <div className="max-w-3xl space-y-4">
-      <h1 className="text-xl font-semibold">Editar plano</h1>
+      <h1 className="font-display text-[28px] leading-tight font-extrabold">Editar plano</h1>
       {empresas > 0 ? (
         <p role="note" className="rounded-md bg-warning/10 p-3 text-sm text-warning">
           {empresas === 1 ? '1 empresa usa' : `${empresas} empresas usam`} este plano. As alterações valem para todas.

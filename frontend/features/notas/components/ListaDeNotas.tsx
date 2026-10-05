@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useState } from 'react';
+import { DataTable } from '@/components/ui/data-table';
 import { SelectNativo } from '@/components/ui/campos-nativos';
 import { Label } from '@/components/ui/label';
 import { formatarCentavos } from '@/lib/formatos';
@@ -30,26 +31,22 @@ export function ListaDeNotas() {
         </SelectNativo>
       </div>
 
-      {isPending ? <p className="text-muted-foreground">Carregando...</p> : null}
       {isError ? <Banner tom="perigo">Não foi possível carregar as notas.</Banner> : null}
-      {data && data.length === 0 ? <p className="text-muted-foreground">Nenhuma nota encontrada.</p> : null}
-      {data && data.length > 0 ? (
-        <ul className="divide-y">
-          {data.map((n) => (
-            <li key={n.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
-              <div className="min-w-0">
-                <p className="font-medium">{n.cliente?.nome ?? 'Sem cliente'}</p>
-                <p className="text-sm text-muted-foreground">
-                  {n.numero !== null ? `Nº ${n.numero} · série ${n.serie}` : 'Sem número'} · {formatarCentavos(n.total_centavos)}
-                </p>
-              </div>
-              <div className="flex items-center gap-3">
-                <StatusDaNota status={n.status} ambiente={n.ambiente} />
-                <Link href={`/notas/${n.id}`} aria-label={`Abrir nota ${n.numero ?? 'sem número'}`} className="text-sm underline">Abrir</Link>
-              </div>
-            </li>
-          ))}
-        </ul>
+      {!isError ? (
+        <DataTable
+          rotulo="Notas fiscais"
+          carregando={isPending}
+          vazio="Nenhuma nota encontrada."
+          linhas={data ?? []}
+          chaveDaLinha={(n) => n.id}
+          colunas={[
+            { chave: 'cliente', titulo: 'Cliente', render: (n) => <span className="font-medium">{n.cliente?.nome ?? 'Sem cliente'}</span> },
+            { chave: 'numero', titulo: 'Número', numerica: true, render: (n) => (n.numero !== null ? `Nº ${n.numero} · série ${n.serie}` : 'Sem número') },
+            { chave: 'total', titulo: 'Total', numerica: true, render: (n) => formatarCentavos(n.total_centavos) },
+            { chave: 'status', titulo: 'Status', render: (n) => <StatusDaNota status={n.status} ambiente={n.ambiente} /> },
+            { chave: 'abrir', titulo: '', render: (n) => <Link href={`/notas/${n.id}`} aria-label={`Abrir nota ${n.numero ?? 'sem número'}`} className="text-sm text-primary-text underline">Abrir</Link> },
+          ]}
+        />
       ) : null}
     </div>
   );

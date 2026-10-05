@@ -16,7 +16,7 @@ export function ListaDePlanosAdmin() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <h1 className="text-xl font-semibold">Planos</h1>
+        <h1 className="font-display text-[28px] leading-tight font-extrabold">Planos</h1>
         <Link href="/admin/planos/novo" className={buttonVariants()}>Novo plano</Link>
       </div>
       {isPending ? <p className="text-muted-foreground">Carregando...</p> : null}

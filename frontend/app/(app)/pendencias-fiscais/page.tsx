@@ -11,7 +11,7 @@ export default function PendenciasFiscaisPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Pendências fiscais</h1>
+      <h1 className="font-display text-[28px] leading-tight font-extrabold">Pendências fiscais</h1>
       <Card>
         <CardHeader><CardTitle>Produtos e serviços sem os dados obrigatórios</CardTitle></CardHeader>
         <CardContent>

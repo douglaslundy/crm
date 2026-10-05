@@ -13,7 +13,7 @@ export default function InutilizarPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Inutilizar numeração</h1>
+      <h1 className="font-display text-[28px] leading-tight font-extrabold">Inutilizar numeração</h1>
       {pode ? (
         <div className="grid gap-4 lg:grid-cols-[22rem_1fr]">
           <Card>

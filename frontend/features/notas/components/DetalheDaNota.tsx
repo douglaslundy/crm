@@ -107,7 +107,7 @@ export function DetalheDaNota({ id }: { id: string }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-xl font-semibold">{nota.numero !== null ? `NF-e nº ${nota.numero} · série ${nota.serie}` : 'NF-e (rascunho)'}</h1>
+          <h1 className="font-display text-[28px] leading-tight font-extrabold">{nota.numero !== null ? `NF-e nº ${nota.numero} · série ${nota.serie}` : 'NF-e (rascunho)'}</h1>
           <p className="text-sm text-muted-foreground">{nota.cliente?.nome ?? 'Sem cliente'} · {formatarCentavos(nota.total_centavos)}</p>
         </div>
         <StatusDaNota status={nota.status} ambiente={nota.ambiente} />

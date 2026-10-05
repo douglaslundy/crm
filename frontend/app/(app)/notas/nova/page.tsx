@@ -6,7 +6,7 @@ import { NotaForm } from '@/features/notas/components/NotaForm';
 export default function NovaNotaPage() {
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Nova NF-e</h1>
+      <h1 className="font-display text-[28px] leading-tight font-extrabold">Nova NF-e</h1>
       <Card>
         <CardHeader><CardTitle>Dados da nota</CardTitle></CardHeader>
         <CardContent><NotaForm /></CardContent>

@@ -27,7 +27,7 @@ export function DetalheDaEmpresa({ id }: { id: string }) {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
-        <h1 className="text-xl font-semibold">{empresa.nome_fantasia ?? empresa.razao_social}</h1>
+        <h1 className="font-display text-[28px] leading-tight font-extrabold">{empresa.nome_fantasia ?? empresa.razao_social}</h1>
         <BadgeSituacao situacao={empresa.situacao} />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">

@@ -29,7 +29,7 @@ export function EmitenteWizard() {
   return (
     <div className="mx-auto max-w-md space-y-4">
       <p className="text-sm text-muted-foreground">Passo {passo + 1} de {passos.length}</p>
-      <h1 className="text-xl font-semibold">{atual.titulo}</h1>
+      <h1 className="font-display text-[28px] leading-tight font-extrabold">{atual.titulo}</h1>
       {atual.conteudo}
       <button type="button" className="text-sm text-muted-foreground underline" onClick={() => router.push('/dashboard')}>
         Continuar depois (fica em Configurações)

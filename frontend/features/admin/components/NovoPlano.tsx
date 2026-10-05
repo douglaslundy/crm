@@ -12,7 +12,7 @@ export function NovoPlano() {
 
   return (
     <div className="max-w-3xl space-y-4">
-      <h1 className="text-xl font-semibold">Novo plano</h1>
+      <h1 className="font-display text-[28px] leading-tight font-extrabold">Novo plano</h1>
       <PlanoForm
         rotuloBotao="Criar plano"
         onSalvar={async (entrada) => {

@@ -17,7 +17,7 @@ export default function UsuariosPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Usuários</h1>
+      <h1 className="font-display text-[28px] leading-tight font-extrabold">Usuários</h1>
       <div className="grid gap-4 lg:grid-cols-[1fr_22rem]">
         <Card>
           <CardHeader><CardTitle>Equipe</CardTitle></CardHeader>

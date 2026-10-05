@@ -19,7 +19,7 @@ export default function ConfiguracoesFiscalPage() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Configurações fiscais</h1>
+      <h1 className="font-display text-[28px] leading-tight font-extrabold">Configurações fiscais</h1>
       <div className="grid gap-4 md:grid-cols-2">
         <Card><CardHeader><CardTitle>Ambiente de emissão</CardTitle></CardHeader><CardContent><ConfirmarProducao emitente={emitente} /></CardContent></Card>
         <Card><CardHeader><CardTitle>Empresa</CardTitle></CardHeader><CardContent><DadosDaEmpresaForm emitente={emitente} /></CardContent></Card>

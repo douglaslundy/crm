@@ -28,7 +28,7 @@ export function ListaDeEmpresas() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Empresas</h1>
+      <h1 className="font-display text-[28px] leading-tight font-extrabold">Empresas</h1>
       <form
         role="search"
         className="grid gap-2 sm:grid-cols-[1fr_12rem_12rem_auto]"
