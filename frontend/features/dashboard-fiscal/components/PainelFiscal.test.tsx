@@ -37,6 +37,7 @@ function dados(sobrescrever: Partial<DashboardFiscal> = {}): DashboardFiscal {
         { id: 'n2', modelo: 'NFCE', numero: 8, cstat: null, motivo: null, mensagem_erro: 'Falha técnica ao emitir: timeout', status: 'ERRO', created_at: '2026-10-03T10:00:00Z' },
       ],
     },
+    contingencias: { quantidade: 0, em_alerta: 0, vencidas: 0, limite_mais_proximo: null },
     ...sobrescrever,
   };
 }
@@ -133,5 +134,30 @@ describe('PainelFiscal', () => {
     vi.mocked(useDashboardFiscal).mockReturnValue({ data: undefined, isPending: false, isError: true } as never);
     render(<PainelFiscal />);
     expect(screen.getByRole('alert')).toHaveTextContent('Não foi possível carregar o painel fiscal.');
+  });
+
+  it('sem contingências mostra o cartão zerado e nenhum aviso de prazo', () => {
+    render(<PainelFiscal />);
+
+    expect(screen.getByRole('region', { name: 'NFC-e em contingência' })).toHaveTextContent('0');
+    expect(screen.queryByText(/perto do prazo/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/prazo vencido/i)).not.toBeInTheDocument();
+  });
+
+  it('contingências perto do prazo aparecem como aviso âmbar', () => {
+    comDados(dados({ contingencias: { quantidade: 2, em_alerta: 1, vencidas: 0, limite_mais_proximo: '2026-10-06T10:00:00Z' } }));
+    render(<PainelFiscal />);
+
+    expect(screen.getByRole('region', { name: 'NFC-e em contingência' })).toHaveTextContent('2');
+    const aviso = screen.getByRole('status', { name: /prazo/i });
+    expect(aviso).toHaveTextContent('1 nota perto do prazo');
+    expect(screen.queryByText(/prazo vencido/i)).not.toBeInTheDocument();
+  });
+
+  it('contingências vencidas aparecem como alerta vermelho', () => {
+    comDados(dados({ contingencias: { quantidade: 3, em_alerta: 1, vencidas: 2, limite_mais_proximo: '2026-10-05T08:00:00Z' } }));
+    render(<PainelFiscal />);
+
+    expect(screen.getByRole('alert', { name: /prazo/i })).toHaveTextContent('2 notas com prazo vencido');
   });
 });

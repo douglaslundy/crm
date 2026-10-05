@@ -11,10 +11,11 @@ const COR: Record<TomDoBanner, string> = {
   sucesso: 'border-success/30 bg-success/10 text-success',
 };
 
-export function Banner({ tom, onDispensar, children }: { tom: TomDoBanner; onDispensar?: () => void; children: ReactNode }) {
+export function Banner({ tom, onDispensar, rotulo, children }: { tom: TomDoBanner; onDispensar?: () => void; rotulo?: string; children: ReactNode }) {
   return (
     <div
       role={tom === 'perigo' ? 'alert' : 'status'}
+      aria-label={rotulo}
       data-tom={tom}
       className={cn('flex items-start gap-3 rounded-lg border px-4 py-2.5 text-[13px] font-semibold', COR[tom])}
     >

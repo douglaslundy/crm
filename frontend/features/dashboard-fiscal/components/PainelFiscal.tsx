@@ -34,6 +34,24 @@ function Certificado({ certificado }: { certificado: DashboardFiscal['certificad
   );
 }
 
+function AvisosDeContingencia({ contingencias }: { contingencias: DashboardFiscal['contingencias'] }) {
+  const plural = (n: number) => (n === 1 ? 'nota' : 'notas');
+  return (
+    <>
+      {contingencias.vencidas > 0 ? (
+        <Banner tom="perigo" rotulo="Prazo das contingências">
+          {contingencias.vencidas} {plural(contingencias.vencidas)} com prazo vencido: retransmita agora ou confirme o prazo da sua UF.
+        </Banner>
+      ) : null}
+      {contingencias.em_alerta > 0 ? (
+        <Banner tom="alerta" rotulo="Prazo das contingências">
+          {contingencias.em_alerta} {plural(contingencias.em_alerta)} perto do prazo de transmissão.
+        </Banner>
+      ) : null}
+    </>
+  );
+}
+
 export function PainelFiscal() {
   const { data, isPending, isError } = useDashboardFiscal();
 
@@ -61,7 +79,12 @@ export function PainelFiscal() {
           <StatCard titulo="Pedem ação" valor={data.rejeicoes.quantidade} tom={data.rejeicoes.quantidade > 0 ? 'perigo' : 'info'} legenda="Rejeitadas ou com erro" />
         </section>
         <Certificado certificado={data.certificado} />
+        <section aria-label="NFC-e em contingência">
+          <StatCard titulo="NFC-e em contingência" valor={data.contingencias.quantidade} tom={data.contingencias.vencidas > 0 ? 'perigo' : data.contingencias.quantidade > 0 ? 'primario' : 'info'} legenda="Aguardam transmissão à SEFAZ" />
+        </section>
       </div>
+
+      <AvisosDeContingencia contingencias={data.contingencias} />
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">

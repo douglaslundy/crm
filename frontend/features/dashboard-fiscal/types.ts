@@ -30,4 +30,5 @@ export interface DashboardFiscal {
   mes: { periodo: string; notas: NotasDoMes[]; valor_emitido_centavos: number };
   faturamento_12_meses: FaturamentoDoMes[];
   rejeicoes: { quantidade: number; recentes: RejeicaoRecente[] };
+  contingencias: { quantidade: number; em_alerta: number; vencidas: number; limite_mais_proximo: string | null };
 }
