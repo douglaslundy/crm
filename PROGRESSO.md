@@ -1,10 +1,10 @@
 # Progresso do Projeto
 
 ## Última atualização
-2026-10-02
+2026-10-05
 
 ## Tarefa em andamento
-**Nenhuma execução em andamento. F3b1 (cancelamento e inutilização da NF-e) concluída em 2026-10-02 (15 tarefas). F3b2 (PDF/DANFE da NF-e): spec escrita, commitada e aprovada pelo usuário (`docs/superpowers/specs/2026-10-02-f3b2-pdf-danfe-design.md`, motor `sped-da`); FALTA escrever o plano (skill writing-plans, ~7 tarefas) e executar em modo Native.** A F3b está dividida em F3b1 (feita), F3b2 (em andamento) e F3b3 (NFC-e).
+**Nenhuma execução em andamento. F3b1 (cancelamento e inutilização) e F3b2 (PDF/DANFE da NF-e, 5 tarefas, concluída em 2026-10-05) feitas; próxima é a F3b3 (NFC-e).** A F3b está dividida em F3b1 (feita), F3b2 (em andamento) e F3b3 (NFC-e).
 
 Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é decisão da SEFAZ (sem número fixo no código); cancelada continua contando na cota `DOCUMENTOS_MES`; `consultarPorChave` usa o ambiente da **nota** (corrige consulta no ambiente errado depois de "Ir para produção"); o XML do cancelamento é o `nfeProc` com `retEvento` (`Complements::cancelRegister`); aceitos 135/136/155; inutilização síncrona com guardas locais (faixa já alocada, sem nota autorizada/em processamento/cancelada na faixa), resultado sempre gravado.
 
@@ -34,6 +34,12 @@ Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é dec
 - **Verificado:** build, migrations de todas as fases no PostgreSQL 16 (primeira vez fora do SQLite), login com sessão pela API, CORS, URL da API embutida no front, worker e agendador de pé, API ~35 ms. **Não verificado:** as telas no navegador.
 - **Reimplantar:** `git -c core.autocrlf=false archive --format=tar.gz -o crm.tar.gz HEAD`, enviar para `~/crm-plataforma/`, extrair em `src/` (NÃO apagar `src/deploy/.env`: tem a senha do banco) e rodar `bash src/deploy/deploy.sh`. Detalhes em `deploy/README.md`.
 - **Diferenças para produção real:** HTTP sem domínio, `INSTALL_DEV=1` (Faker para o seeder), `SESSION_SECURE_COOKIE=false`. Antes de expor à internet: HTTPS, domínio, trocar a senha do usuário SSH e as contas de demonstração.
+
+## Fechamento da F3b2 (2026-10-05)
+- **Feito:** `GeradorDeDanfe` (interface) + `SpedDaGeradorDeDanfe` (sped-da 1.1.x; falha vira `PdfIndisponivelException` 422 `PDF_INDISPONIVEL`), Action `GerarDanfe` (AUTORIZADA/CANCELANDO usam `xml_autorizado`; CANCELADA usa o `nfeProc` de `xml_cancelamento` com a marca, ou o autorizado se o fallback for cru; outros status ou XML ausente: 409 `NOTA_SEM_PDF`), `GET /api/app/notas/{nota}/pdf` (inline, `DANFE-<numero>.pdf`), link "Abrir DANFE (PDF)". PDF nunca é gravado.
+- **Verificado:** backend 455 testes, frontend 218, Pint e PHPStan limpos; o PDF real é gerado nos testes e o texto extraído confere (DANFE, emitente, produto, homologação só em tpAmb 2, CANCELADA por evento e por flag com cStat 136).
+- **Não verificado:** o desenho do PDF (só o texto foi conferido) e a revisão final foi **auto-revisão** (sem subagente nesta execução).
+- **Roteiro de homologação real (usuário):** emitir uma NF-e de teste autorizada, abrir o DANFE e comparar chave, código de barras, itens e totais com o XML; cancelar e conferir a marca CANCELADA; olhar o layout contra o DANFE oficial.
 
 ## Fechamento da F3b1 (2026-10-02)
 - Backend: 436 testes; frontend: 134; Pint, PHPStan 6, tsc e build verdes; eslint só com o warning antigo do `CadastroForm` (`form.watch`).
@@ -69,13 +75,11 @@ Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é dec
 6. Só então "Ir para produção".
 O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artisan schedule:work` (a reconciliação roda a cada 15 min).
 
-## Contexto necessário (F3b2: PDF da NF-e)
-- Spec mestre §7 (PDF sempre a partir do XML autorizado) e `docs/superpowers/specs/2026-10-02-f3b1-cancelamento-inutilizacao-design.md` §1 (decomposição da F3b).
-- Skill `br-fiscal-note-emission`: `assets/pdf-layouts/danfe` (renderer e templates testados) e `assets/pdf-layouts/README.md`; avaliar `nfephp-org/sped-da` contra eles.
-- Dados disponíveis: `Nota::xml_autorizado` (nfeProc), `xml_cancelamento` (nfeProc com retEvento; o DANFE de nota cancelada deve sair com a marca "CANCELADA"), `NotaController::xml` como padrão de download.
-- Padrões a seguir: `backend/app/Modules/Fiscal` (Actions, Resources) e `frontend/features/notas` (`DetalheDaNota`).
-- Pendências conhecidas da F3a e da F3b1 (não bloqueiam a F3b2): em `TAREFAS.md`.
-
+## Contexto necessário (F3b3: NFC-e)
+- Spec mestre §7 e a decomposição da F3b em `docs/superpowers/specs/2026-10-02-f3b1-cancelamento-inutilizacao-design.md` §1. A F3b3 ainda **não tem spec**: começar pela skill brainstorming (emissão com CSC e QR Code, cupom 80 mm, cancelamento em 30 min, modelo 65).
+- Skill `br-fiscal-note-emission`: `assets/pdf-layouts` (template do cupom NFC-e) e `references/domain-concepts.md` (CFOP/CST do consumidor final).
+- Reuso: `EmissorDeNfe`/`NfePhpEmissor`/`MontadorDeXml` (modelo 55 hoje), `GeradorDeDanfe` (a interface existe para acrescentar o cupom), `Emitente` com CSC por ambiente (F2), séries por modelo.
+- Padrões: `backend/app/Modules/Fiscal` (Actions, jobs, Resources) e `frontend/features/notas`.
 ## Concluído
 - [x] Requisitos, decisões, base fiscal (`docs/referencia-fiscal/`) e pesquisa de CRM.
 - [x] Projeto mestre (spec) aprovado.
@@ -115,4 +119,4 @@ O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artis
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-F3b2: escrever o plano de implementação a partir da spec aprovada (`docs/superpowers/specs/2026-10-02-f3b2-pdf-danfe-design.md`) e executar. Decisões já tomadas: motor `sped-da ^1.1` (v1.1.6, spike OK no PHP 8.2), interface `GeradorDeDanfe`, Action `GerarDanfe` (PDF sempre do XML: AUTORIZADA e CANCELANDO usam `xml_autorizado`; CANCELADA usa `xml_cancelamento` com `cancelada=true`), `GET /api/app/notas/{nota}/pdf` inline, link "Abrir DANFE (PDF)" no detalhe, sem logo e sem armazenar PDF. Antes ou em paralelo, o usuário pode fazer o push (39 commits locais) e rodar os roteiros de homologação real da F3a e da F3b1 (certificado A1). O teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado).
+F3b3 NFC-e: brainstorming para escrever a spec (ainda não existe), depois plano e execução. Antes ou em paralelo, o usuário pode: fazer o push (muitos commits locais), rodar os roteiros de homologação real da F3a, da F3b1 e da F3b2 (certificado A1), e conferir o design system no navegador (Fase 5 do plano `2026-10-04-design-system`, tarefas 21 e 22 pendentes). O teste `CadastroForm` estoura 5 s às vezes na suíte completa do frontend (passa isolado).
