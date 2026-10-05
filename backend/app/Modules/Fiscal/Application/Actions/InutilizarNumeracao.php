@@ -38,7 +38,9 @@ final class InutilizarNumeracao
         if (! $tenant->situacao->permiteEscrita()) {
             throw AssinaturaSemEscritaException::para($tenant->situacao);
         }
-        $this->planos->garantirModulo($tenant, Modulo::FiscalNfe);
+        $modelo = ModeloDocumento::from((string) ($dados['modelo'] ?? 'NFE'));
+        $rotulo = $modelo === ModeloDocumento::Nfce ? 'NFC-e' : 'NF-e';
+        $this->planos->garantirModulo($tenant, $modelo === ModeloDocumento::Nfce ? Modulo::FiscalNfce : Modulo::FiscalNfe);
         $justificativa = Justificativa::de((string) $dados['justificativa'])->texto;
 
         $numeroSerie = (string) $dados['serie'];
@@ -49,9 +51,9 @@ final class InutilizarNumeracao
         }
 
         $emitente = Emitente::query()->firstOrCreate([], []);
-        $serie = EmitenteSerie::query()->where('emitente_id', $emitente->id)->where('modelo', ModeloDocumento::Nfe)->where('serie', $numeroSerie)->first();
+        $serie = EmitenteSerie::query()->where('emitente_id', $emitente->id)->where('modelo', $modelo)->where('serie', $numeroSerie)->first();
         if ($serie === null) {
-            throw new EmissaoBloqueadaException('FISCAL_SERIE_NAO_CONFIGURADA', "A série {$numeroSerie} da NF-e não está cadastrada em Configurações > Fiscal.");
+            throw new EmissaoBloqueadaException('FISCAL_SERIE_NAO_CONFIGURADA', "A série {$numeroSerie} da {$rotulo} não está cadastrada em Configurações > Fiscal.");
         }
         if ($final >= $serie->proximo_numero) {
             throw new EmissaoBloqueadaException('FISCAL_FAIXA_NAO_ALOCADA', 'Só é possível inutilizar números já alocados (até o '.($serie->proximo_numero - 1).').');
@@ -59,15 +61,15 @@ final class InutilizarNumeracao
 
         $ambiente = $emitente->ambiente_fiscal->value;
         $conflito = Nota::query()
-            ->where('serie', $numeroSerie)->where('ambiente', $ambiente)->whereBetween('numero', [$inicial, $final])
+            ->where('modelo', $modelo)->where('serie', $numeroSerie)->where('ambiente', $ambiente)->whereBetween('numero', [$inicial, $final])
             ->whereIn('status', [StatusNota::Autorizada, StatusNota::Cancelando, StatusNota::Cancelada, StatusNota::Processando])
             ->orderBy('numero')->first();
         if ($conflito !== null) {
-            throw new EmissaoBloqueadaException('FISCAL_FAIXA_COM_NOTA', "O número {$conflito->numero} pertence a uma NF-e {$conflito->status->value} nesta série e não pode ser inutilizado.");
+            throw new EmissaoBloqueadaException('FISCAL_FAIXA_COM_NOTA', "O número {$conflito->numero} pertence a uma {$rotulo} {$conflito->status->value} nesta série e não pode ser inutilizado.");
         }
 
         try {
-            $resultado = $this->emissor->inutilizar($emitente, (int) $numeroSerie, $inicial, $final, $justificativa, $ambiente);
+            $resultado = $this->emissor->inutilizar($emitente, $modelo, (int) $numeroSerie, $inicial, $final, $justificativa, $ambiente);
         } catch (EmissaoBloqueadaException $e) {
             throw $e;
         } catch (Throwable $e) {
@@ -76,7 +78,7 @@ final class InutilizarNumeracao
         }
 
         return Inutilizacao::query()->create([
-            'emitente_id' => $emitente->id, 'serie' => $numeroSerie, 'numero_inicial' => $inicial, 'numero_final' => $final,
+            'emitente_id' => $emitente->id, 'modelo' => $modelo, 'serie' => $numeroSerie, 'numero_inicial' => $inicial, 'numero_final' => $final,
             'justificativa' => $justificativa, 'ambiente' => $ambiente, 'status' => $resultado->status, 'cstat' => $resultado->cstat,
             'motivo' => $resultado->motivo, 'protocolo' => $resultado->protocolo, 'xml_resposta' => $resultado->xmlResposta,
             'usuario_id' => $autor->id,

@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @property string $id
  * @property string $emitente_id
+ * @property ModeloDocumento $modelo
  * @property string $serie
  * @property int $numero_inicial
  * @property int $numero_final

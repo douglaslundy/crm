@@ -15,7 +15,7 @@ final class InutilizacaoResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id, 'serie' => $this->serie, 'numero_inicial' => $this->numero_inicial, 'numero_final' => $this->numero_final,
+            'id' => $this->id, 'modelo' => $this->modelo->value, 'serie' => $this->serie, 'numero_inicial' => $this->numero_inicial, 'numero_final' => $this->numero_final,
             'justificativa' => $this->justificativa, 'ambiente' => $this->ambiente, 'status' => $this->status->value,
             'cstat' => $this->cstat, 'motivo' => $this->motivo, 'protocolo' => $this->protocolo,
             'created_at' => $this->created_at->toIso8601String(),

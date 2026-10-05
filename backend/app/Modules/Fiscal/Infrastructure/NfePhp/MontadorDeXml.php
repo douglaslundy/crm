@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Infrastructure\NfePhp;
 
 use App\Modules\Fiscal\Domain\Emissao\NotaParaEmissao;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Quantidade;
 use App\Modules\Fiscal\Domain\TabelaIbge;
 use NFePHP\NFe\Make;
@@ -23,13 +24,18 @@ final class MontadorDeXml
         }
         $cUF = TabelaIbge::codigoDaUf($e->uf);
         $tpAmb = $nota->ambiente === 'PRODUCAO' ? 1 : 2;
+        $nfce = $nota->modelo === ModeloDocumento::Nfce;
+        $destinatario = $nota->destinatario;
+        if (! $nfce && $destinatario === null) {
+            throw new RuntimeException('NF-e sem destinatário: o Preparador deveria ter bloqueado.');
+        }
 
         $make = new Make;
         $make->taginfNFe($this->std(['versao' => '4.00', 'Id' => null, 'pk_nItem' => '']));
 
-        $ide = ['cUF' => $cUF, 'natOp' => $this->texto($nota->naturezaOperacao, 60), 'mod' => 55, 'serie' => (int) $nota->serie, 'nNF' => $nota->numero,
+        $ide = ['cUF' => $cUF, 'natOp' => $this->texto($nota->naturezaOperacao, 60), 'mod' => $nfce ? 65 : 55, 'serie' => (int) $nota->serie, 'nNF' => $nota->numero,
             'dhEmi' => now()->setTimezone('America/Sao_Paulo')->format('c'), 'tpNF' => 1, 'idDest' => $nota->idDest, 'cMunFG' => $e->codigoIbge,
-            'tpImp' => 1, 'tpEmis' => 1, 'tpAmb' => $tpAmb, 'finNFe' => 1, 'indFinal' => $nota->destinatario->indFinal, 'indPres' => 1,
+            'tpImp' => $nfce ? 4 : 1, 'tpEmis' => 1, 'tpAmb' => $tpAmb, 'finNFe' => 1, 'indFinal' => $nfce ? 1 : $destinatario->indFinal, 'indPres' => 1,
             'procEmi' => 0, 'verProc' => config('fiscal.ver_proc')];
         if ($cNF !== null) {
             $ide['cNF'] = $cNF;
@@ -42,20 +48,30 @@ final class MontadorDeXml
             'cMun' => $e->codigoIbge, 'xMun' => $this->texto($e->cidade, 60), 'UF' => $e->uf, 'CEP' => $e->cep, 'cPais' => 1058, 'xPais' => 'Brasil',
         ]));
 
-        $d = $nota->destinatario;
-        $dest = ['xNome' => $this->texto($d->nome, 60), 'indIEDest' => $d->indIeDest];
-        $dest[strlen($d->documento) > 11 ? 'CNPJ' : 'CPF'] = $d->documento;
-        if ($d->indIeDest === 1 && $d->ie !== null) {
-            $dest['IE'] = $d->ie;
+        if ($nfce) {
+            // NFC-e: consumidor só com documento e nome (indIEDest 9), sem endereço; sem identificação, sem grupo dest.
+            $c = $nota->consumidor;
+            if ($c !== null) {
+                $dest = ['xNome' => $this->texto($c->nome, 60), 'indIEDest' => 9];
+                $dest[strlen($c->documento) > 11 ? 'CNPJ' : 'CPF'] = $c->documento;
+                $make->tagdest($this->std($dest));
+            }
+        } else {
+            $d = $destinatario;
+            $dest = ['xNome' => $this->texto($d->nome, 60), 'indIEDest' => $d->indIeDest];
+            $dest[strlen($d->documento) > 11 ? 'CNPJ' : 'CPF'] = $d->documento;
+            if ($d->indIeDest === 1 && $d->ie !== null) {
+                $dest['IE'] = $d->ie;
+            }
+            if ($d->email !== null) {
+                $dest['email'] = $d->email;
+            }
+            $make->tagdest($this->std($dest));
+            $make->tagenderDest($this->std([
+                'xLgr' => $this->texto($d->logradouro, 60), 'nro' => $this->texto($d->numero, 60), 'xBairro' => $this->texto($d->bairro, 60),
+                'cMun' => $d->codigoIbge, 'xMun' => $this->texto($d->cidade, 60), 'UF' => $d->uf, 'CEP' => $d->cep, 'cPais' => 1058, 'xPais' => 'Brasil',
+            ]));
         }
-        if ($d->email !== null) {
-            $dest['email'] = $d->email;
-        }
-        $make->tagdest($this->std($dest));
-        $make->tagenderDest($this->std([
-            'xLgr' => $this->texto($d->logradouro, 60), 'nro' => $this->texto($d->numero, 60), 'xBairro' => $this->texto($d->bairro, 60),
-            'cMun' => $d->codigoIbge, 'xMun' => $this->texto($d->cidade, 60), 'UF' => $d->uf, 'CEP' => $d->cep, 'cPais' => 1058, 'xPais' => 'Brasil',
-        ]));
 
         foreach ($nota->itens as $i) {
             $vUn = $this->reais($i->valorUnitarioCentavos);
@@ -97,7 +113,7 @@ final class MontadorDeXml
         $xml = $make->getXML();
         $erros = $make->getErrors();
         if ($erros !== []) {
-            throw new RuntimeException('Falha ao montar o XML da NF-e: '.implode(' | ', $erros));
+            throw new RuntimeException('Falha ao montar o XML da '.($nfce ? 'NFC-e' : 'NF-e').': '.implode(' | ', $erros));
         }
 
         return ['xml' => $xml, 'chave' => $make->getChave()];

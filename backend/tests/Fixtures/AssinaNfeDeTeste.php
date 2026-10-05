@@ -4,25 +4,29 @@ declare(strict_types=1);
 
 namespace Tests\Fixtures;
 
+use App\Modules\Fiscal\Domain\Emissao\ConsumidorParaEmissao;
 use App\Modules\Fiscal\Domain\Emissao\DestinatarioParaEmissao;
 use App\Modules\Fiscal\Domain\Emissao\EmitenteParaEmissao;
 use App\Modules\Fiscal\Domain\Emissao\ItemParaEmissao;
 use App\Modules\Fiscal\Domain\Emissao\NotaParaEmissao;
 use App\Modules\Fiscal\Domain\Emissao\PagamentoParaEmissao;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use NFePHP\Common\Certificate;
 use NFePHP\NFe\Tools;
 
 /** NF-e de teste montada, assinada com certificado autoassinado gerado na hora. Nenhum dado real. */
 trait AssinaNfeDeTeste
 {
-    private function notaDeTeste(string $nomeItem = 'Produto Um', ?string $infCpl = null, int $descontoItem = 0): NotaParaEmissao
+    private function notaDeTeste(string $nomeItem = 'Produto Um', ?string $infCpl = null, int $descontoItem = 0, ModeloDocumento $modelo = ModeloDocumento::Nfe, ?ConsumidorParaEmissao $consumidor = null): NotaParaEmissao
     {
         $emitente = new EmitenteParaEmissao('11444777000161', 'Empresa Teste LTDA', null, '110042490114', 1, 'Rua Teste', '100', 'Centro', '3550308', 'São Paulo', 'SP', '01001000', '4520001');
         $dest = new DestinatarioParaEmissao('PF', '52998224725', 'Maria Teste', 9, 1, null, 'Rua A', '10', 'Centro', '3550308', 'São Paulo', 'SP', '01001000', null);
         $total = 2500 - $descontoItem;
         $item = new ItemParaEmissao(1, 'P-1', $nomeItem, 'UN', null, '12345678', null, '5102', 0, '102', 2500, 1000, $descontoItem, 2500);
 
-        return new NotaParaEmissao('nota-1', 'HOMOLOGACAO', '1', 7, 'Venda de mercadoria', 1, $emitente, $dest, [$item], [new PagamentoParaEmissao('01', null, $total)], 2500, $descontoItem, $total, $infCpl);
+        $nfce = $modelo === ModeloDocumento::Nfce;
+
+        return new NotaParaEmissao('nota-1', 'HOMOLOGACAO', '1', 7, 'Venda de mercadoria', 1, $emitente, $nfce ? null : $dest, [$item], [new PagamentoParaEmissao('01', null, $total)], 2500, $descontoItem, $total, $infCpl, $modelo, $consumidor);
     }
 
     private function certificadoDeTeste(): Certificate
@@ -35,13 +39,17 @@ trait AssinaNfeDeTeste
         return Certificate::readPfx($pfx, 'teste');
     }
 
-    private function assinar(string $xml): string
+    private function assinar(string $xml, int $modelo = 55): string
     {
-        $tools = new Tools(json_encode([
+        $config = [
             'atualizacao' => '2026-10-02 00:00:00', 'tpAmb' => 2, 'razaosocial' => 'Empresa Teste LTDA', 'siglaUF' => 'SP',
             'cnpj' => '11444777000161', 'schemes' => 'PL_009_V4', 'versao' => '4.00',
-        ], JSON_THROW_ON_ERROR), $this->certificadoDeTeste());
-        $tools->model(55);
+        ];
+        if ($modelo === 65) {
+            $config += ['CSC' => 'TOKEN-DE-TESTE', 'CSCid' => '000001'];
+        }
+        $tools = new Tools(json_encode($config, JSON_THROW_ON_ERROR), $this->certificadoDeTeste());
+        $tools->model($modelo);
 
         return $tools->signNFe($xml);
     }

@@ -10,6 +10,7 @@ use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsulta;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEmissao;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeInutilizacao;
 use App\Modules\Fiscal\Domain\Emissao\XmlAssinado;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Models\Emitente;
 
 /** O motor só traduz formato: nenhuma regra tributária mora aqui. */
@@ -27,5 +28,5 @@ interface EmissorDeNfe
     /** Envia o evento de cancelamento. Falha de comunicação lança exceção (a nota permanece CANCELANDO). */
     public function cancelar(Emitente $emitente, string $chave, string $protocolo, string $justificativa, string $ambiente, string $xmlAutorizado): ResultadoDeCancelamento;
 
-    public function inutilizar(Emitente $emitente, int $serie, int $numeroInicial, int $numeroFinal, string $justificativa, string $ambiente): ResultadoDeInutilizacao;
+    public function inutilizar(Emitente $emitente, ModeloDocumento $modelo, int $serie, int $numeroInicial, int $numeroFinal, string $justificativa, string $ambiente): ResultadoDeInutilizacao;
 }

@@ -11,6 +11,7 @@ use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsulta;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEmissao;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeInutilizacao;
 use App\Modules\Fiscal\Domain\Emissao\XmlAssinado;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Models\Emitente;
 use Throwable;
 
@@ -18,6 +19,9 @@ final class EmissorFake implements EmissorDeNfe
 {
     /** @var list<string> */
     public array $chamadas = [];
+
+    /** @var list<ModeloDocumento> */
+    public array $modelosInutilizados = [];
 
     /** @var list<string> Ambiente recebido em cada consulta, cancelamento e inutilização, em ordem. */
     public array $ambientes = [];
@@ -101,9 +105,10 @@ final class EmissorFake implements EmissorDeNfe
         return array_shift($this->cancelamentos) ?? ResultadoDeCancelamento::aceito('135260000000099', '<nfeProc>cancelada</nfeProc>');
     }
 
-    public function inutilizar(Emitente $emitente, int $serie, int $numeroInicial, int $numeroFinal, string $justificativa, string $ambiente): ResultadoDeInutilizacao
+    public function inutilizar(Emitente $emitente, ModeloDocumento $modelo, int $serie, int $numeroInicial, int $numeroFinal, string $justificativa, string $ambiente): ResultadoDeInutilizacao
     {
         $this->chamadas[] = 'inutilizar';
+        $this->modelosInutilizados[] = $modelo;
         $this->ambientes[] = $ambiente;
         if ($this->falharEmInutilizar !== null) {
             throw $this->falharEmInutilizar;

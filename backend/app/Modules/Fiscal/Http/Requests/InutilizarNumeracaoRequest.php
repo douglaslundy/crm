@@ -12,6 +12,7 @@ final class InutilizarNumeracaoRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'modelo' => ['nullable', 'in:NFE,NFCE'],
             'serie' => ['required', 'string', 'regex:/^\d{1,3}$/'],
             'numero_inicial' => ['required', 'integer', 'min:1'],
             'numero_final' => ['required', 'integer', 'min:1'],
