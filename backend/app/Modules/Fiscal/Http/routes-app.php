@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Modules\Fiscal\Http\Controllers\CertificadoController;
 use App\Modules\Fiscal\Http\Controllers\ConfiguracaoFiscalController;
 use App\Modules\Fiscal\Http\Controllers\ConsultarCepController;
+use App\Modules\Fiscal\Http\Controllers\DashboardFiscalController;
 use App\Modules\Fiscal\Http\Controllers\EmitenteController;
 use App\Modules\Fiscal\Http\Controllers\InutilizacaoController;
 use App\Modules\Fiscal\Http\Controllers\NotaController;
@@ -19,6 +20,8 @@ Route::middleware('empresa')->group(function (): void {
     Route::put('emitente/csc', [ConfiguracaoFiscalController::class, 'atualizarCsc'])->name('app.emitente.csc');
     Route::put('emitente/series/{modelo}', [ConfiguracaoFiscalController::class, 'atualizarSerie'])->whereIn('modelo', ['NFE', 'NFCE', 'DPS'])->name('app.emitente.series');
     Route::post('emitente/ambiente/producao', [ConfiguracaoFiscalController::class, 'confirmarProducao'])->name('app.emitente.producao');
+
+    Route::get('dashboard/fiscal', DashboardFiscalController::class)->name('app.dashboard.fiscal');
 
     Route::get('notas', [NotaController::class, 'index'])->name('app.notas.index');
     Route::post('notas', [NotaController::class, 'store'])->name('app.notas.store');
