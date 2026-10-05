@@ -1,6 +1,6 @@
 # 05. Plano de aplicação no CRM
 
-**Estado: proposta. Nenhum arquivo do frontend do CRM foi alterado.** Aplicar o layout é uma mudança de interface em todo o frontend; ela segue o fluxo do projeto (spec → plano → execução) e só começa com a sua aprovação das decisões da §3.
+**Estado: decisões D1 a D6 tomadas; nenhum arquivo do frontend do CRM foi alterado ainda.** Aplicar o layout é uma mudança de interface em todo o frontend; segue o fluxo do projeto (spec → plano → execução).
 
 ## 1. Onde o CRM está e para onde vai
 
@@ -36,6 +36,19 @@
 | D4 | **Navegação no celular** | (a) gaveta lateral como o Mecânica Pro, (b) manter a barra inferior atual | **(a)**: o menu do proprietário já tem 8 itens; a barra inferior fica apertada e só piora quando o CRM crescer |
 | D5 | **Ícones** | (a) lucide, (b) emoji como o Mecânica Pro | **(a)**: consistência e cor controlável; emoji muda em cada sistema |
 | D6 | **Densidade do menu** | (a) regular do protótipo (14 px, ≈36 px por item), (b) compacta de produção (12 px, ≈26 px) | **(a)** enquanto o menu tiver até ~12 itens |
+
+### Decisões tomadas (2026-10-04)
+
+| # | Decisão do usuário |
+|---|---|
+| D1 | **Escuro por padrão, com alternância lembrada** (`defaultTheme="dark"`, o usuário pode trocar para o claro). |
+| D2 | **Mesmo visual com as correções de acessibilidade** (foco visível, tokens `*-text`, borda de campo forte, pílulas `*-strong`). |
+| D3 | **Manter o nome "Plataforma Fiscal"** (sem logotipo novo; ícone de marca em lucide). |
+| D4 | **Gaveta lateral no celular** (a `BottomNav` atual sai). |
+| D5 | **Ícones lucide.** |
+| D6 | **Menu regular** (14 px, itens de ≈36 px). |
+
+Com D1 a D6 fechadas, falta apenas a spec e o plano de implementação (fases da §4) e a aprovação do usuário para executar.
 
 ## 4. Fases e tarefas previstas
 
@@ -80,6 +93,6 @@ Total estimado: **≈28 tarefas**, sem mudança de regra de negócio, de API ou 
 
 Todas as rotas do CRM usam os tokens e primitivos novos; os dois temas passam no teste de contraste; as telas conferem com `03-componentes.md` nas três larguras; a suíte inteira passa; o ambiente de acompanhamento mostra o resultado para sua avaliação.
 
-## 8. Próximo passo
+## 8. Próximo passo (atualizado)
 
-Você responder D1 a D6 (principalmente **D3, o nome da marca**). Com isso eu escrevo a spec e o plano de implementação e executo por fases, mostrando cada fase no ambiente de acompanhamento.
+D1 a D6 estão respondidas (§3). Próximo: escrever a spec e o plano de implementação das 5 fases e executar, mostrando cada fase no ambiente de acompanhamento.

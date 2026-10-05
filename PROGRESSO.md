@@ -25,7 +25,7 @@ Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é dec
 
 ## Design system do CRM (2026-10-04)
 - Documentação do layout do Mecânica Pro (somente leitura, `C:\Users\dougl\workspace\mecanicapro`) em `docs/design-system/` (índice em `00-INDICE.md`): análise, tokens dos temas escuro e claro com contraste WCAG, especificação de componentes, layout/responsividade e plano de aplicação.
-- **Nada aplicado no CRM ainda.** Aguarda a decisão do usuário sobre D1 a D6 (tema padrão, fidelidade com correções de acessibilidade, nome/logo da marca, menu no celular, ícones, densidade do menu). Estimativa: ~28 tarefas em 5 fases, sem mudar regra de negócio. O CRM já centraliza o visual em primitivos, então o esforço é bem menor que no original.
+- **Nada aplicado no CRM ainda.** Decisões tomadas (D1 a D6): escuro por padrão com alternância, mesmo visual COM correções de acessibilidade, manter o nome "Plataforma Fiscal", gaveta lateral no celular, ícones lucide, menu regular (14 px). Falta spec + plano das 5 fases (~28 tarefas, sem mudar regra de negócio) e a aprovação para executar.
 - Defeitos do original que NÃO se copiam: sem foco visível nos campos, cores semânticas do tema claro com 2,0 a 3,7:1, borda de campo 1,2:1, texto branco em pílulas sólidas (3,3 a 4,2:1), ícones em emoji.
 
 ## Ambiente de acompanhamento (staging) na VPS (2026-10-04)
