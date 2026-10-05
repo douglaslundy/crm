@@ -60,7 +60,7 @@ export function ListaDeEmpresas() {
       {empresas.length > 0 ? (
         <>
           <table className="hidden w-full text-sm md:table">
-            <thead className="text-left text-muted-foreground">
+            <thead className="border-b border-border text-left text-xs uppercase tracking-[0.05em] text-muted-foreground">
               <tr><th className="p-2">Empresa</th><th className="p-2">CNPJ</th><th className="p-2">Plano</th><th className="p-2">Situação</th><th className="p-2">Criada em</th><th className="p-2"><span className="sr-only">Ações</span></th></tr>
             </thead>
             <tbody className="divide-y">
