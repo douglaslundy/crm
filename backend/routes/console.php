@@ -15,3 +15,6 @@ Schedule::command('assinaturas:expirar-testes')->dailyAt('00:10')->timezone('Ame
 
 Schedule::command('fiscal:reconciliar-processando')->everyFifteenMinutes()
     ->withoutOverlapping()->onOneServer();
+
+Schedule::command('fiscal:retransmitir-contingencia')->hourly()
+    ->withoutOverlapping()->onOneServer();

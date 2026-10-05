@@ -66,7 +66,7 @@ final class AplicarResultadoDaEmissao
     {
         return DB::transaction(function () use ($notaId, $r): Nota {
             $nota = Nota::query()->whereKey($notaId)->lockForUpdate()->firstOrFail();
-            if ($nota->status !== StatusNota::Processando && $nota->status !== StatusNota::Erro) {
+            if (! in_array($nota->status, [StatusNota::Processando, StatusNota::Erro, StatusNota::Contingencia], true)) {
                 return $nota;
             }
             $anterior = $nota->status;

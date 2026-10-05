@@ -31,6 +31,7 @@ Route::middleware('empresa')->group(function (): void {
     Route::get('notas/{nota}/status', [NotaController::class, 'status'])->name('app.notas.status');
     Route::post('notas/{nota}/emitir', [NotaController::class, 'emitir'])->name('app.notas.emitir');
     Route::get('notas/{nota}/xml', [NotaController::class, 'xml'])->name('app.notas.xml');
+    Route::post('notas/{nota}/retransmitir', [NotaController::class, 'retransmitir'])->name('app.notas.retransmitir');
     Route::post('notas/{nota}/cancelar', [NotaController::class, 'cancelar'])->name('app.notas.cancelar');
     Route::get('notas/{nota}/xml-cancelamento', [NotaController::class, 'xmlCancelamento'])->name('app.notas.xml-cancelamento');
     Route::get('notas/{nota}/pdf', [NotaController::class, 'pdf'])->name('app.notas.pdf');

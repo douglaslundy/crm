@@ -10,6 +10,7 @@ use App\Modules\Fiscal\Application\Actions\ExcluirRascunhoDeNota;
 use App\Modules\Fiscal\Application\Actions\GerarDanfe;
 use App\Modules\Fiscal\Application\Actions\IniciarCancelamento;
 use App\Modules\Fiscal\Application\Actions\IniciarEmissao;
+use App\Modules\Fiscal\Application\Actions\RetransmitirNota;
 use App\Modules\Fiscal\Application\PoliticaDeNotas;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Exceptions\NotaSemXmlCancelamentoException;
@@ -82,6 +83,13 @@ final class NotaController
     }
 
     public function emitir(Request $request, Nota $nota, IniciarEmissao $acao): JsonResponse
+    {
+        $nota = $acao->executar($nota->id, $this->autor($request));
+
+        return (new NotaStatusResource($nota))->response()->setStatusCode(202);
+    }
+
+    public function retransmitir(Request $request, Nota $nota, RetransmitirNota $acao): JsonResponse
     {
         $nota = $acao->executar($nota->id, $this->autor($request));
 
