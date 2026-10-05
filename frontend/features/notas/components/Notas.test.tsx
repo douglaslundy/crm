@@ -23,7 +23,7 @@ vi.mock('../api', () => ({
   urlDoPdf: (id: string) => `http://api.test/api/app/notas/${id}/pdf`,
   QUERY_KEY_INUTILIZACOES: ['inutilizacoes'],
   inutilizacoesApi: { listar: vi.fn(), criar: vi.fn() },
-  notasApi: { listar: vi.fn(), buscar: vi.fn(), status: vi.fn(), criar: vi.fn(), editar: vi.fn(), excluir: vi.fn(), emitir: vi.fn(), cancelar: vi.fn() },
+  notasApi: { retransmitir: vi.fn(), listar: vi.fn(), buscar: vi.fn(), status: vi.fn(), criar: vi.fn(), editar: vi.fn(), excluir: vi.fn(), emitir: vi.fn(), cancelar: vi.fn() },
 }));
 
 vi.mock('@/features/clientes/api', () => ({ QUERY_KEY_CLIENTES: ['clientes'], clientesApi: { listar: vi.fn() } }));
@@ -44,7 +44,7 @@ export function renderizar(ui: ReactNode) {
 }
 
 export const NOTA: Nota = {
-  id: 'n1', modelo: 'NFE', status: 'AUTORIZADA', ambiente: 'HOMOLOGACAO', numero: 7, serie: '1', chave: '3'.repeat(44), protocolo: '135', cstat: '100', motivo: 'Autorizado',
+  id: 'n1', modelo: 'NFE', contingencia_limite_em: null, contingencia_motivo: null, status: 'AUTORIZADA', ambiente: 'HOMOLOGACAO', numero: 7, serie: '1', chave: '3'.repeat(44), protocolo: '135', cstat: '100', motivo: 'Autorizado',
   cancelamento_justificativa: null, cancelado_em: null, cancelamento_protocolo: null, cancelamento_cstat: null, cancelamento_motivo: null,
   mensagem_erro: null, natureza_operacao: 'Venda de mercadoria', consumidor_final: true, subtotal_centavos: 2500, desconto_centavos: 0, total_centavos: 2500,
   informacoes_complementares: null, emitido_em: '2026-10-02T10:00:00-03:00', created_at: '2026-10-02T09:00:00-03:00', cliente: { id: 'c1', nome: 'Maria Teste' },
@@ -574,5 +574,58 @@ describe('NFC-e: cupom e cancelamento', () => {
     renderizar(<ListaDeInutilizacoes />);
 
     expect(await screen.findByText(/NFC-e · série 2/)).toBeInTheDocument();
+  });
+});
+
+describe('NFC-e em contingência', () => {
+  const EM_CONTINGENCIA: Nota = {
+    ...NOTA, modelo: 'NFCE', status: 'CONTINGENCIA', protocolo: null, emitido_em: null,
+    contingencia_limite_em: '2099-01-01T00:00:00Z', contingencia_motivo: 'Falha de comunicação com a SEFAZ na emissão; emitida em contingência offline.',
+  };
+
+  it('StatusDaNota mostra "Em contingência" em texto', () => {
+    render(<StatusDaNota status="CONTINGENCIA" ambiente="HOMOLOGACAO" />);
+    expect(screen.getByText('Em contingência')).toBeInTheDocument();
+  });
+
+  it('o detalhe explica a contingência, mostra o prazo e oferece o cupom', async () => {
+    comPapel('LEITURA');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: EM_CONTINGENCIA });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    expect(await screen.findByRole('status')).toHaveTextContent('Falha de comunicação com a SEFAZ');
+    expect(screen.getByRole('status')).toHaveTextContent(/restam/i);
+    expect(screen.getByRole('link', { name: 'Abrir cupom (PDF)' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Retransmitir agora' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Cancelar/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Emitir/ })).not.toBeInTheDocument();
+  });
+
+  it('prazo vencido vira alerta', async () => {
+    comPapel('LEITURA');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: { ...EM_CONTINGENCIA, contingencia_limite_em: '2020-01-01T00:00:00Z' } });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/vencido/i);
+  });
+
+  it('quem emite retransmite com um clique', async () => {
+    comPapel('ADMIN');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: EM_CONTINGENCIA });
+    vi.mocked(notasApi.retransmitir).mockResolvedValue({ data: { id: 'n1', status: 'AUTORIZADA', numero: 7, serie: '1', chave: null, cstat: null, motivo: null, mensagem_erro: null, cancelamento_cstat: null, cancelamento_motivo: null } });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Retransmitir agora' }));
+
+    await waitFor(() => expect(notasApi.retransmitir).toHaveBeenCalledWith('n1'));
+  });
+
+  it('a lista filtra por contingência', async () => {
+    vi.mocked(notasApi.listar).mockResolvedValue({ data: [] });
+    renderizar(<ListaDeNotas />);
+    await screen.findByText('Nenhuma nota encontrada.');
+
+    await userEvent.selectOptions(screen.getByLabelText('Status'), 'CONTINGENCIA');
+    await waitFor(() => expect(notasApi.listar).toHaveBeenLastCalledWith('CONTINGENCIA'));
   });
 });

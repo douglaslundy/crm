@@ -1,4 +1,4 @@
-export type StatusNota = 'RASCUNHO' | 'PROCESSANDO' | 'AUTORIZADA' | 'REJEITADA' | 'ERRO' | 'CANCELADA' | 'CANCELANDO';
+export type StatusNota = 'RASCUNHO' | 'PROCESSANDO' | 'AUTORIZADA' | 'REJEITADA' | 'ERRO' | 'CANCELADA' | 'CANCELANDO' | 'CONTINGENCIA';
 export type FormaPagamento = '01' | '03' | '04' | '17' | '99';
 
 export const ROTULO_STATUS: Record<StatusNota, string> = {
@@ -9,6 +9,7 @@ export const ROTULO_STATUS: Record<StatusNota, string> = {
   ERRO: 'Erro',
   CANCELADA: 'Cancelada',
   CANCELANDO: 'Cancelando',
+  CONTINGENCIA: 'Em contingência',
 };
 
 export const ROTULO_PAGAMENTO: Record<FormaPagamento, string> = {
@@ -54,6 +55,8 @@ export const ROTULO_MODELO: Record<ModeloDaNota, string> = { NFE: 'NF-e', NFCE: 
 export interface Nota {
   id: string;
   modelo: ModeloDaNota;
+  contingencia_limite_em: string | null;
+  contingencia_motivo: string | null;
   status: StatusNota;
   ambiente: 'HOMOLOGACAO' | 'PRODUCAO' | null;
   numero: number | null;

@@ -16,7 +16,8 @@ import { formatarCentavos } from '@/lib/formatos';
 import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { notasApi, QUERY_KEY_NOTAS, urlDoPdf, urlDoXml, urlDoXmlCancelamento } from '../api';
 import { cancelamentoSchema, type CancelamentoDados } from '../schemas';
-import { ROTULO_MODELO, ROTULO_PAGAMENTO, ROTULO_STATUS } from '../types';
+import { tempoRestante } from '../contingencia';
+import { ROTULO_MODELO, ROTULO_PAGAMENTO, ROTULO_STATUS, type Nota } from '../types';
 import { NotaForm } from './NotaForm';
 import { StatusDaNota } from './StatusDaNota';
 import { Banner } from '@/components/ui/banner';
@@ -71,6 +72,17 @@ export function DetalheDaNota({ id }: { id: string }) {
     },
   });
 
+  const retransmitir = useMutation({
+    mutationFn: () => notasApi.retransmitir(id),
+    onSuccess: () => {
+      toast.info('Retransmissão solicitada.');
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEY_NOTAS });
+    },
+    onError: (erro) => {
+      toast.error(erro instanceof ApiError ? erro.message : 'Não foi possível retransmitir. Tente novamente.');
+    },
+  });
+
   const emitir = useMutation({
     mutationFn: () => notasApi.emitir(id),
     onSuccess: () => {
@@ -121,7 +133,9 @@ export function DetalheDaNota({ id }: { id: string }) {
       ) : null}
       {erroEmissao ? <Banner tom="perigo">{erroEmissao}</Banner> : null}
 
-      {nota.status === 'AUTORIZADA' || nota.status === 'CANCELANDO' || nota.status === 'CANCELADA' ? (
+      {nota.status === 'CONTINGENCIA' ? <BlocoDeContingencia nota={nota} podeRetransmitir={podeEmitir} retransmitindo={retransmitir.isPending} aoRetransmitir={() => retransmitir.mutate()} /> : null}
+
+      {nota.status === 'AUTORIZADA' || nota.status === 'CANCELANDO' || nota.status === 'CANCELADA' || nota.status === 'CONTINGENCIA' ? (
         <div>
           <a href={urlDoPdf(nota.id)} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: 'secondary' })}>{nota.modelo === 'NFCE' ? 'Abrir cupom (PDF)' : 'Abrir DANFE (PDF)'}</a>
         </div>
@@ -279,5 +293,27 @@ export function DetalheDaNota({ id }: { id: string }) {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function BlocoDeContingencia({ nota, podeRetransmitir, retransmitindo, aoRetransmitir }: { nota: Nota; podeRetransmitir: boolean; retransmitindo: boolean; aoRetransmitir: () => void }) {
+  const prazo = nota.contingencia_limite_em === null ? null : tempoRestante(nota.contingencia_limite_em);
+  return (
+    <Banner tom={prazo?.vencido ? 'perigo' : 'alerta'}>
+      <p>
+        Emitida em contingência offline: o cupom já vale para o consumidor, mas a nota ainda não foi autorizada pela SEFAZ.
+        {nota.contingencia_motivo ? ` ${nota.contingencia_motivo}` : ''}
+      </p>
+      {prazo ? (
+        <p className="mt-1">
+          {prazo.vencido ? `Prazo para transmitir vencido há ${prazo.texto}.` : `Prazo para transmitir: restam ${prazo.texto}.`}
+        </p>
+      ) : null}
+      {podeRetransmitir ? (
+        <div className="mt-2">
+          <Button type="button" size="sm" onClick={aoRetransmitir} disabled={retransmitindo}>Retransmitir agora</Button>
+        </div>
+      ) : null}
+    </Banner>
   );
 }

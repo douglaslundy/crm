@@ -9,6 +9,7 @@ const TOM: Record<StatusNota, { tom: TomDaPilula; contorno?: boolean }> = {
   ERRO: { tom: 'perigo' },
   CANCELADA: { tom: 'perigo', contorno: true },
   CANCELANDO: { tom: 'alerta', contorno: true },
+  CONTINGENCIA: { tom: 'alerta' },
 };
 
 /** Texto sempre presente: a cor sozinha não basta (acessibilidade). O ambiente fica visível ao lado. */

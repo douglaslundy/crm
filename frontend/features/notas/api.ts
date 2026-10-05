@@ -11,6 +11,7 @@ export const notasApi = {
   editar: (id: string, dados: NotaPayload) => api<{ data: Nota }>(`/api/app/notas/${id}`, { method: 'PUT', body: JSON.stringify(dados) }),
   excluir: (id: string) => api<void>(`/api/app/notas/${id}`, { method: 'DELETE' }),
   emitir: (id: string) => api<{ data: NotaStatus }>(`/api/app/notas/${id}/emitir`, { method: 'POST' }),
+  retransmitir: (id: string) => api<{ data: NotaStatus }>(`/api/app/notas/${id}/retransmitir`, { method: 'POST' }),
   cancelar: (id: string, justificativa: string) =>
     api<{ data: NotaStatus }>(`/api/app/notas/${id}/cancelar`, { method: 'POST', body: JSON.stringify({ justificativa }) }),
 };
