@@ -33,10 +33,10 @@ trait CenarioDeNota
 
     protected Produto $produto;
 
-    protected function montarCenario(): void
+    protected function montarCenario(Modulo ...$modulos): void
     {
         $this->tenant = Tenant::factory()->for(
-            Plano::factory()->comModulos(Modulo::FiscalNfe)->comLimites([Recurso::DocumentosMes->value => 100]),
+            Plano::factory()->comModulos(...($modulos === [] ? [Modulo::FiscalNfe] : $modulos))->comLimites([Recurso::DocumentosMes->value => 100]),
         )->create(['cnpj' => '11444777000161']);
         $this->admin = Usuario::factory()->for($this->tenant)->create(['papel' => Papel::Admin]);
         app(TenantContext::class)->set($this->tenant->id);

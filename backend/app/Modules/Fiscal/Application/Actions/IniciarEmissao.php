@@ -50,10 +50,14 @@ final class IniciarEmissao
             if (! $tenant->situacao->permiteEscrita()) {
                 throw AssinaturaSemEscritaException::para($tenant->situacao);
             }
-            $this->planos->garantirModulo($tenant, Modulo::FiscalNfe);
+            $nfce = $nota->modelo === ModeloDocumento::Nfce;
+            $this->planos->garantirModulo($tenant, $nfce ? Modulo::FiscalNfce : Modulo::FiscalNfe);
 
             $emitente = Emitente::query()->findOrFail($nota->emitente_id);
-            $this->verificador->garantirApto($emitente, $tenant);
+            $this->verificador->garantirApto($emitente, $tenant, $nota->modelo);
+            if ($nfce) {
+                $this->verificador->garantirCsc($emitente, $emitente->ambiente_fiscal->value);
+            }
             if ($emitente->ambiente_fiscal === AmbienteFiscal::Producao) {
                 $this->planos->garantirCapacidade($tenant, Recurso::DocumentosMes);
             }
@@ -63,7 +67,7 @@ final class IniciarEmissao
             $ambiente = $emitente->ambiente_fiscal->value;
             $numeroNovo = $nota->numero === null || $nota->ambiente !== $ambiente;
             if ($numeroNovo) {
-                $serie = EmitenteSerie::query()->where('emitente_id', $emitente->id)->where('modelo', ModeloDocumento::Nfe)->lockForUpdate()->firstOrFail();
+                $serie = EmitenteSerie::query()->where('emitente_id', $emitente->id)->where('modelo', $nota->modelo)->lockForUpdate()->firstOrFail();
                 $nota->numero = $serie->proximo_numero;
                 $nota->serie = $serie->serie;
                 $serie->update(['proximo_numero' => $serie->proximo_numero + 1]);

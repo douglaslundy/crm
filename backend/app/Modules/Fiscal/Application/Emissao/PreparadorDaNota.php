@@ -9,10 +9,12 @@ use App\Modules\Catalog\Domain\Models\Produto;
 use App\Modules\Customers\Domain\Enums\TipoCliente;
 use App\Modules\Customers\Domain\Models\Cliente;
 use App\Modules\Fiscal\Domain\Enums\FormaPagamento;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Exceptions\EmissaoBloqueadaException;
 use App\Modules\Fiscal\Domain\Models\Emitente;
 use App\Modules\Fiscal\Domain\Models\Nota;
 use App\Modules\Fiscal\Domain\RateioDeDesconto;
+use App\Modules\Fiscal\Domain\Resolvers\CfopConsumidorResolver;
 use App\Modules\Fiscal\Domain\Resolvers\CfopSaidaResolver;
 use App\Modules\Fiscal\Domain\Resolvers\IndicadorIeDestinatarioResolver;
 use App\Modules\Fiscal\Domain\Resolvers\TributacaoIcmsSaidaResolver;
@@ -27,6 +29,7 @@ final class PreparadorDaNota
         private readonly CfopSaidaResolver $cfop,
         private readonly TributacaoIcmsSaidaResolver $csosn,
         private readonly IndicadorIeDestinatarioResolver $indicadorIe,
+        private readonly CfopConsumidorResolver $cfopConsumidor,
     ) {}
 
     public function preparar(Nota $nota, Emitente $emitente): void
@@ -36,8 +39,10 @@ final class PreparadorDaNota
             throw new EmissaoBloqueadaException('FISCAL_NOTA_SEM_ITENS', 'Adicione ao menos um item à nota.');
         }
 
-        $cliente = Cliente::query()->findOrFail($nota->cliente_id);
-        $destinatario = $this->destinatario($nota, $cliente);
+        $nfce = $nota->modelo === ModeloDocumento::Nfce;
+        $destinatario = $nfce
+            ? $this->consumidor($nota)
+            : $this->destinatario($nota, Cliente::query()->findOrFail($nota->cliente_id));
 
         $totais = $itens->map(fn ($i): int => RateioDeDesconto::totalDoItem($i->quantidade_milesimos, $i->valor_unitario_centavos))->all();
         $descontos = RateioDeDesconto::ratear($nota->desconto_centavos, array_values($totais));
@@ -59,7 +64,9 @@ final class PreparadorDaNota
                 'cest' => $produto->cest,
                 'origem' => $produto->origem,
                 'tributacao_icms' => $tributacao->value,
-                'cfop' => $this->cfop->resolver((string) $emitente->uf, $destinatario['uf'], $tributacao),
+                'cfop' => $nfce
+                    ? $this->cfopConsumidor->resolver((string) $emitente->uf, $destinatario['uf'] ?? null, $tributacao)
+                    : $this->cfop->resolver((string) $emitente->uf, $destinatario['uf'], $tributacao),
                 'csosn' => $this->csosn->csosn($tributacao),
                 'desconto_centavos' => $descontos[$i],
                 'total_centavos' => $totais[$i],
@@ -90,6 +97,27 @@ final class PreparadorDaNota
         }
 
         return $produto->tributacao_icms;
+    }
+
+    /**
+     * NFC-e: destinatário opcional, só documento e nome, sem endereço. Sem cliente ou sem CPF/CNPJ é venda
+     * sem identificação (snapshot nulo). A UF só serve para recusar a NFC-e interestadual.
+     *
+     * @return array<string, mixed>|null
+     */
+    private function consumidor(Nota $nota): ?array
+    {
+        if ($nota->cliente_id === null) {
+            return null;
+        }
+        $c = Cliente::query()->findOrFail($nota->cliente_id);
+        $documento = $c->cpf_cnpj === null ? '' : (string) preg_replace('/\D/', '', $c->cpf_cnpj);
+        if ($documento === '') {
+            return null;
+        }
+        $uf = $c->uf === null || trim((string) $c->uf) === '' ? null : strtoupper((string) $c->uf);
+
+        return ['tipo' => $c->tipo->value, 'documento' => $documento, 'nome' => $c->nome, 'uf' => $uf];
     }
 
     /** @return array<string, mixed> */
