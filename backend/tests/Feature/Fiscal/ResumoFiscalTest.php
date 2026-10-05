@@ -1,0 +1,163 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Fiscal;
+
+use App\Modules\Fiscal\Application\ResumoFiscal;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
+use App\Modules\Fiscal\Domain\Enums\StatusNota;
+use App\Modules\Fiscal\Domain\Models\Nota;
+use App\Modules\Platform\Domain\Models\Plano;
+use App\Modules\Tenancy\Domain\Models\Tenant;
+use App\Modules\Tenancy\Domain\TenantContext;
+use Carbon\CarbonImmutable;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Fixtures\CenarioDeNota;
+use Tests\TestCase;
+
+class ResumoFiscalTest extends TestCase
+{
+    use CenarioDeNota;
+    use RefreshDatabase;
+
+    private CarbonImmutable $agora;
+
+    private int $seq = 0;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->montarCenario();
+        $this->agora = CarbonImmutable::parse('2026-10-15 12:00', 'America/Sao_Paulo');
+    }
+
+    private function nota(StatusNota $status, int $total, ?string $emitidoEm = null, string $ambiente = 'HOMOLOGACAO', ModeloDocumento $modelo = ModeloDocumento::Nfe, ?string $criadaEm = null): Nota
+    {
+        $this->seq++;
+        $nota = Nota::factory()->create(['emitente_id' => $this->emitente->id, 'cliente_id' => $this->cliente->id]);
+        $nota->forceFill([
+            'modelo' => $modelo, 'status' => $status, 'ambiente' => $ambiente, 'serie' => '1', 'numero' => $this->seq,
+            'chave' => str_pad((string) $this->seq, 44, '0', STR_PAD_LEFT), 'total_centavos' => $total, 'subtotal_centavos' => $total,
+            'emitido_em' => $emitidoEm, 'cstat' => '232', 'motivo' => 'Motivo '.$this->seq,
+        ]);
+        if ($criadaEm !== null) {
+            $nota->created_at = CarbonImmutable::parse($criadaEm);
+        }
+        $nota->save();
+
+        return $nota;
+    }
+
+    /** @return array<string, mixed> */
+    private function resumo(): array
+    {
+        return app(ResumoFiscal::class)->executar($this->agora);
+    }
+
+    public function test_doze_meses_ordenados_e_preenchidos_com_zero(): void
+    {
+        $meses = $this->resumo()['faturamento_12_meses'];
+
+        $this->assertCount(12, $meses);
+        $this->assertSame('2025-11', $meses[0]['mes']);
+        $this->assertSame('2026-10', $meses[11]['mes']);
+        foreach ($meses as $m) {
+            $this->assertSame(0, $m['valor_centavos']);
+            $this->assertSame(0, $m['quantidade']);
+        }
+    }
+
+    public function test_soma_autorizadas_e_cancelando_e_ignora_canceladas_nos_meses_certos(): void
+    {
+        $this->nota(StatusNota::Autorizada, 1000, '2026-09-10 12:00:00');
+        $this->nota(StatusNota::Autorizada, 2500, '2026-10-02 12:00:00');
+        $this->nota(StatusNota::Cancelando, 700, '2026-10-03 12:00:00');
+        $this->nota(StatusNota::Cancelada, 9999, '2026-10-04 12:00:00');
+
+        $r = $this->resumo();
+
+        $this->assertSame(3200, $r['mes']['valor_emitido_centavos']);
+        $this->assertSame(['mes' => '2026-09', 'valor_centavos' => 1000, 'quantidade' => 1], $r['faturamento_12_meses'][10]);
+        $this->assertSame(['mes' => '2026-10', 'valor_centavos' => 3200, 'quantidade' => 2], $r['faturamento_12_meses'][11]);
+    }
+
+    public function test_so_o_ambiente_atual_entra(): void
+    {
+        $this->nota(StatusNota::Autorizada, 1000, '2026-10-02 12:00:00', 'HOMOLOGACAO');
+        $this->nota(StatusNota::Autorizada, 5000, '2026-10-02 12:00:00', 'PRODUCAO');
+
+        $r = $this->resumo();
+
+        $this->assertSame('HOMOLOGACAO', $r['ambiente']);
+        $this->assertSame(1000, $r['mes']['valor_emitido_centavos']);
+    }
+
+    public function test_notas_do_mes_por_modelo_e_status_so_com_quantidade(): void
+    {
+        $this->nota(StatusNota::Autorizada, 100, '2026-10-02 12:00:00', modelo: ModeloDocumento::Nfe);
+        $this->nota(StatusNota::Autorizada, 100, '2026-10-03 12:00:00', modelo: ModeloDocumento::Nfce);
+        $this->nota(StatusNota::Autorizada, 100, '2026-10-04 12:00:00', modelo: ModeloDocumento::Nfce);
+        $this->nota(StatusNota::Rascunho, 0, null, criadaEm: '2026-10-05 12:00:00');
+        $this->nota(StatusNota::Rejeitada, 0, null, criadaEm: '2026-09-05 12:00:00');
+
+        $notas = collect($this->resumo()['mes']['notas'])->mapWithKeys(fn (array $n): array => [$n['modelo'].'/'.$n['status'] => $n['quantidade']])->all();
+
+        $this->assertEquals(['NFE/AUTORIZADA' => 1, 'NFCE/AUTORIZADA' => 2, 'NFE/RASCUNHO' => 1], $notas);
+        $this->assertSame('2026-10', $this->resumo()['mes']['periodo']);
+    }
+
+    public function test_nota_emitida_as_23h30_de_31_de_marco_em_sao_paulo_conta_em_marco(): void
+    {
+        $this->agora = CarbonImmutable::parse('2026-04-10 12:00', 'America/Sao_Paulo');
+        $this->nota(StatusNota::Autorizada, 4200, '2026-04-01 02:30:00');
+
+        $meses = collect($this->resumo()['faturamento_12_meses'])->keyBy('mes');
+
+        $this->assertSame(4200, $meses['2026-03']['valor_centavos']);
+        $this->assertSame(0, $meses['2026-04']['valor_centavos']);
+    }
+
+    public function test_rejeicoes_total_sem_limite_e_cinco_recentes_da_mais_nova(): void
+    {
+        foreach (range(1, 7) as $i) {
+            $this->nota($i % 2 === 0 ? StatusNota::Erro : StatusNota::Rejeitada, 0, null, criadaEm: "2026-10-0{$i} 10:00:00");
+        }
+
+        $rej = $this->resumo()['rejeicoes'];
+
+        $this->assertSame(7, $rej['quantidade']);
+        $this->assertCount(5, $rej['recentes']);
+        $this->assertSame('Motivo 7', $rej['recentes'][0]['motivo']);
+        $this->assertSame('Motivo 3', $rej['recentes'][4]['motivo']);
+        $this->assertArrayHasKey('modelo', $rej['recentes'][0]);
+        $this->assertArrayHasKey('numero', $rej['recentes'][0]);
+        $this->assertArrayHasKey('status', $rej['recentes'][0]);
+    }
+
+    public function test_certificado_futuro_vencido_e_sem_validade(): void
+    {
+        $this->emitente->update(['certificado_validade' => '2026-10-25']);
+        $this->assertSame(10, $this->resumo()['certificado']['dias_restantes']);
+        $this->assertSame('2026-10-25', $this->resumo()['certificado']['validade']);
+
+        $this->emitente->update(['certificado_validade' => '2026-10-10']);
+        $this->assertSame(-5, $this->resumo()['certificado']['dias_restantes']);
+
+        $this->emitente->forceFill(['certificado_validade' => null])->save();
+        $this->assertNull($this->resumo()['certificado']['validade']);
+        $this->assertNull($this->resumo()['certificado']['dias_restantes']);
+    }
+
+    public function test_notas_de_outro_tenant_nao_aparecem(): void
+    {
+        $this->nota(StatusNota::Autorizada, 1000, '2026-10-02 12:00:00');
+        $outro = Tenant::factory()->for(Plano::factory())->create();
+        app(TenantContext::class)->set($outro->id);
+
+        $r = $this->resumo();
+
+        $this->assertSame(0, $r['mes']['valor_emitido_centavos']);
+        $this->assertSame(0, $r['rejeicoes']['quantidade']);
+    }
+}
