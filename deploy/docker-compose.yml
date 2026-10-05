@@ -1,0 +1,62 @@
+# Ambiente de acompanhamento (staging) da Plataforma Fiscal + CRM.
+# Projeto isolado ("crm"): rede, volumes e portas próprios. O banco não é exposto no host.
+# Uso: veja deploy/README.md. Variáveis em deploy/.env (modelo: deploy/.env.example).
+name: crm
+
+x-app: &app
+  build:
+    context: ..
+    dockerfile: deploy/Dockerfile.backend
+  image: crm-app:local
+  env_file: .env
+  restart: unless-stopped
+  volumes:
+    - storage:/var/www/html/storage
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  app:
+    <<: *app
+    ports:
+      - "${API_PORT:-8200}:8080"
+
+  worker:
+    <<: *app
+    command: ["php", "/var/www/html/artisan", "queue:work", "--sleep=3", "--tries=1", "--timeout=180", "--max-time=3600"]
+    stop_grace_period: 60s
+
+  scheduler:
+    <<: *app
+    command: ["php", "/var/www/html/artisan", "schedule:work"]
+
+  web:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    image: crm-web:local
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-3200}:3000"
+
+volumes:
+  pgdata:
+  storage:

@@ -1,0 +1,20 @@
+# Backend Laravel: nginx + PHP-FPM numa imagem só (serversideup/php).
+# O mesmo build serve a API, o worker da fila e o agendador (muda só o comando no compose).
+FROM serversideup/php:8.2-fpm-nginx
+
+USER root
+# pdo_pgsql já vem na imagem; o resto é o que o projeto pede (sped-nfe: soap/intl/zip; sped-da: gd).
+RUN install-php-extensions soap intl gd zip bcmath
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /var/www/html
+COPY --chown=www-data:www-data backend/composer.json backend/composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction
+
+COPY --chown=www-data:www-data backend/ ./
+RUN composer dump-autoload --optimize --no-dev \
+    && php artisan package:discover --ansi \
+    && mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache \
+    && chown -R www-data:www-data storage bootstrap/cache
+
+USER www-data

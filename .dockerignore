@@ -1,0 +1,17 @@
+.git
+.superpowers
+.github
+docs
+deploy
+**/node_modules
+**/vendor
+**/.next
+**/.env
+**/.env.*
+!**/.env.example
+backend/tests
+backend/database/*.sqlite
+backend/storage/logs/*
+backend/storage/framework/cache/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
