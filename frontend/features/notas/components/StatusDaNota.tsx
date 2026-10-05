@@ -1,25 +1,26 @@
-import { cn } from '@/lib/utils';
+import { Pilula, type TomDaPilula } from '@/components/ui/pilula';
 import { ROTULO_STATUS, type StatusNota } from '../types';
 
-const COR: Record<StatusNota, string> = {
-  RASCUNHO: 'bg-muted text-muted-foreground',
-  PROCESSANDO: 'bg-warning/15 text-warning',
-  AUTORIZADA: 'bg-success/15 text-success',
-  REJEITADA: 'bg-danger/15 text-danger',
-  ERRO: 'bg-danger/15 text-danger',
-  CANCELADA: 'bg-muted text-muted-foreground',
-  CANCELANDO: 'bg-warning/15 text-warning',
+const TOM: Record<StatusNota, { tom: TomDaPilula; contorno?: boolean }> = {
+  RASCUNHO: { tom: 'neutro' },
+  PROCESSANDO: { tom: 'alerta' },
+  AUTORIZADA: { tom: 'sucesso' },
+  REJEITADA: { tom: 'perigo' },
+  ERRO: { tom: 'perigo' },
+  CANCELADA: { tom: 'perigo', contorno: true },
+  CANCELANDO: { tom: 'alerta', contorno: true },
 };
 
 /** Texto sempre presente: a cor sozinha não basta (acessibilidade). O ambiente fica visível ao lado. */
 export function StatusDaNota({ status, ambiente }: { status: StatusNota; ambiente?: 'HOMOLOGACAO' | 'PRODUCAO' | null }) {
+  const { tom, contorno } = TOM[status];
   return (
-    <span className="inline-flex flex-wrap items-center gap-1.5 text-xs font-medium">
-      <span className={cn('rounded-full px-2 py-0.5', COR[status])}>{ROTULO_STATUS[status]}</span>
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      <Pilula tom={tom} contorno={contorno}>{ROTULO_STATUS[status]}</Pilula>
       {ambiente ? (
-        <span className={cn('rounded-full px-2 py-0.5', ambiente === 'PRODUCAO' ? 'bg-danger/15 text-danger' : 'bg-info/15 text-info')}>
+        <Pilula tom={ambiente === 'PRODUCAO' ? 'perigo' : 'info'} contorno>
           {ambiente === 'PRODUCAO' ? 'Produção' : 'Homologação'}
-        </span>
+        </Pilula>
       ) : null}
     </span>
   );
