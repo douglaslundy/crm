@@ -2,7 +2,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { ReactNode } from 'react';
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { useAssinatura } from '@/features/assinatura/hooks/useAssinatura';
 import { useUsuario } from '@/features/auth/hooks/useUsuario';
 import { clientesApi } from '@/features/clientes/api';
 import { produtosApi } from '@/features/produtos/api';
@@ -29,6 +30,13 @@ vi.mock('@/features/clientes/api', () => ({ QUERY_KEY_CLIENTES: ['clientes'], cl
 vi.mock('@/features/produtos/api', () => ({ QUERY_KEY_PRODUTOS: ['produtos'], produtosApi: { listar: vi.fn() } }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/features/auth/hooks/useUsuario', () => ({ useUsuario: vi.fn() }));
+vi.mock('@/features/assinatura/hooks/useAssinatura', () => ({ useAssinatura: vi.fn() }));
+
+function comModulos(modulos: string[]) {
+  vi.mocked(useAssinatura).mockReturnValue({ data: { plano: { modulos } } } as never);
+}
+
+beforeEach(() => comModulos(['FISCAL_NFE']));
 
 export function renderizar(ui: ReactNode) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
@@ -36,7 +44,7 @@ export function renderizar(ui: ReactNode) {
 }
 
 export const NOTA: Nota = {
-  id: 'n1', status: 'AUTORIZADA', ambiente: 'HOMOLOGACAO', numero: 7, serie: '1', chave: '3'.repeat(44), protocolo: '135', cstat: '100', motivo: 'Autorizado',
+  id: 'n1', modelo: 'NFE', status: 'AUTORIZADA', ambiente: 'HOMOLOGACAO', numero: 7, serie: '1', chave: '3'.repeat(44), protocolo: '135', cstat: '100', motivo: 'Autorizado',
   cancelamento_justificativa: null, cancelado_em: null, cancelamento_protocolo: null, cancelamento_cstat: null, cancelamento_motivo: null,
   mensagem_erro: null, natureza_operacao: 'Venda de mercadoria', consumidor_final: true, subtotal_centavos: 2500, desconto_centavos: 0, total_centavos: 2500,
   informacoes_complementares: null, emitido_em: '2026-10-02T10:00:00-03:00', created_at: '2026-10-02T09:00:00-03:00', cliente: { id: 'c1', nome: 'Maria Teste' },
@@ -345,13 +353,13 @@ describe('inutilização', () => {
   }
 
   it('envia a faixa no formato da API', async () => {
-    vi.mocked(inutilizacoesApi.criar).mockResolvedValue({ data: { id: 'i1', serie: '1', numero_inicial: 3, numero_final: 5, justificativa: 'x', ambiente: 'HOMOLOGACAO', status: 'INUTILIZADA', cstat: '102', motivo: null, protocolo: '1', created_at: '2026-10-02T10:00:00-03:00' } });
+    vi.mocked(inutilizacoesApi.criar).mockResolvedValue({ data: { id: 'i1', modelo: 'NFE', serie: '1', numero_inicial: 3, numero_final: 5, justificativa: 'x', ambiente: 'HOMOLOGACAO', status: 'INUTILIZADA', cstat: '102', motivo: null, protocolo: '1', created_at: '2026-10-02T10:00:00-03:00' } });
     renderizar(<FormInutilizacao />);
 
     await preencher('3', '5');
 
     await waitFor(() => expect(inutilizacoesApi.criar).toHaveBeenCalledWith({
-      serie: '1', numero_inicial: 3, numero_final: 5, justificativa: 'Numeração perdida por queda do servidor',
+      modelo: 'NFE', serie: '1', numero_inicial: 3, numero_final: 5, justificativa: 'Numeração perdida por queda do servidor',
     }));
   });
 
@@ -377,7 +385,7 @@ describe('inutilização', () => {
 
   it('lista o histórico com o status em texto', async () => {
     vi.mocked(inutilizacoesApi.listar).mockResolvedValue({ data: [
-      { id: 'i1', serie: '1', numero_inicial: 3, numero_final: 5, justificativa: 'Queda', ambiente: 'HOMOLOGACAO', status: 'RECUSADA', cstat: '241', motivo: 'Um numero da faixa ja foi utilizado', protocolo: null, created_at: '2026-10-02T10:00:00-03:00' },
+      { id: 'i1', modelo: 'NFE', serie: '1', numero_inicial: 3, numero_final: 5, justificativa: 'Queda', ambiente: 'HOMOLOGACAO', status: 'RECUSADA', cstat: '241', motivo: 'Um numero da faixa ja foi utilizado', protocolo: null, created_at: '2026-10-02T10:00:00-03:00' },
     ] });
     renderizar(<ListaDeInutilizacoes />);
 
@@ -412,5 +420,109 @@ describe('DetalheDaNota DANFE', () => {
 
     await screen.findByRole('heading', { level: 1 });
     expect(screen.queryByRole('link', { name: 'Abrir DANFE (PDF)' })).not.toBeInTheDocument();
+  });
+});
+
+describe('NotaForm NFC-e', () => {
+  const CLIENTE_ENDERECO = { id: '44444444-4444-4444-8444-444444444444', tipo: 'PF', nome: 'Joana Consumidora', estagio: 'CLIENTE' };
+
+  function preparar() {
+    vi.mocked(clientesApi.listar).mockResolvedValue({ data: [CLIENTE_ENDERECO] as never });
+    vi.mocked(produtosApi.listar).mockResolvedValue({ data: [PRODUTO] as never });
+  }
+
+  it('só mostra o seletor de modelo quando o plano tem NFC-e', async () => {
+    preparar();
+    renderizar(<NotaForm />);
+    await screen.findByLabelText('Cliente');
+    expect(screen.queryByLabelText('Modelo')).not.toBeInTheDocument();
+  });
+
+  it('com o módulo, oferece NF-e e NFC-e', async () => {
+    comModulos(['FISCAL_NFE', 'FISCAL_NFCE']);
+    preparar();
+    renderizar(<NotaForm />);
+
+    const modelo = await screen.findByLabelText('Modelo');
+    expect(modelo).toHaveValue('NFE');
+    expect(screen.getByRole('option', { name: 'NFC-e' })).toBeInTheDocument();
+  });
+
+  it('na NFC-e o cliente é opcional e o envio leva modelo NFCE sem cliente', async () => {
+    comModulos(['FISCAL_NFE', 'FISCAL_NFCE']);
+    preparar();
+    vi.mocked(notasApi.criar).mockResolvedValue({ data: { ...NOTA, id: 'novo', modelo: 'NFCE', status: 'RASCUNHO' } });
+    renderizar(<NotaForm />);
+
+    await userEvent.selectOptions(await screen.findByLabelText('Modelo'), 'NFCE');
+    expect(screen.getByRole('option', { name: 'Consumidor não identificado' })).toBeInTheDocument();
+    await userEvent.selectOptions(screen.getByLabelText('Produto 1'), PRODUTO.id);
+    await userEvent.clear(screen.getByLabelText('Valor do pagamento 1'));
+    await userEvent.type(screen.getByLabelText('Valor do pagamento 1'), '10,00');
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar rascunho' }));
+
+    await waitFor(() => expect(notasApi.criar).toHaveBeenCalledWith(expect.objectContaining({ modelo: 'NFCE', cliente_id: null })));
+  });
+
+  it('na NFC-e não pergunta se é consumidor final', async () => {
+    comModulos(['FISCAL_NFE', 'FISCAL_NFCE']);
+    vi.mocked(clientesApi.listar).mockResolvedValue({ data: [CLIENTE_PJ] as never });
+    vi.mocked(produtosApi.listar).mockResolvedValue({ data: [PRODUTO] as never });
+    renderizar(<NotaForm />);
+
+    await userEvent.selectOptions(await screen.findByLabelText('Modelo'), 'NFCE');
+    await userEvent.selectOptions(screen.getByLabelText('Cliente (opcional)'), CLIENTE_PJ.id);
+    expect(screen.queryByLabelText('Consumidor final?')).not.toBeInTheDocument();
+  });
+
+  it('na NF-e o cliente continua obrigatório e o envio leva modelo NFE', async () => {
+    comModulos(['FISCAL_NFE', 'FISCAL_NFCE']);
+    preparar();
+    vi.mocked(notasApi.criar).mockClear();
+    renderizar(<NotaForm />);
+
+    await screen.findByLabelText('Modelo');
+    await userEvent.selectOptions(screen.getByLabelText('Produto 1'), PRODUTO.id);
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar rascunho' }));
+
+    expect(await screen.findByText('Escolha um cliente.')).toBeInTheDocument();
+    expect(notasApi.criar).not.toHaveBeenCalled();
+  });
+});
+
+describe('modelo na lista e no detalhe', () => {
+  it('o detalhe de uma NFC-e se identifica como NFC-e e não oferece DANFE', async () => {
+    comPapel('LEITURA');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: { ...NOTA, modelo: 'NFCE', cliente: undefined } });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('NFC-e nº 7');
+    expect(screen.getByText(/Consumidor não identificado/)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Abrir DANFE (PDF)' })).not.toBeInTheDocument();
+  });
+
+  it('a lista mostra o modelo de cada nota', async () => {
+    vi.mocked(notasApi.listar).mockResolvedValue({ data: [NOTA, { ...NOTA, id: 'n2', modelo: 'NFCE', numero: 8 }] });
+    renderizar(<ListaDeNotas />);
+
+    expect(await screen.findByText('NFC-e')).toBeInTheDocument();
+    expect(screen.getByText('NF-e')).toBeInTheDocument();
+  });
+});
+
+describe('FormInutilizacao modelo', () => {
+  it('envia o modelo escolhido quando o plano tem NFC-e', async () => {
+    comModulos(['FISCAL_NFE', 'FISCAL_NFCE']);
+    vi.mocked(inutilizacoesApi.criar).mockResolvedValue({ data: { id: 'i1', modelo: 'NFCE', serie: '2', numero_inicial: 3, numero_final: 5, justificativa: 'x', ambiente: 'HOMOLOGACAO', status: 'INUTILIZADA', cstat: '102', motivo: null, protocolo: '1', created_at: '2026-10-05T10:00:00-03:00' } });
+    renderizar(<FormInutilizacao />);
+
+    await userEvent.selectOptions(await screen.findByLabelText('Modelo'), 'NFCE');
+    await userEvent.type(screen.getByLabelText('Série'), '2');
+    await userEvent.type(screen.getByLabelText('Número inicial'), '3');
+    await userEvent.type(screen.getByLabelText('Número final'), '5');
+    await userEvent.type(screen.getByLabelText('Justificativa'), 'Numeração perdida por queda do servidor');
+    await userEvent.click(screen.getByRole('button', { name: 'Inutilizar numeração' }));
+
+    await waitFor(() => expect(inutilizacoesApi.criar).toHaveBeenCalledWith(expect.objectContaining({ modelo: 'NFCE', serie: '2' })));
   });
 });

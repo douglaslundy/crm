@@ -9,6 +9,7 @@ import { Campo } from '@/components/form/Campo';
 import { Button } from '@/components/ui/button';
 import { SelectNativo, TextareaNativo } from '@/components/ui/campos-nativos';
 import { Input } from '@/components/ui/input';
+import { useAssinatura } from '@/features/assinatura/hooks/useAssinatura';
 import { clientesApi, QUERY_KEY_CLIENTES } from '@/features/clientes/api';
 import { produtosApi, QUERY_KEY_PRODUTOS } from '@/features/produtos/api';
 import { ApiError } from '@/lib/api';
@@ -16,7 +17,7 @@ import { centavosParaReais, formatarCentavos, reaisParaCentavos } from '@/lib/fo
 import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { notasApi, QUERY_KEY_NOTAS } from '../api';
 import { notaSchema, paraPayload, type NotaFormDados } from '../schemas';
-import { ROTULO_PAGAMENTO, type FormaPagamento, type Nota } from '../types';
+import { ROTULO_MODELO, ROTULO_PAGAMENTO, type FormaPagamento, type ModeloDaNota, type Nota } from '../types';
 import { Banner } from '@/components/ui/banner';
 
 const ITEM_VAZIO = { produto_id: '', quantidade: '1', valor_unitario: '' };
@@ -26,6 +27,7 @@ const QUANTIDADE = /^\d{1,9}([.,]\d{1,3})?$/;
 
 function paraFormulario(n: Nota): NotaFormDados {
   return {
+    modelo: n.modelo,
     cliente_id: n.cliente?.id ?? '',
     consumidor_final: n.consumidor_final === null ? '' : n.consumidor_final ? 'sim' : 'nao',
     desconto: centavosParaReais(n.desconto_centavos),
@@ -52,7 +54,7 @@ function campoDoFormulario(campoApi: string): FieldPath<NotaFormDados> | null {
     .replace(/^desconto_centavos$/, 'desconto')
     .replace(/\.valor_unitario_centavos$/, '.valor_unitario')
     .replace(/\.valor_centavos$/, '.valor');
-  const conhecido = /^(cliente_id|consumidor_final|desconto|informacoes_complementares|itens|pagamentos|itens\.\d+\.(produto_id|quantidade|valor_unitario)|pagamentos\.\d+\.(tpag|xpag|valor))$/;
+  const conhecido = /^(modelo|cliente_id|consumidor_final|desconto|informacoes_complementares|itens|pagamentos|itens\.\d+\.(produto_id|quantidade|valor_unitario)|pagamentos\.\d+\.(tpag|xpag|valor))$/;
   return conhecido.test(nome) ? (nome as FieldPath<NotaFormDados>) : null;
 }
 
@@ -66,11 +68,15 @@ export function NotaForm({ nota, onSalvo }: { nota?: Nota; onSalvo?: (nota: Nota
     resolver: zodResolver(notaSchema),
     defaultValues: nota
       ? paraFormulario(nota)
-      : { cliente_id: '', consumidor_final: '', desconto: '0,00', informacoes_complementares: '', itens: [ITEM_VAZIO], pagamentos: [PAGAMENTO_VAZIO] },
+      : { modelo: 'NFE', cliente_id: '', consumidor_final: '', desconto: '0,00', informacoes_complementares: '', itens: [ITEM_VAZIO], pagamentos: [PAGAMENTO_VAZIO] },
   });
   const itens = useFieldArray({ control: form.control, name: 'itens' });
   const pagamentos = useFieldArray({ control: form.control, name: 'pagamentos' });
   const clienteId = useWatch({ control: form.control, name: 'cliente_id' });
+  const modelo = useWatch({ control: form.control, name: 'modelo' });
+  const assinatura = useAssinatura();
+  const temNfce = assinatura.data?.plano?.modulos.includes('FISCAL_NFCE') ?? false;
+  const nfce = modelo === 'NFCE';
   const itensValores = useWatch({ control: form.control, name: 'itens' });
   const pagamentosValores = useWatch({ control: form.control, name: 'pagamentos' });
   const desconto = useWatch({ control: form.control, name: 'desconto' });
@@ -103,7 +109,7 @@ export function NotaForm({ nota, onSalvo }: { nota?: Nota; onSalvo?: (nota: Nota
   const erros = form.formState.errors;
 
   const listaClientes = (clientes.data ?? []).filter((c) => c.estagio === 'CLIENTE');
-  const clienteEhPj = listaClientes.find((c) => c.id === clienteId)?.tipo === 'PJ';
+  const clienteEhPj = !nfce && listaClientes.find((c) => c.id === clienteId)?.tipo === 'PJ';
 
   const subtotal = (itensValores ?? []).reduce((soma, i) => {
     const preco = i.valor_unitario !== '' ? (DINHEIRO.test(i.valor_unitario) ? reaisParaCentavos(i.valor_unitario) : 0) : (produtos.data?.find((p) => p.id === i.produto_id)?.preco_centavos ?? 0);
@@ -121,10 +127,20 @@ export function NotaForm({ nota, onSalvo }: { nota?: Nota; onSalvo?: (nota: Nota
 
   return (
     <form noValidate className="space-y-4" onSubmit={envioUnico(form.handleSubmit(async (d) => { await salvar.mutateAsync(d).catch(() => undefined); }))}>
-      <Campo id="nota_cliente" label="Cliente" erro={erros.cliente_id?.message}>
+      {temNfce && !nota ? (
+        <Campo id="nota_modelo" label="Modelo" erro={erros.modelo?.message}>
+          {(a11y) => (
+            <SelectNativo {...a11y} {...form.register('modelo')}>
+              {(Object.keys(ROTULO_MODELO) as ModeloDaNota[]).map((m) => <option key={m} value={m}>{ROTULO_MODELO[m]}</option>)}
+            </SelectNativo>
+          )}
+        </Campo>
+      ) : null}
+
+      <Campo id="nota_cliente" label={nfce ? 'Cliente (opcional)' : 'Cliente'} erro={erros.cliente_id?.message}>
         {(a11y) => (
           <SelectNativo {...a11y} {...form.register('cliente_id')}>
-            <option value="">Escolha um cliente</option>
+            <option value="">{nfce ? 'Consumidor não identificado' : 'Escolha um cliente'}</option>
             {listaClientes.map((c) => <option key={c.id} value={c.id}>{c.nome}</option>)}
           </SelectNativo>
         )}

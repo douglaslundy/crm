@@ -47,8 +47,13 @@ export interface NotaEvento {
   em: string;
 }
 
+export type ModeloDaNota = 'NFE' | 'NFCE';
+
+export const ROTULO_MODELO: Record<ModeloDaNota, string> = { NFE: 'NF-e', NFCE: 'NFC-e' };
+
 export interface Nota {
   id: string;
+  modelo: ModeloDaNota;
   status: StatusNota;
   ambiente: 'HOMOLOGACAO' | 'PRODUCAO' | null;
   numero: number | null;
@@ -71,7 +76,7 @@ export interface Nota {
   cancelamento_cstat: string | null;
   cancelamento_motivo: string | null;
   created_at: string;
-  cliente?: { id: string; nome: string };
+  cliente?: { id: string; nome: string } | null;
   itens?: NotaItem[];
   pagamentos?: NotaPagamento[];
   eventos?: NotaEvento[];
@@ -80,7 +85,8 @@ export interface Nota {
 export type NotaStatus = Pick<Nota, 'id' | 'status' | 'numero' | 'serie' | 'chave' | 'cstat' | 'motivo' | 'mensagem_erro' | 'cancelamento_cstat' | 'cancelamento_motivo'>;
 
 export interface NotaPayload {
-  cliente_id: string;
+  modelo: ModeloDaNota;
+  cliente_id: string | null;
   consumidor_final: boolean | null;
   desconto_centavos: number;
   informacoes_complementares: string | null;
@@ -98,6 +104,7 @@ export const ROTULO_STATUS_INUTILIZACAO: Record<StatusInutilizacao, string> = {
 
 export interface Inutilizacao {
   id: string;
+  modelo: ModeloDaNota;
   serie: string;
   numero_inicial: number;
   numero_final: number;
@@ -111,6 +118,7 @@ export interface Inutilizacao {
 }
 
 export interface InutilizacaoPayload {
+  modelo: ModeloDaNota;
   serie: string;
   numero_inicial: number;
   numero_final: number;

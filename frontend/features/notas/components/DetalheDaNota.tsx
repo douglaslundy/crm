@@ -16,7 +16,7 @@ import { formatarCentavos } from '@/lib/formatos';
 import { useEnvioUnico } from '@/lib/useEnvioUnico';
 import { notasApi, QUERY_KEY_NOTAS, urlDoPdf, urlDoXml, urlDoXmlCancelamento } from '../api';
 import { cancelamentoSchema, type CancelamentoDados } from '../schemas';
-import { ROTULO_PAGAMENTO, ROTULO_STATUS } from '../types';
+import { ROTULO_MODELO, ROTULO_PAGAMENTO, ROTULO_STATUS } from '../types';
 import { NotaForm } from './NotaForm';
 import { StatusDaNota } from './StatusDaNota';
 import { Banner } from '@/components/ui/banner';
@@ -107,8 +107,8 @@ export function DetalheDaNota({ id }: { id: string }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="font-display text-[28px] leading-tight font-extrabold">{nota.numero !== null ? `NF-e nº ${nota.numero} · série ${nota.serie}` : 'NF-e (rascunho)'}</h1>
-          <p className="text-sm text-muted-foreground">{nota.cliente?.nome ?? 'Sem cliente'} · {formatarCentavos(nota.total_centavos)}</p>
+          <h1 className="font-display text-[28px] leading-tight font-extrabold">{nota.numero !== null ? `${ROTULO_MODELO[nota.modelo]} nº ${nota.numero} · série ${nota.serie}` : `${ROTULO_MODELO[nota.modelo]} (rascunho)`}</h1>
+          <p className="text-sm text-muted-foreground">{nota.cliente?.nome ?? (nota.modelo === 'NFCE' ? 'Consumidor não identificado' : 'Sem cliente')} · {formatarCentavos(nota.total_centavos)}</p>
         </div>
         <StatusDaNota status={nota.status} ambiente={nota.ambiente} />
       </div>
@@ -121,7 +121,7 @@ export function DetalheDaNota({ id }: { id: string }) {
       ) : null}
       {erroEmissao ? <Banner tom="perigo">{erroEmissao}</Banner> : null}
 
-      {nota.status === 'AUTORIZADA' || nota.status === 'CANCELANDO' || nota.status === 'CANCELADA' ? (
+      {nota.modelo === 'NFE' && (nota.status === 'AUTORIZADA' || nota.status === 'CANCELANDO' || nota.status === 'CANCELADA') ? (
         <div>
           <a href={urlDoPdf(nota.id)} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: 'secondary' })}>Abrir DANFE (PDF)</a>
         </div>

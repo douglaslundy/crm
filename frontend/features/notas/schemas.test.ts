@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { cancelamentoSchema, inutilizacaoSchema, notaSchema, paraPayload, paraPayloadInutilizacao, type NotaFormDados } from './schemas';
 
 const BASE: NotaFormDados = {
+  modelo: 'NFE',
   cliente_id: '11111111-1111-4111-8111-111111111111',
   consumidor_final: '',
   desconto: '0,00',
@@ -62,11 +63,11 @@ describe('cancelamentoSchema', () => {
 });
 
 describe('inutilizacaoSchema', () => {
-  const BASE = { serie: '1', numero_inicial: '3', numero_final: '5', justificativa: 'Numeração perdida por queda' };
+  const BASE = { modelo: 'NFE' as const, serie: '1', numero_inicial: '3', numero_final: '5', justificativa: 'Numeração perdida por queda' };
 
   it('aceita uma faixa válida e converte para o payload', () => {
     expect(inutilizacaoSchema.safeParse(BASE).success).toBe(true);
-    expect(paraPayloadInutilizacao(BASE)).toEqual({ serie: '1', numero_inicial: 3, numero_final: 5, justificativa: 'Numeração perdida por queda' });
+    expect(paraPayloadInutilizacao(BASE)).toEqual({ modelo: 'NFE', serie: '1', numero_inicial: 3, numero_final: 5, justificativa: 'Numeração perdida por queda' });
   });
 
   it('recusa inicial maior que o final, zero e série inválida', () => {

@@ -8,7 +8,7 @@ import { SelectNativo } from '@/components/ui/campos-nativos';
 import { Label } from '@/components/ui/label';
 import { formatarCentavos } from '@/lib/formatos';
 import { notasApi, QUERY_KEY_NOTAS } from '../api';
-import { ROTULO_STATUS, type StatusNota } from '../types';
+import { ROTULO_MODELO, ROTULO_STATUS, type StatusNota } from '../types';
 import { StatusDaNota } from './StatusDaNota';
 import { Banner } from '@/components/ui/banner';
 
@@ -41,6 +41,7 @@ export function ListaDeNotas() {
           chaveDaLinha={(n) => n.id}
           colunas={[
             { chave: 'cliente', titulo: 'Cliente', render: (n) => <span className="font-medium">{n.cliente?.nome ?? 'Sem cliente'}</span> },
+            { chave: 'modelo', titulo: 'Modelo', render: (n) => ROTULO_MODELO[n.modelo] },
             { chave: 'numero', titulo: 'Número', numerica: true, render: (n) => (n.numero !== null ? `Nº ${n.numero} · série ${n.serie}` : 'Sem número') },
             { chave: 'total', titulo: 'Total', numerica: true, render: (n) => formatarCentavos(n.total_centavos) },
             { chave: 'status', titulo: 'Status', render: (n) => <StatusDaNota status={n.status} ambiente={n.ambiente} /> },
