@@ -21,6 +21,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
 export const urlDoXml = (id: string): string => `${API_URL}/api/app/notas/${id}/xml`;
 
 export const urlDoXmlCancelamento = (id: string): string => `${API_URL}/api/app/notas/${id}/xml-cancelamento`;
+export const urlDoPdf = (id: string): string => `${API_URL}/api/app/notas/${id}/pdf`;
 
 export const QUERY_KEY_INUTILIZACOES = ['inutilizacoes'] as const;
 

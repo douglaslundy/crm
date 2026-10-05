@@ -14,7 +14,7 @@ import { useUsuario } from '@/features/auth/hooks/useUsuario';
 import { ApiError } from '@/lib/api';
 import { formatarCentavos } from '@/lib/formatos';
 import { useEnvioUnico } from '@/lib/useEnvioUnico';
-import { notasApi, QUERY_KEY_NOTAS, urlDoXml, urlDoXmlCancelamento } from '../api';
+import { notasApi, QUERY_KEY_NOTAS, urlDoPdf, urlDoXml, urlDoXmlCancelamento } from '../api';
 import { cancelamentoSchema, type CancelamentoDados } from '../schemas';
 import { ROTULO_PAGAMENTO, ROTULO_STATUS } from '../types';
 import { NotaForm } from './NotaForm';
@@ -120,6 +120,12 @@ export function DetalheDaNota({ id }: { id: string }) {
         <Banner tom="perigo">{nota.mensagem_erro}</Banner>
       ) : null}
       {erroEmissao ? <Banner tom="perigo">{erroEmissao}</Banner> : null}
+
+      {nota.status === 'AUTORIZADA' || nota.status === 'CANCELANDO' || nota.status === 'CANCELADA' ? (
+        <div>
+          <a href={urlDoPdf(nota.id)} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: 'secondary' })}>Abrir DANFE (PDF)</a>
+        </div>
+      ) : null}
 
       {nota.status === 'AUTORIZADA' ? (
         <Card>

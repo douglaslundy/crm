@@ -19,6 +19,7 @@ vi.mock('../api', () => ({
   QUERY_KEY_NOTAS: ['notas'],
   urlDoXml: (id: string) => `http://api.test/api/app/notas/${id}/xml`,
   urlDoXmlCancelamento: (id: string) => `http://api.test/api/app/notas/${id}/xml-cancelamento`,
+  urlDoPdf: (id: string) => `http://api.test/api/app/notas/${id}/pdf`,
   QUERY_KEY_INUTILIZACOES: ['inutilizacoes'],
   inutilizacoesApi: { listar: vi.fn(), criar: vi.fn() },
   notasApi: { listar: vi.fn(), buscar: vi.fn(), status: vi.fn(), criar: vi.fn(), editar: vi.fn(), excluir: vi.fn(), emitir: vi.fn(), cancelar: vi.fn() },
@@ -389,5 +390,27 @@ describe('inutilização', () => {
     vi.mocked(inutilizacoesApi.listar).mockResolvedValue({ data: [] });
     renderizar(<ListaDeInutilizacoes />);
     expect(await screen.findByText('Nenhuma inutilização registrada.')).toBeInTheDocument();
+  });
+});
+
+describe('DetalheDaNota DANFE', () => {
+  it.each(['AUTORIZADA', 'CANCELANDO', 'CANCELADA'] as const)('%s mostra o link do DANFE em nova aba', async (status) => {
+    comPapel('LEITURA');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: { ...NOTA, status } });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    const link = await screen.findByRole('link', { name: 'Abrir DANFE (PDF)' });
+    expect(link).toHaveAttribute('href', 'http://api.test/api/app/notas/n1/pdf');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link.getAttribute('rel')).toContain('noopener');
+  });
+
+  it.each(['RASCUNHO', 'PROCESSANDO', 'REJEITADA', 'ERRO'] as const)('%s não mostra o link do DANFE', async (status) => {
+    comPapel('LEITURA');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: { ...NOTA, status } });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    await screen.findByRole('heading', { level: 1 });
+    expect(screen.queryByRole('link', { name: 'Abrir DANFE (PDF)' })).not.toBeInTheDocument();
   });
 });
