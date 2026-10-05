@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { inutilizacoesApi, QUERY_KEY_INUTILIZACOES } from '../api';
-import { ROTULO_STATUS_INUTILIZACAO } from '../types';
+import { ROTULO_MODELO, ROTULO_STATUS_INUTILIZACAO } from '../types';
 import { Banner } from '@/components/ui/banner';
 
 export function ListaDeInutilizacoes() {
@@ -17,7 +17,7 @@ export function ListaDeInutilizacoes() {
       {data.map((i) => (
         <li key={i.id} className="space-y-1 py-3 text-sm">
           <p className="font-medium">
-            Série {i.serie} · números {i.numero_inicial} a {i.numero_final} · {i.ambiente === 'PRODUCAO' ? 'Produção' : 'Homologação'}
+            {ROTULO_MODELO[i.modelo]} · série {i.serie} · números {i.numero_inicial} a {i.numero_final} · {i.ambiente === 'PRODUCAO' ? 'Produção' : 'Homologação'}
           </p>
           <p>
             {ROTULO_STATUS_INUTILIZACAO[i.status]}

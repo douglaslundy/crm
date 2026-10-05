@@ -491,7 +491,7 @@ describe('NotaForm NFC-e', () => {
 });
 
 describe('modelo na lista e no detalhe', () => {
-  it('o detalhe de uma NFC-e se identifica como NFC-e e não oferece DANFE', async () => {
+  it('o detalhe de uma NFC-e se identifica como NFC-e e oferece o cupom, não o DANFE', async () => {
     comPapel('LEITURA');
     vi.mocked(notasApi.buscar).mockResolvedValue({ data: { ...NOTA, modelo: 'NFCE', cliente: undefined } });
     renderizar(<DetalheDaNota id="n1" />);
@@ -499,6 +499,7 @@ describe('modelo na lista e no detalhe', () => {
     expect(await screen.findByRole('heading', { level: 1 })).toHaveTextContent('NFC-e nº 7');
     expect(screen.getByText(/Consumidor não identificado/)).toBeInTheDocument();
     expect(screen.queryByRole('link', { name: 'Abrir DANFE (PDF)' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Abrir cupom (PDF)' })).toHaveAttribute('href', 'http://api.test/api/app/notas/n1/pdf');
   });
 
   it('a lista mostra o modelo de cada nota', async () => {
@@ -524,5 +525,54 @@ describe('FormInutilizacao modelo', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Inutilizar numeração' }));
 
     await waitFor(() => expect(inutilizacoesApi.criar).toHaveBeenCalledWith(expect.objectContaining({ modelo: 'NFCE', serie: '2' })));
+  });
+});
+
+describe('NFC-e: cupom e cancelamento', () => {
+  it.each(['AUTORIZADA', 'CANCELANDO', 'CANCELADA'] as const)('NFC-e %s mostra o link do cupom em nova aba', async (status) => {
+    comPapel('LEITURA');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: { ...NOTA, modelo: 'NFCE', status } });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    const link = await screen.findByRole('link', { name: 'Abrir cupom (PDF)' });
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link.getAttribute('rel')).toContain('noopener');
+    expect(screen.queryByRole('link', { name: 'Abrir DANFE (PDF)' })).not.toBeInTheDocument();
+  });
+
+  it('NF-e continua com o link do DANFE', async () => {
+    comPapel('LEITURA');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: NOTA });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    expect(await screen.findByRole('link', { name: 'Abrir DANFE (PDF)' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Abrir cupom (PDF)' })).not.toBeInTheDocument();
+  });
+
+  it('os rótulos de cancelamento seguem o modelo da nota', async () => {
+    comPapel('ADMIN');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: { ...NOTA, modelo: 'NFCE' } });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Cancelar NFC-e' }));
+    expect(screen.getByRole('button', { name: 'Confirmar cancelamento' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Cancelar NF-e' })).not.toBeInTheDocument();
+  });
+
+  it('rascunho de NFC-e oferece "Emitir NFC-e"', async () => {
+    comPapel('ADMIN');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: { ...NOTA, modelo: 'NFCE', status: 'RASCUNHO', numero: null, serie: null } });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    expect(await screen.findByRole('button', { name: 'Emitir NFC-e' })).toBeInTheDocument();
+  });
+
+  it('a lista de inutilizações mostra o modelo', async () => {
+    vi.mocked(inutilizacoesApi.listar).mockResolvedValue({ data: [
+      { id: 'i9', modelo: 'NFCE', serie: '2', numero_inicial: 3, numero_final: 5, justificativa: 'Queda', ambiente: 'HOMOLOGACAO', status: 'INUTILIZADA', cstat: '102', motivo: null, protocolo: '1', created_at: '2026-10-05T10:00:00-03:00' },
+    ] });
+    renderizar(<ListaDeInutilizacoes />);
+
+    expect(await screen.findByText(/NFC-e · série 2/)).toBeInTheDocument();
   });
 });

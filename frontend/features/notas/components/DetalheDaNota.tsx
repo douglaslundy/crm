@@ -121,9 +121,9 @@ export function DetalheDaNota({ id }: { id: string }) {
       ) : null}
       {erroEmissao ? <Banner tom="perigo">{erroEmissao}</Banner> : null}
 
-      {nota.modelo === 'NFE' && (nota.status === 'AUTORIZADA' || nota.status === 'CANCELANDO' || nota.status === 'CANCELADA') ? (
+      {nota.status === 'AUTORIZADA' || nota.status === 'CANCELANDO' || nota.status === 'CANCELADA' ? (
         <div>
-          <a href={urlDoPdf(nota.id)} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: 'secondary' })}>Abrir DANFE (PDF)</a>
+          <a href={urlDoPdf(nota.id)} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: 'secondary' })}>{nota.modelo === 'NFCE' ? 'Abrir cupom (PDF)' : 'Abrir DANFE (PDF)'}</a>
         </div>
       ) : null}
 
@@ -172,7 +172,7 @@ export function DetalheDaNota({ id }: { id: string }) {
       {nota.status === 'AUTORIZADA' && podeEmitir ? (
         cancelando ? (
           <Card>
-            <CardHeader><CardTitle>Cancelar NF-e</CardTitle></CardHeader>
+            <CardHeader><CardTitle>Cancelar {ROTULO_MODELO[nota.modelo]}</CardTitle></CardHeader>
             <CardContent>
               <form
                 noValidate
@@ -199,7 +199,7 @@ export function DetalheDaNota({ id }: { id: string }) {
             </CardContent>
           </Card>
         ) : (
-          <div><Button type="button" variant="outline" onClick={() => setCancelando(true)}>Cancelar NF-e</Button></div>
+          <div><Button type="button" variant="outline" onClick={() => setCancelando(true)}>Cancelar {ROTULO_MODELO[nota.modelo]}</Button></div>
         )
       ) : null}
 
@@ -244,7 +244,7 @@ export function DetalheDaNota({ id }: { id: string }) {
                 await emitir.mutateAsync().catch(() => undefined);
               })}
             >
-              <Button type="submit" disabled={emitir.isPending}>Emitir NF-e</Button>
+              <Button type="submit" disabled={emitir.isPending}>Emitir {ROTULO_MODELO[nota.modelo]}</Button>
             </form>
           ) : (
             <p className="text-sm text-muted-foreground">Você pode editar, mas só um usuário fiscal pode emitir.</p>
