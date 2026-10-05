@@ -34,12 +34,14 @@ final class NotaController
     {
         $dados = $request->validate([
             'status' => ['nullable', Rule::in(array_column(StatusNota::cases(), 'value'))],
+            'modelo' => ['nullable', Rule::in(['NFE', 'NFCE'])],
             'de' => ['nullable', 'date_format:Y-m-d'],
             'ate' => ['nullable', 'date_format:Y-m-d'],
         ]);
 
         $notas = Nota::query()->with('cliente')
             ->when($dados['status'] ?? null, fn ($q, $s) => $q->where('status', $s))
+            ->when($dados['modelo'] ?? null, fn ($q, $m) => $q->where('modelo', $m))
             ->when($dados['de'] ?? null, fn ($q, $d) => $q->whereDate('created_at', '>=', $d))
             ->when($dados['ate'] ?? null, fn ($q, $d) => $q->whereDate('created_at', '<=', $d))
             ->latest('created_at')->paginate(25);

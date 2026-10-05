@@ -17,6 +17,7 @@ final class NotaResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'modelo' => $this->modelo->value,
             'status' => $this->status->value,
             'ambiente' => $this->ambiente,
             'numero' => $this->numero,
@@ -39,7 +40,7 @@ final class NotaResource extends JsonResource
             'cancelamento_cstat' => $this->cancelamento_cstat,
             'cancelamento_motivo' => $this->cancelamento_motivo,
             'created_at' => $this->created_at->toIso8601String(),
-            'cliente' => $this->whenLoaded('cliente', fn (): array => ['id' => $this->cliente->id, 'nome' => $this->cliente->nome]),
+            'cliente' => $this->whenLoaded('cliente', fn (): ?array => $this->cliente === null ? null : ['id' => $this->cliente->id, 'nome' => $this->cliente->nome]),
             'itens' => $this->whenLoaded('itens', fn () => $this->itens->map(fn ($i): array => [
                 'id' => $i->id, 'produto_id' => $i->produto_id, 'ordem' => $i->ordem, 'sku' => $i->sku, 'descricao' => $i->descricao,
                 'unidade' => $i->unidade, 'quantidade' => Quantidade::formatar($i->quantidade_milesimos, 3),

@@ -20,7 +20,12 @@ final class SalvarNotaRequest extends FormRequest
         $tenantId = $this->user()?->tenant_id;
 
         return [
-            'cliente_id' => ['required', 'uuid', Rule::exists('clientes', 'id')->where('tenant_id', $tenantId)],
+            'modelo' => ['nullable', Rule::in(['NFE', 'NFCE'])],
+            // NFC-e vende sem identificar o consumidor; a NF-e sempre tem destinatário.
+            'cliente_id' => [
+                Rule::requiredIf(fn (): bool => ($this->input('modelo') ?? 'NFE') !== 'NFCE'),
+                'nullable', 'uuid', Rule::exists('clientes', 'id')->where('tenant_id', $tenantId),
+            ],
             'consumidor_final' => ['nullable', 'boolean'],
             'desconto_centavos' => ['required', 'integer', 'min:0'],
             'informacoes_complementares' => ['nullable', 'string', 'max:5000'],

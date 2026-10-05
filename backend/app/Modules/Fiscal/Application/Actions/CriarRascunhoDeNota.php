@@ -6,6 +6,7 @@ namespace App\Modules\Fiscal\Application\Actions;
 
 use App\Modules\Catalog\Domain\Models\Produto;
 use App\Modules\Fiscal\Application\PoliticaDeNotas;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Models\Emitente;
 use App\Modules\Fiscal\Domain\Models\Nota;
@@ -13,22 +14,29 @@ use App\Modules\Fiscal\Domain\Models\NotaEvento;
 use App\Modules\Fiscal\Domain\Quantidade;
 use App\Modules\Fiscal\Domain\RateioDeDesconto;
 use App\Modules\Identity\Domain\Models\Usuario;
+use App\Modules\Platform\Application\EntitlementService;
+use App\Modules\Platform\Domain\Enums\Modulo;
 use Illuminate\Support\Facades\DB;
 
 final class CriarRascunhoDeNota
 {
-    public function __construct(private readonly PoliticaDeNotas $politica) {}
+    public function __construct(private readonly PoliticaDeNotas $politica, private readonly EntitlementService $planos) {}
 
     /** @param array<string, mixed> $dados */
     public function executar(array $dados, Usuario $autor): Nota
     {
         $this->politica->garantirPodeRascunhar($autor);
+        $modelo = ModeloDocumento::from((string) ($dados['modelo'] ?? 'NFE'));
+        if ($modelo === ModeloDocumento::Nfce) {
+            $this->planos->garantirModulo($autor->tenant, Modulo::FiscalNfce);
+        }
 
-        return DB::transaction(function () use ($dados, $autor): Nota {
+        return DB::transaction(function () use ($dados, $autor, $modelo): Nota {
             $emitente = Emitente::query()->firstOrCreate([], []);
             $nota = new Nota;
             $nota->emitente_id = $emitente->id;
-            $nota->cliente_id = $dados['cliente_id'];
+            $nota->modelo = $modelo;
+            $nota->cliente_id = $dados['cliente_id'] ?? null;
             $nota->save();
             $this->preencher($nota, $dados);
             NotaEvento::registrar($nota, null, StatusNota::Rascunho, 'Rascunho criado', $autor->id);
@@ -60,7 +68,7 @@ final class CriarRascunhoDeNota
 
         $desconto = (int) $dados['desconto_centavos'];
         $nota->fill([
-            'cliente_id' => $dados['cliente_id'],
+            'cliente_id' => $dados['cliente_id'] ?? null,
             'consumidor_final' => $dados['consumidor_final'] ?? null,
             'desconto_centavos' => $desconto,
             'informacoes_complementares' => $dados['informacoes_complementares'] ?? null,
