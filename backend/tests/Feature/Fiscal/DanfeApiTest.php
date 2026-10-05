@@ -118,4 +118,18 @@ class DanfeApiTest extends TestCase
 
         $this->spaComo($this->admin)->getJson("/api/app/notas/{$id}/pdf")->assertStatus(409)->assertJsonPath('codigo', 'NOTA_SEM_PDF');
     }
+
+    public function test_nfce_em_contingencia_abre_o_cupom_de_duas_vias(): void
+    {
+        $nota = Nota::factory()->create(['emitente_id' => $this->emitente->id, 'cliente_id' => null]);
+        $nota->forceFill([
+            'modelo' => ModeloDocumento::Nfce, 'status' => StatusNota::Contingencia, 'ambiente' => 'HOMOLOGACAO', 'serie' => '1', 'numero' => 1,
+            'chave' => str_repeat('9', 44), 'xml_enviado' => $this->xmlOfflineDeTeste(),
+        ])->save();
+
+        $resp = $this->spaComo($this->admin)->get("/api/app/notas/{$nota->id}/pdf")->assertOk();
+
+        $this->assertSame('inline; filename="CUPOM-1.pdf"', $resp->headers->get('Content-Disposition'));
+        $this->assertStringStartsWith('%PDF', (string) $resp->getContent());
+    }
 }

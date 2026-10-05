@@ -18,11 +18,13 @@ final class GerarDanfe
 
     public function executar(Nota $nota): ArquivoPdf
     {
-        $nota->makeVisible(['xml_autorizado', 'xml_cancelamento']);
+        $nota->makeVisible(['xml_autorizado', 'xml_cancelamento', 'xml_enviado']);
 
         [$xml, $cancelada] = match ($nota->status) {
             StatusNota::Autorizada, StatusNota::Cancelando => [$nota->xml_autorizado, false],
             StatusNota::Cancelada => [$this->xmlDaCancelada($nota), true],
+            // Contingência offline: o XML assinado e ainda sem protocolo; a biblioteca imprime as duas vias sozinha (tpEmis 9).
+            StatusNota::Contingencia => [$nota->xml_enviado, false],
             default => throw new NotaSemPdfException,
         };
 

@@ -96,4 +96,21 @@ class GeradorDeDanfeTest extends TestCase
 
         $this->assertStringContainsString('DANFE', $texto);
     }
+
+    public function test_cupom_de_nfce_em_contingencia_sai_com_duas_vias_e_a_marca(): void
+    {
+        $texto = $this->textoDoPdf($this->gerador()->gerar($this->xmlOfflineDeTeste(), false, ModeloDocumento::Nfce));
+
+        $this->assertStringContainsString('EMITIDA EM CONTING', $texto);
+        $this->assertStringContainsString('Via Consumidor', $texto);
+        $this->assertStringContainsString('Via Estabelecimento', $texto);
+    }
+
+    public function test_cupom_de_nfce_autorizada_nao_tem_marca_de_contingencia_nem_duas_vias(): void
+    {
+        $texto = $this->textoDoPdf($this->gerador()->gerar($this->nfeProcDeTeste('2', ModeloDocumento::Nfce)['xml'], false, ModeloDocumento::Nfce));
+
+        $this->assertStringNotContainsString('EMITIDA EM CONTING', $texto);
+        $this->assertStringNotContainsString('Via Estabelecimento', $texto);
+    }
 }

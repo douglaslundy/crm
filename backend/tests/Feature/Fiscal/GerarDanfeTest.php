@@ -147,4 +147,23 @@ class GerarDanfeTest extends TestCase
 
         $this->assertSame([ModeloDocumento::Nfe], $this->modelos);
     }
+
+    public function test_nfce_em_contingencia_usa_o_xml_offline_enviado(): void
+    {
+        $nota = $this->nota(StatusNota::Contingencia, null, null, 11, ModeloDocumento::Nfce);
+        $nota->forceFill(['xml_enviado' => '<NFe>offline</NFe>'])->save();
+
+        $arquivo = app(GerarDanfe::class)->executar(Nota::query()->findOrFail($nota->id));
+
+        $this->assertSame('CUPOM-11.pdf', $arquivo->nome);
+        $this->assertSame([['<NFe>offline</NFe>', false]], $this->chamadas);
+        $this->assertSame([ModeloDocumento::Nfce], $this->modelos);
+    }
+
+    public function test_contingencia_sem_xml_enviado_lanca(): void
+    {
+        $this->expectException(NotaSemPdfException::class);
+
+        app(GerarDanfe::class)->executar($this->nota(StatusNota::Contingencia, null, null, 12, ModeloDocumento::Nfce));
+    }
 }

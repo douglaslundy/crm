@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Tests\Fixtures;
 
 use App\Modules\Fiscal\Domain\Emissao\ConsumidorParaEmissao;
+use App\Modules\Fiscal\Domain\Emissao\ContingenciaDeEmissao;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Infrastructure\NfePhp\MontadorDeXml;
+use Carbon\CarbonImmutable;
 use NFePHP\NFe\Complements;
 
 /** nfeProc autorizado (e cancelado) de teste. Exige `AssinaNfeDeTeste` na mesma classe. */
@@ -37,5 +39,14 @@ trait XmlAutorizadoDeTeste
         $evento = '<retEnvEvento xmlns="http://www.portalfiscal.inf.br/nfe" versao="1.00"><cStat>128</cStat><xMotivo>Lote</xMotivo><retEvento versao="1.00"><infEvento><cStat>'.$cStatEvento.'</cStat><xMotivo>ok</xMotivo><chNFe>'.$chave.'</chNFe><tpEvento>110111</tpEvento><nProt>135260000000555</nProt><dhRegEvento>2026-10-02T11:00:00-03:00</dhRegEvento></infEvento></retEvento></retEnvEvento>';
 
         return Complements::cancelRegister($nfeProc, $evento);
+    }
+
+    /** XML da NFC-e emitida em contingência offline (tpEmis 9), assinado e ainda sem protocolo. */
+    private function xmlOfflineDeTeste(): string
+    {
+        $nota = $this->notaDeTeste(modelo: ModeloDocumento::Nfce, consumidor: new ConsumidorParaEmissao('52998224725', 'Joana Consumidora'));
+        $contingencia = new ContingenciaDeEmissao('Falha de comunicação com a SEFAZ na emissão; emitida em contingência offline.', CarbonImmutable::parse('2026-10-05 14:30:00', 'America/Sao_Paulo'));
+
+        return $this->assinar((new MontadorDeXml)->montar($nota, '47382915', $contingencia)['xml'], 65);
     }
 }
