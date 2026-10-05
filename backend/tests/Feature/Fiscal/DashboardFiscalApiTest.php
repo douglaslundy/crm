@@ -40,6 +40,7 @@ class DashboardFiscalApiTest extends TestCase
                 'mes' => ['periodo', 'notas', 'valor_emitido_centavos'],
                 'faturamento_12_meses' => [['mes', 'valor_centavos', 'quantidade']],
                 'rejeicoes' => ['quantidade', 'recentes'],
+                'contingencias' => ['quantidade', 'em_alerta', 'vencidas', 'limite_mais_proximo'],
             ]])
             ->assertJsonCount(12, 'data.faturamento_12_meses')
             ->assertJsonPath('data.ambiente', 'HOMOLOGACAO')

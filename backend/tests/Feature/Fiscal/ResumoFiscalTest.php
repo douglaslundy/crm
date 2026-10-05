@@ -160,4 +160,40 @@ class ResumoFiscalTest extends TestCase
         $this->assertSame(0, $r['mes']['valor_emitido_centavos']);
         $this->assertSame(0, $r['rejeicoes']['quantidade']);
     }
+
+    private function emContingencia(string $limite, string $ambiente = 'HOMOLOGACAO'): void
+    {
+        $nota = $this->nota(StatusNota::Contingencia, 0, null, $ambiente, ModeloDocumento::Nfce);
+        $nota->forceFill(['contingencia_desde' => '2026-10-15 08:00:00', 'contingencia_limite_em' => $limite])->save();
+    }
+
+    public function test_contingencias_com_alerta_e_vencidas(): void
+    {
+        config(['fiscal.contingencia_alerta_horas' => 6]);
+        // agora = 2026-10-15 12:00 em São Paulo = 15:00 UTC (como o banco guarda)
+        $this->emContingencia('2026-10-16 01:00:00'); // +10h: fora do alerta
+        $this->emContingencia('2026-10-15 18:00:00'); // +3h: em alerta
+        $this->emContingencia('2026-10-15 14:00:00'); // -1h: vencida
+
+        $c = $this->resumo()['contingencias'];
+
+        $this->assertSame(3, $c['quantidade']);
+        $this->assertSame(1, $c['em_alerta']);
+        $this->assertSame(1, $c['vencidas']);
+        $this->assertSame('2026-10-15T14:00:00+00:00', $c['limite_mais_proximo']);
+    }
+
+    public function test_sem_contingencias_o_bloco_vem_zerado_e_sem_data(): void
+    {
+        $this->assertSame(['quantidade' => 0, 'em_alerta' => 0, 'vencidas' => 0, 'limite_mais_proximo' => null], $this->resumo()['contingencias']);
+    }
+
+    public function test_contingencia_de_outro_ambiente_ou_tenant_nao_conta(): void
+    {
+        $this->emContingencia('2026-10-15 18:00:00', 'PRODUCAO');
+        $outro = Tenant::factory()->for(Plano::factory())->create();
+        app(TenantContext::class)->set($outro->id);
+
+        $this->assertSame(0, $this->resumo()['contingencias']['quantidade']);
+    }
 }

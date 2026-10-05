@@ -43,6 +43,7 @@ final class ResumoFiscal
             ],
             'faturamento_12_meses' => $this->faturamento($ambiente, $inicioDoMes),
             'rejeicoes' => $this->rejeicoes($ambiente),
+            'contingencias' => $this->contingencias($ambiente, $agora),
         ];
     }
 
@@ -124,6 +125,37 @@ final class ResumoFiscal
                 'id' => $n->id, 'modelo' => $n->modelo->value, 'numero' => $n->numero, 'cstat' => $n->cstat, 'motivo' => $n->motivo,
                 'mensagem_erro' => $n->mensagem_erro, 'status' => $n->status->value, 'created_at' => $n->created_at->toIso8601String(),
             ])->all(),
+        ];
+    }
+
+    /**
+     * NFC-e emitidas offline que ainda esperam transmissão. "Em alerta" = faltam menos de `contingencia_alerta_horas`
+     * para o limite gravado na entrada; "vencida" = limite no passado.
+     *
+     * @return array{quantidade: int, em_alerta: int, vencidas: int, limite_mais_proximo: ?string}
+     */
+    private function contingencias(string $ambiente, CarbonImmutable $agora): array
+    {
+        $limites = Nota::query()->where('ambiente', $ambiente)->where('status', StatusNota::Contingencia)
+            ->whereNotNull('contingencia_limite_em')->orderBy('contingencia_limite_em')->pluck('contingencia_limite_em');
+        $agoraNoBanco = $agora->setTimezone((string) config('app.timezone'));
+        $inicioDoAlerta = $agoraNoBanco->addHours((int) config('fiscal.contingencia_alerta_horas'));
+
+        $vencidas = 0;
+        $emAlerta = 0;
+        foreach ($limites as $limite) {
+            if ($limite->lt($agoraNoBanco)) {
+                $vencidas++;
+            } elseif ($limite->lt($inicioDoAlerta)) {
+                $emAlerta++;
+            }
+        }
+
+        return [
+            'quantidade' => Nota::query()->where('ambiente', $ambiente)->where('status', StatusNota::Contingencia)->count(),
+            'em_alerta' => $emAlerta,
+            'vencidas' => $vencidas,
+            'limite_mais_proximo' => $limites->first()?->toIso8601String(),
         ];
     }
 }
