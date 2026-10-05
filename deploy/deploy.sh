@@ -12,11 +12,13 @@ SEED_DEMO=0
 if [ ! -f .env ]; then
   HOST="${HOST:-$(hostname -I | awk '{print $1}')}"
   echo ">> Criando deploy/.env para HOST=${HOST} (segredos gerados agora; não vão para o git)"
-  sed "s/192\.168\.0\.233/${HOST}/g" .env.example > .env
+  tr -d '\r' < .env.example | sed "s/192\.168\.0\.233/${HOST}/g" > .env
   sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=$(openssl rand -hex 16)|" .env
   sed -i "s|^APP_KEY=.*|APP_KEY=base64:$(openssl rand -base64 32)|" .env
   chmod 600 .env
 fi
+
+sed -i 's/\r$//' .env   # tolera .env salvo com CRLF (Windows)
 
 DC="docker compose"
 

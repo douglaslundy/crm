@@ -14,7 +14,7 @@ Escolhidas para não colidir com outros projetos da mesma VPS. Mude `WEB_PORT`/`
 No computador de desenvolvimento, empacote o código commitado e envie para a VPS (não precisa de push):
 
 ```bash
-git archive --format=tar.gz -o crm.tar.gz HEAD
+git -c core.autocrlf=false archive --format=tar.gz -o crm.tar.gz HEAD   # LF, não CRLF do Windows
 scp crm.tar.gz usuario@VPS:~/crm-plataforma/
 ssh usuario@VPS 'cd ~/crm-plataforma && mkdir -p src && tar -xzf crm.tar.gz -C src && bash src/deploy/deploy.sh --seed-demo'
 ```
