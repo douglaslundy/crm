@@ -7,8 +7,10 @@ import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { authApi } from '@/features/auth/api';
 import { useUsuario } from '@/features/auth/hooks/useUsuario';
+import { MenuMobile } from './MenuMobile';
+import type { NavItem } from './nav-items';
 
-export function Topbar() {
+export function Topbar({ itens }: { itens: NavItem[] }) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data: usuario } = useUsuario();
@@ -20,12 +22,15 @@ export function Topbar() {
   }
 
   return (
-    <header className="sticky top-0 z-10 flex h-14 items-center justify-between border-b bg-background/95 px-4 backdrop-blur">
-      <div className="min-w-0">
-        <p className="truncate text-sm font-medium">
-          {usuario?.tenant ? (usuario.tenant.nome_fantasia ?? usuario.tenant.razao_social) : 'Administração da plataforma'}
-        </p>
-        <p className="truncate text-xs text-muted-foreground">{usuario?.nome}</p>
+    <header className="sticky top-0 z-50 flex h-[60px] items-center justify-between gap-2 border-b border-border bg-surface px-4 md:px-6">
+      <div className="flex min-w-0 items-center gap-2">
+        <MenuMobile itens={itens} />
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold">
+            {usuario?.tenant ? (usuario.tenant.nome_fantasia ?? usuario.tenant.razao_social) : 'Administração da plataforma'}
+          </p>
+          <p className="truncate text-xs text-muted-foreground">{usuario?.nome}</p>
+        </div>
       </div>
       <div className="flex items-center gap-1">
         <ThemeToggle />

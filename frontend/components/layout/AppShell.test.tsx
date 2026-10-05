@@ -8,7 +8,7 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ replace: vi.fn() }), use
 vi.mock('next-themes', () => ({ useTheme: () => ({ resolvedTheme: 'light', setTheme: vi.fn() }) }));
 
 describe('AppShell', () => {
-  it('renderiza navegação lateral, navegação inferior, usuário e conteúdo', () => {
+  it('renderiza navegação lateral, menu do celular, usuário e conteúdo', () => {
     const client = new QueryClient();
     client.setQueryData(QUERY_KEY_USUARIO, {
       id: '1', nome: 'Ana Souza', email: 'ana@x.com', papel: 'PROPRIETARIO',
@@ -22,9 +22,9 @@ describe('AppShell', () => {
     );
 
     const lateral = screen.getByRole('navigation', { name: 'Navegação principal' });
-    const inferior = screen.getByRole('navigation', { name: 'Navegação inferior' });
     expect(within(lateral).getByRole('link', { name: /Início/ })).toHaveAttribute('aria-current', 'page');
-    expect(within(inferior).getByRole('link', { name: /Início/ })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Abrir menu' })).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Navegação inferior' })).not.toBeInTheDocument();
     expect(screen.getByText('Empresa X')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Sair' })).toBeInTheDocument();
     expect(screen.getByText('página')).toBeInTheDocument();
