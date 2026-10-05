@@ -23,6 +23,13 @@ Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é dec
 - Testes: helper `spaComo($usuario)` no `TestCase` troca de usuário sem o 401 espúrio.
 - `NfePhpEmissor` não tem teste automatizado (exige SEFAZ); coberto pela fumaça abaixo e pelo roteiro de homologação real.
 
+## Ambiente de acompanhamento (staging) na VPS (2026-10-04)
+- **Endereço:** front `http://192.168.0.233:3200`, API `http://192.168.0.233:8200` (rede local, HTTP). VPS Ubuntu 26.04 **compartilhada** com outros projetos (monitoramento, xadrez, readcoach, market_system): o CRM roda num Compose isolado (projeto `crm`, pasta `~/crm-plataforma`, usuário `lundy`), sem mexer nos outros. `root` não loga por senha via SSH.
+- **Contas de demonstração (senha `Senha123`):** `admin@plataforma.local` (admin da plataforma) e `dono@empresa.local` (dono da empresa demonstração). Só dados fictícios; nenhum certificado A1 nem CNPJ real.
+- **Verificado:** build, migrations de todas as fases no PostgreSQL 16 (primeira vez fora do SQLite), login com sessão pela API, CORS, URL da API embutida no front, worker e agendador de pé, API ~35 ms. **Não verificado:** as telas no navegador.
+- **Reimplantar:** `git -c core.autocrlf=false archive --format=tar.gz -o crm.tar.gz HEAD`, enviar para `~/crm-plataforma/`, extrair em `src/` (NÃO apagar `src/deploy/.env`: tem a senha do banco) e rodar `bash src/deploy/deploy.sh`. Detalhes em `deploy/README.md`.
+- **Diferenças para produção real:** HTTP sem domínio, `INSTALL_DEV=1` (Faker para o seeder), `SESSION_SECURE_COOKIE=false`. Antes de expor à internet: HTTPS, domínio, trocar a senha do usuário SSH e as contas de demonstração.
+
 ## Fechamento da F3b1 (2026-10-02)
 - Backend: 436 testes; frontend: 134; Pint, PHPStan 6, tsc e build verdes; eslint só com o warning antigo do `CadastroForm` (`form.watch`).
 - **Fumaça com o motor real** (HTTP de teste, `NfePhpEmissor` real, `.pfx` autoassinado, sem EmissorFake), nota `AUTORIZADA` criada por `forceFill`:
