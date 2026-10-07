@@ -35,6 +35,60 @@ final class IniciarEmissao
         private readonly PreparadorDaNotaDeServico $preparadorDeServico,
     ) {}
 
+    /** Os bloqueios de assinatura, plano e emitente que valem antes de preparar a nota. */
+    private function garantirPodeEmitirNota(Nota $nota, Usuario $autor): Emitente
+    {
+        $tenant = $autor->tenant;
+        if (! $tenant->situacao->permiteEscrita()) {
+            throw AssinaturaSemEscritaException::para($tenant->situacao);
+        }
+        $nfce = $nota->modelo === ModeloDocumento::Nfce;
+        $servico = $nota->modelo === ModeloDocumento::Dps;
+        $this->planos->garantirModulo($tenant, match (true) {
+            $servico => Modulo::FiscalNfse,
+            $nfce => Modulo::FiscalNfce,
+            default => Modulo::FiscalNfe,
+        });
+
+        $emitente = Emitente::query()->findOrFail($nota->emitente_id);
+        if ($servico) {
+            $this->verificador->garantirAptoParaNfse($emitente, $tenant);
+        } else {
+            $this->verificador->garantirApto($emitente, $tenant, $nota->modelo);
+        }
+        if ($nfce) {
+            $this->verificador->garantirCsc($emitente, $emitente->ambiente_fiscal->value);
+        }
+        if ($emitente->ambiente_fiscal === AmbienteFiscal::Producao) {
+            $this->planos->garantirCapacidade($tenant, Recurso::DocumentosMes);
+        }
+
+        return $emitente;
+    }
+
+    /** Diz se a nota está pronta para emitir, sem emitir: não muda a nota, os itens, a série nem o status. */
+    public function verificar(Nota $nota, Usuario $autor): void
+    {
+        $this->politica->garantirPodeEmitir($autor);
+        $nota = Nota::query()->whereKey($nota->id)->firstOrFail();
+        if (! $nota->status->editavel()) {
+            throw new NotaNaoEditavelException('Esta nota não pode ser emitida.');
+        }
+        $emitente = $this->garantirPodeEmitirNota($nota, $autor);
+
+        // `preparar` valida e congela o snapshot; aqui só a validação interessa, então tudo é desfeito.
+        DB::beginTransaction();
+        try {
+            if ($nota->modelo === ModeloDocumento::Dps) {
+                $this->preparadorDeServico->preparar($nota, $emitente);
+            } else {
+                $this->preparador->preparar($nota, $emitente);
+            }
+        } finally {
+            DB::rollBack();
+        }
+    }
+
     public function executar(string $notaId, Usuario $autor): Nota
     {
         $this->politica->garantirPodeEmitir($autor);
@@ -49,30 +103,8 @@ final class IniciarEmissao
                 throw new NotaNaoEditavelException('Esta nota não pode ser emitida.');
             }
 
-            $tenant = $autor->tenant;
-            if (! $tenant->situacao->permiteEscrita()) {
-                throw AssinaturaSemEscritaException::para($tenant->situacao);
-            }
-            $nfce = $nota->modelo === ModeloDocumento::Nfce;
+            $emitente = $this->garantirPodeEmitirNota($nota, $autor);
             $servico = $nota->modelo === ModeloDocumento::Dps;
-            $this->planos->garantirModulo($tenant, match (true) {
-                $servico => Modulo::FiscalNfse,
-                $nfce => Modulo::FiscalNfce,
-                default => Modulo::FiscalNfe,
-            });
-
-            $emitente = Emitente::query()->findOrFail($nota->emitente_id);
-            if ($servico) {
-                $this->verificador->garantirAptoParaNfse($emitente, $tenant);
-            } else {
-                $this->verificador->garantirApto($emitente, $tenant, $nota->modelo);
-            }
-            if ($nfce) {
-                $this->verificador->garantirCsc($emitente, $emitente->ambiente_fiscal->value);
-            }
-            if ($emitente->ambiente_fiscal === AmbienteFiscal::Producao) {
-                $this->planos->garantirCapacidade($tenant, Recurso::DocumentosMes);
-            }
 
             if ($servico) {
                 $this->preparadorDeServico->preparar($nota, $emitente);
