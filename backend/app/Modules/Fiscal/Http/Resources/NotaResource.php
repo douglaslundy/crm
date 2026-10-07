@@ -25,6 +25,7 @@ final class NotaResource extends JsonResource
             'chave' => $this->chave,
             'protocolo' => $this->protocolo,
             'numero_nfse' => $this->numero_nfse,
+            'venda_id' => $this->venda_id,
             'cstat' => $this->cstat,
             'motivo' => $this->motivo,
             'mensagem_erro' => $this->mensagem_erro,

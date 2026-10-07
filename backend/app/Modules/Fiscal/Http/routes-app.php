@@ -9,6 +9,7 @@ use App\Modules\Fiscal\Http\Controllers\DashboardFiscalController;
 use App\Modules\Fiscal\Http\Controllers\EmitenteController;
 use App\Modules\Fiscal\Http\Controllers\InutilizacaoController;
 use App\Modules\Fiscal\Http\Controllers\NotaController;
+use App\Modules\Fiscal\Http\Controllers\VendaController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('empresa')->group(function (): void {
@@ -35,6 +36,11 @@ Route::middleware('empresa')->group(function (): void {
     Route::post('notas/{nota}/cancelar', [NotaController::class, 'cancelar'])->name('app.notas.cancelar');
     Route::get('notas/{nota}/xml-cancelamento', [NotaController::class, 'xmlCancelamento'])->name('app.notas.xml-cancelamento');
     Route::get('notas/{nota}/pdf', [NotaController::class, 'pdf'])->name('app.notas.pdf');
+    Route::post('vendas', [VendaController::class, 'store'])->name('app.vendas.store');
+    Route::get('vendas/{venda}', [VendaController::class, 'show'])->name('app.vendas.show');
+    Route::put('vendas/{venda}', [VendaController::class, 'update'])->name('app.vendas.update');
+    Route::delete('vendas/{venda}', [VendaController::class, 'destroy'])->name('app.vendas.destroy');
+    Route::post('vendas/{venda}/emitir', [VendaController::class, 'emitir'])->name('app.vendas.emitir');
     Route::get('inutilizacoes', [InutilizacaoController::class, 'index'])->name('app.inutilizacoes.index');
     Route::post('inutilizacoes', [InutilizacaoController::class, 'store'])->name('app.inutilizacoes.store');
 });
