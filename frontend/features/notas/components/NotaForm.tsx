@@ -27,13 +27,14 @@ const QUANTIDADE = /^\d{1,9}([.,]\d{1,3})?$/;
 
 function paraFormulario(n: Nota): NotaFormDados {
   return {
-    modelo: n.modelo,
+    // Este formulário é só de produtos: a nota de serviço (DPS) usa o NotaDeServicoForm.
+    modelo: n.modelo === 'NFCE' ? 'NFCE' : 'NFE',
     cliente_id: n.cliente?.id ?? '',
     consumidor_final: n.consumidor_final === null ? '' : n.consumidor_final ? 'sim' : 'nao',
     desconto: centavosParaReais(n.desconto_centavos),
     informacoes_complementares: n.informacoes_complementares ?? '',
     itens: (n.itens ?? []).map((i) => ({
-      produto_id: i.produto_id,
+      produto_id: i.produto_id ?? '',
       quantidade: i.quantidade.replace('.', ','),
       valor_unitario: centavosParaReais(i.valor_unitario_centavos),
     })),

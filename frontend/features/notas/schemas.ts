@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { reaisParaCentavos } from '@/lib/formatos';
-import type { InutilizacaoPayload, NotaPayload } from './types';
+import type { InutilizacaoPayload, NotaDeProdutosPayload, NotaDeServicosPayload } from './types';
 
 const DINHEIRO = /^\d+(,\d{1,2})?$/;
 const QUANTIDADE = /^\d{1,9}([.,]\d{1,3})?$/;
@@ -41,7 +41,7 @@ export const notaSchema = z
 
 export type NotaFormDados = z.infer<typeof notaSchema>;
 
-export function paraPayload(d: NotaFormDados): NotaPayload {
+export function paraPayload(d: NotaFormDados): NotaDeProdutosPayload {
   return {
     modelo: d.modelo,
     cliente_id: d.cliente_id === '' ? null : d.cliente_id,
@@ -57,6 +57,40 @@ export function paraPayload(d: NotaFormDados): NotaPayload {
       tpag: p.tpag,
       xpag: p.xpag.trim() === '' ? null : p.xpag,
       valor_centavos: reaisParaCentavos(p.valor),
+    })),
+  };
+}
+
+const servicoItemSchema = z.object({
+  servico_id: z.string().uuid('Escolha um serviço.'),
+  quantidade: z
+    .string()
+    .regex(QUANTIDADE, 'Use até 3 casas decimais.')
+    .refine((v) => Number(v.replace(',', '.')) > 0, 'A quantidade deve ser maior que zero.'),
+  valor_unitario: z.string().refine((v) => v === '' || DINHEIRO.test(v), 'Use o formato 10,50.'),
+});
+
+export const notaDeServicoSchema = z.object({
+  cliente_id: z.string().uuid('Escolha um cliente.'),
+  desconto: z.string().regex(DINHEIRO, 'Use o formato 10,50.'),
+  // O limite de 255 é do campo de informações complementares da DPS.
+  informacoes_complementares: z.string().max(255, 'No máximo 255 caracteres.'),
+  itens: z.array(servicoItemSchema).min(1, 'Adicione ao menos um serviço.'),
+});
+
+export type NotaDeServicoDados = z.infer<typeof notaDeServicoSchema>;
+
+export function paraPayloadDeServico(d: NotaDeServicoDados): NotaDeServicosPayload {
+  return {
+    modelo: 'DPS',
+    cliente_id: d.cliente_id,
+    consumidor_final: null,
+    desconto_centavos: reaisParaCentavos(d.desconto),
+    informacoes_complementares: d.informacoes_complementares.trim() === '' ? null : d.informacoes_complementares,
+    itens: d.itens.map((i) => ({
+      servico_id: i.servico_id,
+      quantidade: i.quantidade.replace(',', '.'),
+      valor_unitario_centavos: i.valor_unitario === '' ? null : reaisParaCentavos(i.valor_unitario),
     })),
   };
 }

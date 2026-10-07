@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cancelamentoSchema, inutilizacaoSchema, notaSchema, paraPayload, paraPayloadInutilizacao, type NotaFormDados } from './schemas';
+import { cancelamentoSchema, inutilizacaoSchema, notaDeServicoSchema, notaSchema, paraPayload, paraPayloadDeServico, paraPayloadInutilizacao, type NotaFormDados } from './schemas';
 
 const BASE: NotaFormDados = {
   modelo: 'NFE',
@@ -75,5 +75,33 @@ describe('inutilizacaoSchema', () => {
     expect(inutilizacaoSchema.safeParse({ ...BASE, numero_inicial: '0' }).success).toBe(false);
     expect(inutilizacaoSchema.safeParse({ ...BASE, serie: 'AB' }).success).toBe(false);
     expect(inutilizacaoSchema.safeParse({ ...BASE, justificativa: 'curta' }).success).toBe(false);
+  });
+});
+
+describe('notaDeServicoSchema', () => {
+  const base = {
+    cliente_id: '11111111-1111-4111-8111-111111111111',
+    desconto: '0,00',
+    informacoes_complementares: '',
+    itens: [{ servico_id: '22222222-2222-4222-8222-222222222222', quantidade: '1', valor_unitario: '' }],
+  };
+
+  it('aceita a nota de serviço e monta o payload sem pagamentos', () => {
+    const dados = notaDeServicoSchema.parse({ ...base, desconto: '10,00', informacoes_complementares: 'Placa ABC1D23' });
+
+    expect(paraPayloadDeServico(dados)).toEqual({
+      modelo: 'DPS',
+      cliente_id: base.cliente_id,
+      consumidor_final: null,
+      desconto_centavos: 1000,
+      informacoes_complementares: 'Placa ABC1D23',
+      itens: [{ servico_id: base.itens[0].servico_id, quantidade: '1', valor_unitario_centavos: null }],
+    });
+  });
+
+  it('exige cliente e ao menos um serviço, e limita as informações a 255', () => {
+    expect(notaDeServicoSchema.safeParse({ ...base, cliente_id: '' }).success).toBe(false);
+    expect(notaDeServicoSchema.safeParse({ ...base, itens: [] }).success).toBe(false);
+    expect(notaDeServicoSchema.safeParse({ ...base, informacoes_complementares: 'x'.repeat(256) }).success).toBe(false);
   });
 });

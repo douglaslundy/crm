@@ -10,7 +10,7 @@ export default function DashboardPage() {
   const { data: usuario } = useUsuario();
   const { data: assinatura, isError } = useAssinatura();
   // Cada bloco só aparece se o módulo está no plano.
-  const temFiscal = assinatura?.plano?.modulos.some((m) => m === 'FISCAL_NFE' || m === 'FISCAL_NFCE') ?? false;
+  const temFiscal = assinatura?.plano?.modulos.some((m) => m === 'FISCAL_NFE' || m === 'FISCAL_NFCE' || m === 'FISCAL_NFSE') ?? false;
 
   return (
     <div className="space-y-4">

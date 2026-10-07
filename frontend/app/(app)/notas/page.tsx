@@ -20,11 +20,11 @@ export default function NotasPage() {
         <h1 className="font-display text-[28px] leading-tight font-extrabold">Notas fiscais</h1>
         <div className="flex gap-2">
           {podeInutilizar ? <Link href="/notas/inutilizar" className={buttonVariants({ variant: 'outline' })}>Inutilizar numeração</Link> : null}
-          {podeCriar ? <Link href="/notas/nova" className={buttonVariants()}>Nova NF-e</Link> : null}
+          {podeCriar ? <Link href="/notas/nova" className={buttonVariants()}>Nova nota</Link> : null}
         </div>
       </div>
       <Card>
-        <CardHeader><CardTitle>NF-e</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Notas</CardTitle></CardHeader>
         <CardContent><ListaDeNotas /></CardContent>
       </Card>
     </div>

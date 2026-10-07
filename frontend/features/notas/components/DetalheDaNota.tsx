@@ -18,7 +18,7 @@ import { notasApi, QUERY_KEY_NOTAS, urlDoPdf, urlDoXml, urlDoXmlCancelamento } f
 import { cancelamentoSchema, type CancelamentoDados } from '../schemas';
 import { tempoRestante } from '../contingencia';
 import { ROTULO_MODELO, ROTULO_PAGAMENTO, ROTULO_STATUS, type Nota } from '../types';
-import { NotaForm } from './NotaForm';
+import { FormularioDeNota } from './FormularioDeNota';
 import { StatusDaNota } from './StatusDaNota';
 import { Banner } from '@/components/ui/banner';
 
@@ -119,7 +119,9 @@ export function DetalheDaNota({ id }: { id: string }) {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="font-display text-[28px] leading-tight font-extrabold">{nota.numero !== null ? `${ROTULO_MODELO[nota.modelo]} nº ${nota.numero} · série ${nota.serie}` : `${ROTULO_MODELO[nota.modelo]} (rascunho)`}</h1>
+          <h1 className="font-display text-[28px] leading-tight font-extrabold">{nota.modelo === 'DPS' && nota.numero_nfse !== null
+            ? `${ROTULO_MODELO.DPS} nº ${nota.numero_nfse}`
+            : nota.numero !== null ? `${ROTULO_MODELO[nota.modelo]} nº ${nota.numero} · série ${nota.serie}` : `${ROTULO_MODELO[nota.modelo]} (rascunho)`}</h1>
           <p className="text-sm text-muted-foreground">{nota.cliente?.nome ?? (nota.modelo === 'NFCE' ? 'Consumidor não identificado' : 'Sem cliente')} · {formatarCentavos(nota.total_centavos)}</p>
         </div>
         <StatusDaNota status={nota.status} ambiente={nota.ambiente} />
@@ -137,7 +139,7 @@ export function DetalheDaNota({ id }: { id: string }) {
 
       {nota.status === 'AUTORIZADA' || nota.status === 'CANCELANDO' || nota.status === 'CANCELADA' || nota.status === 'CONTINGENCIA' ? (
         <div>
-          <a href={urlDoPdf(nota.id)} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: 'secondary' })}>{nota.modelo === 'NFCE' ? 'Abrir cupom (PDF)' : 'Abrir DANFE (PDF)'}</a>
+          <a href={urlDoPdf(nota.id)} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: 'secondary' })}>{nota.modelo === 'NFCE' ? 'Abrir cupom (PDF)' : nota.modelo === 'DPS' ? 'Abrir DANFSe (PDF)' : 'Abrir DANFE (PDF)'}</a>
         </div>
       ) : null}
 
@@ -147,14 +149,14 @@ export function DetalheDaNota({ id }: { id: string }) {
           <CardContent className="space-y-2 text-sm">
             <p>Chave de acesso</p>
             <p className="break-all font-mono">{nota.chave}</p>
-            <p>Protocolo: <span className="font-mono">{nota.protocolo}</span></p>
+            {nota.modelo !== 'DPS' ? <p>Protocolo: <span className="font-mono">{nota.protocolo}</span></p> : null}
             <a href={urlDoXml(nota.id)} className={buttonVariants({ variant: 'outline' })}>Baixar XML</a>
           </CardContent>
         </Card>
       ) : null}
 
       {nota.status === 'PROCESSANDO' ? (
-        <p className="text-sm text-muted-foreground">Aguardando resposta da SEFAZ. Esta página atualiza sozinha.</p>
+        <p className="text-sm text-muted-foreground">Aguardando resposta {nota.modelo === 'DPS' ? 'da ADN' : 'da SEFAZ'}. Esta página atualiza sozinha.</p>
       ) : null}
 
       {nota.status === 'AUTORIZADA' && nota.cancelamento_cstat !== null ? (
@@ -167,14 +169,14 @@ export function DetalheDaNota({ id }: { id: string }) {
       ) : null}
 
       {nota.status === 'CANCELANDO' ? (
-        <p className="text-sm text-muted-foreground">Aguardando a SEFAZ confirmar o cancelamento. Esta página atualiza sozinha.</p>
+        <p className="text-sm text-muted-foreground">Aguardando {nota.modelo === 'DPS' ? 'a ADN' : 'a SEFAZ'} confirmar o cancelamento. Esta página atualiza sozinha.</p>
       ) : null}
 
       {nota.status === 'CANCELADA' ? (
         <Card>
           <CardHeader><CardTitle>Cancelamento</CardTitle></CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <p>Protocolo: <span className="font-mono">{nota.cancelamento_protocolo}</span></p>
+            {nota.modelo !== 'DPS' ? <p>Protocolo: <span className="font-mono">{nota.cancelamento_protocolo}</span></p> : null}
             {nota.cancelado_em ? <p>Cancelada em {new Date(nota.cancelado_em).toLocaleString('pt-BR')}</p> : null}
             <p>Justificativa:</p>
             <p>{nota.cancelamento_justificativa}</p>
@@ -221,12 +223,12 @@ export function DetalheDaNota({ id }: { id: string }) {
         <Card>
           <CardHeader><CardTitle>Editar nota</CardTitle></CardHeader>
           <CardContent>
-            <NotaForm nota={nota} onSalvo={() => setEditando(false)} />
+            <FormularioDeNota nota={nota} onSalvo={() => setEditando(false)} />
           </CardContent>
         </Card>
       ) : (
         <Card>
-          <CardHeader><CardTitle>Itens e pagamentos</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{nota.modelo === 'DPS' ? 'Serviços' : 'Itens e pagamentos'}</CardTitle></CardHeader>
           <CardContent className="space-y-3 text-sm">
             <ul className="divide-y">
               {(nota.itens ?? []).map((i) => (

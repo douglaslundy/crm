@@ -22,7 +22,7 @@ export const ROTULO_PAGAMENTO: Record<FormaPagamento, string> = {
 
 export interface NotaItem {
   id: number;
-  produto_id: string;
+  produto_id: string | null;
   ordem: number;
   sku: string | null;
   descricao: string | null;
@@ -33,6 +33,8 @@ export interface NotaItem {
   total_centavos: number;
   cfop: string | null;
   csosn: string | null;
+  servico_id: string | null;
+  c_trib_nac: string | null;
 }
 
 export interface NotaPagamento {
@@ -48,9 +50,10 @@ export interface NotaEvento {
   em: string;
 }
 
-export type ModeloDaNota = 'NFE' | 'NFCE';
+/** `DPS` é a NFS-e Nacional (o modelo da série e da nota no backend). */
+export type ModeloDaNota = 'NFE' | 'NFCE' | 'DPS';
 
-export const ROTULO_MODELO: Record<ModeloDaNota, string> = { NFE: 'NF-e', NFCE: 'NFC-e' };
+export const ROTULO_MODELO: Record<ModeloDaNota, string> = { NFE: 'NF-e', NFCE: 'NFC-e', DPS: 'NFS-e' };
 
 export interface Nota {
   id: string;
@@ -66,6 +69,7 @@ export interface Nota {
   serie: string | null;
   chave: string | null;
   protocolo: string | null;
+  numero_nfse: string | null;
   cstat: string | null;
   motivo: string | null;
   mensagem_erro: string | null;
@@ -90,8 +94,8 @@ export interface Nota {
 
 export type NotaStatus = Pick<Nota, 'id' | 'status' | 'numero' | 'serie' | 'chave' | 'cstat' | 'motivo' | 'mensagem_erro' | 'cancelamento_cstat' | 'cancelamento_motivo'>;
 
-export interface NotaPayload {
-  modelo: ModeloDaNota;
+export interface NotaDeProdutosPayload {
+  modelo: Exclude<ModeloDaNota, 'DPS'>;
   cliente_id: string | null;
   consumidor_final: boolean | null;
   desconto_centavos: number;
@@ -99,6 +103,17 @@ export interface NotaPayload {
   itens: { produto_id: string; quantidade: string; valor_unitario_centavos: number | null }[];
   pagamentos: { tpag: FormaPagamento; xpag: string | null; valor_centavos: number }[];
 }
+
+export interface NotaDeServicosPayload {
+  modelo: 'DPS';
+  cliente_id: string;
+  consumidor_final: null;
+  desconto_centavos: number;
+  informacoes_complementares: string | null;
+  itens: { servico_id: string; quantidade: string; valor_unitario_centavos: number | null }[];
+}
+
+export type NotaPayload = NotaDeProdutosPayload | NotaDeServicosPayload;
 
 export type StatusInutilizacao = 'INUTILIZADA' | 'RECUSADA' | 'ERRO';
 

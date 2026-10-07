@@ -7,12 +7,15 @@ import { useAssinatura } from '@/features/assinatura/hooks/useAssinatura';
 import { useUsuario } from '@/features/auth/hooks/useUsuario';
 import { clientesApi } from '@/features/clientes/api';
 import { produtosApi } from '@/features/produtos/api';
+import { servicosApi } from '@/features/servicos/api';
 import { inutilizacoesApi, notasApi } from '../api';
 import type { Nota } from '../types';
 import { DetalheDaNota } from './DetalheDaNota';
 import { FormInutilizacao } from './FormInutilizacao';
+import { FormularioDeNota } from './FormularioDeNota';
 import { ListaDeInutilizacoes } from './ListaDeInutilizacoes';
 import { ListaDeNotas } from './ListaDeNotas';
+import { NotaDeServicoForm } from './NotaDeServicoForm';
 import { NotaForm } from './NotaForm';
 import { StatusDaNota } from './StatusDaNota';
 
@@ -28,6 +31,7 @@ vi.mock('../api', () => ({
 
 vi.mock('@/features/clientes/api', () => ({ QUERY_KEY_CLIENTES: ['clientes'], clientesApi: { listar: vi.fn() } }));
 vi.mock('@/features/produtos/api', () => ({ QUERY_KEY_PRODUTOS: ['produtos'], produtosApi: { listar: vi.fn() } }));
+vi.mock('@/features/servicos/api', () => ({ QUERY_KEY_SERVICOS: ['servicos'], servicosApi: { listar: vi.fn() } }));
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 vi.mock('@/features/auth/hooks/useUsuario', () => ({ useUsuario: vi.fn() }));
 vi.mock('@/features/assinatura/hooks/useAssinatura', () => ({ useAssinatura: vi.fn() }));
@@ -44,7 +48,7 @@ export function renderizar(ui: ReactNode) {
 }
 
 export const NOTA: Nota = {
-  id: 'n1', modelo: 'NFE', contingencia_limite_em: null, contingencia_motivo: null, contingencia_tipo: null, epec_protocolo: null, epec_registrado_em: null, status: 'AUTORIZADA', ambiente: 'HOMOLOGACAO', numero: 7, serie: '1', chave: '3'.repeat(44), protocolo: '135', cstat: '100', motivo: 'Autorizado',
+  id: 'n1', modelo: 'NFE', numero_nfse: null, contingencia_limite_em: null, contingencia_motivo: null, contingencia_tipo: null, epec_protocolo: null, epec_registrado_em: null, status: 'AUTORIZADA', ambiente: 'HOMOLOGACAO', numero: 7, serie: '1', chave: '3'.repeat(44), protocolo: '135', cstat: '100', motivo: 'Autorizado',
   cancelamento_justificativa: null, cancelado_em: null, cancelamento_protocolo: null, cancelamento_cstat: null, cancelamento_motivo: null,
   mensagem_erro: null, natureza_operacao: 'Venda de mercadoria', consumidor_final: true, subtotal_centavos: 2500, desconto_centavos: 0, total_centavos: 2500,
   informacoes_complementares: null, emitido_em: '2026-10-02T10:00:00-03:00', created_at: '2026-10-02T09:00:00-03:00', cliente: { id: 'c1', nome: 'Maria Teste' },
@@ -665,5 +669,84 @@ describe('NFC-e em contingência', () => {
 
     await userEvent.selectOptions(screen.getByLabelText('Status'), 'CONTINGENCIA');
     await waitFor(() => expect(notasApi.listar).toHaveBeenLastCalledWith('CONTINGENCIA'));
+  });
+});
+
+describe('NFS-e', () => {
+  const CLIENTE = { id: '11111111-1111-4111-8111-111111111111', tipo: 'PF', nome: 'Maria Teste', estagio: 'CLIENTE' };
+  const SERVICO = { id: '55555555-5555-4555-8555-555555555555', nome: 'Troca de óleo', preco_centavos: 15000 };
+  const NFSE: Nota = {
+    ...NOTA, modelo: 'DPS', status: 'AUTORIZADA', protocolo: null, numero_nfse: '42', chave: '1'.repeat(50),
+    itens: [{ id: 1, produto_id: null, servico_id: SERVICO.id, c_trib_nac: '140101', ordem: 1, sku: null, descricao: 'Troca de óleo', unidade: null, quantidade: '1.000', valor_unitario_centavos: 15000, desconto_centavos: 0, total_centavos: 15000, cfop: null, csosn: null }],
+    pagamentos: [],
+  };
+
+  function preparar() {
+    vi.mocked(clientesApi.listar).mockResolvedValue({ data: [CLIENTE] as never });
+    vi.mocked(servicosApi.listar).mockResolvedValue({ data: [SERVICO] as never });
+    vi.mocked(produtosApi.listar).mockResolvedValue({ data: [] as never });
+  }
+
+  it('FormularioDeNota só oferece NFS-e quando o plano tem o módulo', async () => {
+    preparar();
+    renderizar(<FormularioDeNota />);
+    await screen.findByLabelText('Cliente');
+    expect(screen.queryByLabelText('Tipo de nota')).not.toBeInTheDocument();
+  });
+
+  it('com o módulo, escolher NFS-e mostra o formulário de serviços e envia modelo DPS sem pagamentos', async () => {
+    comModulos(['FISCAL_NFE', 'FISCAL_NFSE']);
+    preparar();
+    vi.mocked(notasApi.criar).mockResolvedValue({ data: { ...NFSE, id: 'novo', status: 'RASCUNHO' } });
+    renderizar(<FormularioDeNota />);
+
+    await userEvent.selectOptions(await screen.findByLabelText('Tipo de nota'), 'SERVICOS');
+    await userEvent.selectOptions(await screen.findByLabelText('Cliente'), CLIENTE.id);
+    await userEvent.selectOptions(screen.getByLabelText('Serviço 1'), SERVICO.id);
+    expect(screen.queryByLabelText('Forma de pagamento 1')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar rascunho' }));
+
+    await waitFor(() =>
+      expect(notasApi.criar).toHaveBeenCalledWith({
+        modelo: 'DPS', cliente_id: CLIENTE.id, consumidor_final: null, desconto_centavos: 0, informacoes_complementares: null,
+        itens: [{ servico_id: SERVICO.id, quantidade: '1', valor_unitario_centavos: null }],
+      }),
+    );
+  });
+
+  it('mostra o erro de bloqueio fiscal que vem da API', async () => {
+    preparar();
+    const { ApiError } = await import('@/lib/api');
+    vi.mocked(notasApi.criar).mockRejectedValue(new ApiError(422, 'O serviço "Troca de óleo" está sem: alíquota do ISS.', {}, { codigo: 'FISCAL_SERVICO_INCOMPLETO' }));
+    renderizar(<NotaDeServicoForm />);
+
+    await userEvent.selectOptions(await screen.findByLabelText('Cliente'), CLIENTE.id);
+    await userEvent.selectOptions(screen.getByLabelText('Serviço 1'), SERVICO.id);
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar rascunho' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('alíquota do ISS');
+  });
+
+  it('o detalhe da NFS-e autorizada mostra o número oficial, o DANFSe e não mostra protocolo nem pagamentos', async () => {
+    comPapel('LEITURA');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: NFSE });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    expect(await screen.findByRole('link', { name: 'Abrir DANFSe (PDF)' })).toHaveAttribute('href', 'http://api.test/api/app/notas/n1/pdf');
+    expect(screen.getByText(/NFS-e nº 42/)).toBeInTheDocument();
+    expect(screen.queryByText(/Protocolo:/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Itens e pagamentos')).not.toBeInTheDocument();
+    expect(screen.getByText('Serviços')).toBeInTheDocument();
+  });
+
+  it('quem emite cancela a NFS-e e o texto fala em NFS-e', async () => {
+    comPapel('ADMIN');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: NFSE });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Cancelar NFS-e' }));
+
+    expect(screen.getByText('Cancelar NFS-e')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Confirmar cancelamento' })).toBeInTheDocument();
   });
 });
