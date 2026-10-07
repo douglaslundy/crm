@@ -20,6 +20,7 @@ export default function NotasPage() {
         <h1 className="font-display text-[28px] leading-tight font-extrabold">Notas fiscais</h1>
         <div className="flex gap-2">
           {podeInutilizar ? <Link href="/notas/inutilizar" className={buttonVariants({ variant: 'outline' })}>Inutilizar numeração</Link> : null}
+          {podeCriar ? <Link href="/vendas/nova" className={buttonVariants({ variant: 'outline' })}>Nova venda (produtos e serviços)</Link> : null}
           {podeCriar ? <Link href="/notas/nova" className={buttonVariants()}>Nova nota</Link> : null}
         </div>
       </div>
