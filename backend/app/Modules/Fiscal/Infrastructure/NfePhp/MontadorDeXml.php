@@ -7,6 +7,7 @@ namespace App\Modules\Fiscal\Infrastructure\NfePhp;
 use App\Modules\Fiscal\Domain\Emissao\ContingenciaDeEmissao;
 use App\Modules\Fiscal\Domain\Emissao\NotaParaEmissao;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
+use App\Modules\Fiscal\Domain\Enums\TipoDeContingencia;
 use App\Modules\Fiscal\Domain\Quantidade;
 use App\Modules\Fiscal\Domain\TabelaIbge;
 use NFePHP\NFe\Make;
@@ -27,9 +28,11 @@ final class MontadorDeXml
         $tpAmb = $nota->ambiente === 'PRODUCAO' ? 1 : 2;
         $nfce = $nota->modelo === ModeloDocumento::Nfce;
         $destinatario = $nota->destinatario;
-        if ($contingencia !== null && ! $nfce) {
-            // O EPEC/SVC da NF-e é outra fatia; só a NFC-e remonta em contingência offline.
+        if ($contingencia !== null && $contingencia->tipo === TipoDeContingencia::OfflineNfce && ! $nfce) {
             throw new RuntimeException('Contingência offline só se aplica à NFC-e.');
+        }
+        if ($contingencia !== null && $contingencia->tipo === TipoDeContingencia::Epec && $nfce) {
+            throw new RuntimeException('O EPEC só se aplica à NF-e.');
         }
         if (! $nfce && $destinatario === null) {
             throw new RuntimeException('NF-e sem destinatário: o Preparador deveria ter bloqueado.');
@@ -40,7 +43,7 @@ final class MontadorDeXml
 
         $ide = ['cUF' => $cUF, 'natOp' => $this->texto($nota->naturezaOperacao, 60), 'mod' => $nfce ? 65 : 55, 'serie' => (int) $nota->serie, 'nNF' => $nota->numero,
             'dhEmi' => now()->setTimezone('America/Sao_Paulo')->format('c'), 'tpNF' => 1, 'idDest' => $nota->idDest, 'cMunFG' => $e->codigoIbge,
-            'tpImp' => $nfce ? 4 : 1, 'tpEmis' => $contingencia === null ? 1 : 9, 'tpAmb' => $tpAmb, 'finNFe' => 1, 'indFinal' => $nfce ? 1 : $destinatario->indFinal, 'indPres' => 1,
+            'tpImp' => $nfce ? 4 : 1, 'tpEmis' => match ($contingencia?->tipo) { null => 1, TipoDeContingencia::Epec => 4, TipoDeContingencia::OfflineNfce => 9 }, 'tpAmb' => $tpAmb, 'finNFe' => 1, 'indFinal' => $nfce ? 1 : $destinatario->indFinal, 'indPres' => 1,
             'procEmi' => 0, 'verProc' => config('fiscal.ver_proc')];
         if ($cNF !== null) {
             $ide['cNF'] = $cNF;
