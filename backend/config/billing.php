@@ -3,9 +3,6 @@
 declare(strict_types=1);
 
 return [
-    // 'mercadopago' em produção; 'fake' nunca deve ser usado fora de testes.
-    'gateway' => env('BILLING_GATEWAY', 'mercadopago'),
-
     'mercadopago' => [
         'access_token' => env('MERCADOPAGO_ACCESS_TOKEN'),
         'webhook_secret' => env('MERCADOPAGO_WEBHOOK_SECRET'),
