@@ -60,6 +60,21 @@ final class AplicarResultadoDoCancelamento
         });
     }
 
+    /** NFS-e: a ADN confirmou o evento de cancelamento (consulta de eventos), mas a resposta do nosso pedido se perdeu. */
+    public function confirmarCancelamento(string $notaId, string $detalhe): Nota
+    {
+        return DB::transaction(function () use ($notaId, $detalhe): Nota {
+            $nota = Nota::query()->whereKey($notaId)->lockForUpdate()->firstOrFail();
+            if ($nota->status !== StatusNota::Cancelando) {
+                return $nota;
+            }
+            $nota->forceFill(['status' => StatusNota::Cancelada, 'cancelado_em' => now()])->save();
+            NotaEvento::registrar($nota, StatusNota::Cancelando, StatusNota::Cancelada, $detalhe);
+
+            return $nota;
+        });
+    }
+
     /** Passou o prazo e a SEFAZ ainda mostra a nota autorizada: o pedido não chegou. Volta a AUTORIZADA para tentar de novo. */
     public function naoConfirmado(string $notaId): Nota
     {

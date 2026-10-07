@@ -6,6 +6,7 @@ namespace App\Modules\Fiscal\Application\Actions;
 
 use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfe;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEmissao;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\SituacaoNaSefaz;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Models\Emitente;
@@ -17,10 +18,15 @@ final class ConciliarNota
         private readonly EmissorDeNfe $emissor,
         private readonly AplicarResultadoDaEmissao $aplicar,
         private readonly AplicarResultadoDoCancelamento $cancelamento,
+        private readonly ConciliarNfse $nfse,
     ) {}
 
     public function executar(Nota $nota): Nota
     {
+        if ($nota->modelo === ModeloDocumento::Dps) {
+            return $this->nfse->executar($nota);
+        }
+
         if ($nota->status === StatusNota::Cancelando) {
             return $this->conciliarCancelamento($nota);
         }

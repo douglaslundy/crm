@@ -57,9 +57,10 @@ trait CenarioDeNfse
     {
         $nota = $this->rascunhoDeNfse();
         app(PreparadorDaNotaDeServico::class)->preparar($nota, $this->emitente);
-        $nota->forceFill([
-            'status' => $status, 'numero' => 1, 'serie' => '1', 'ambiente' => 'HOMOLOGACAO', 'iniciada_em' => now(),
-        ] + $campos)->save();
+        // array_replace: os campos do chamador vencem os padrões (com `+` venceria o lado esquerdo).
+        $nota->forceFill(array_replace([
+            'status' => $status, 'numero' => (int) Nota::query()->max('numero') + 1, 'serie' => '1', 'ambiente' => 'HOMOLOGACAO', 'iniciada_em' => now(),
+        ], $campos))->save();
 
         return $nota->refresh();
     }
