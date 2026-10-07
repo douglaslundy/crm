@@ -97,14 +97,14 @@ class EntradaEmContingenciaTest extends TestCase
         $this->assertSame('2026-10-05 18:00:00', $nota->contingencia_limite_em?->format('Y-m-d H:i:s'));
     }
 
-    public function test_nfe_com_falha_de_comunicacao_vira_erro_e_nao_entra_em_contingencia(): void
+    public function test_nfe_com_falha_de_comunicacao_nao_usa_a_contingencia_offline(): void
     {
         $this->emissor->falharEmTransmitir = new FalhaDeComunicacaoException;
 
         $nota = $this->emitir('NFE');
 
-        $this->assertSame(StatusNota::Erro, $nota->status);
         $this->assertNotContains('prepararContingencia', $this->emissor->chamadas);
+        $this->assertSame(TipoDeContingencia::Epec, $nota->contingencia_tipo);
     }
 
     public function test_erro_que_nao_e_de_comunicacao_vira_erro_mesmo_na_nfce(): void

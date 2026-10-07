@@ -6,6 +6,7 @@ namespace App\Modules\Fiscal\Application\Jobs;
 
 use App\Modules\Fiscal\Application\Actions\AplicarResultadoDaEmissao;
 use App\Modules\Fiscal\Application\Actions\EntrarEmContingencia;
+use App\Modules\Fiscal\Application\Actions\EntrarEmEpec;
 use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfe;
 use App\Modules\Fiscal\Domain\Emissao\NotaParaEmissao;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEmissao;
@@ -68,18 +69,23 @@ final class EmitirNotaJob implements ShouldQueue
 
             $aplicar->executar($nota->id, $emissor->transmitir($emitente, $dto, $xml));
         } catch (FalhaDeComunicacaoException $e) {
-            // Só a NFC-e vai para contingência offline; a NF-e (EPEC/SVC é outra fatia) continua em ERRO.
+            // NFC-e entra em contingência offline; NF-e entra em EPEC. Qualquer falha ao entrar vira ERRO com a causa.
             $nota = Nota::query()->find($this->notaId);
-            if ($nota !== null && $nota->modelo === ModeloDocumento::Nfce) {
-                try {
-                    app(EntrarEmContingencia::class)->executar($this->notaId);
-                } catch (Throwable $e2) {
-                    report($e2);
-                    $aplicar->executar($this->notaId, ResultadoDeEmissao::erro('Falha técnica ao entrar em contingência: '.mb_substr($e2->getMessage(), 0, 300)));
-                }
-            } else {
+            $entrada = match ($nota?->modelo) {
+                ModeloDocumento::Nfce => [EntrarEmContingencia::class, 'Falha técnica ao entrar em contingência: '],
+                ModeloDocumento::Nfe => [EntrarEmEpec::class, 'Falha técnica ao registrar o EPEC: '],
+                default => null,
+            };
+            if ($entrada === null) {
                 report($e);
                 $aplicar->executar($this->notaId, ResultadoDeEmissao::erro('Falha de comunicação com a SEFAZ ao emitir. Tente novamente: o número foi preservado.'));
+            } else {
+                try {
+                    app($entrada[0])->executar($this->notaId);
+                } catch (Throwable $e2) {
+                    report($e2);
+                    $aplicar->executar($this->notaId, ResultadoDeEmissao::erro($entrada[1].mb_substr($e2->getMessage(), 0, 300)));
+                }
             }
         } catch (Throwable $e) {
             report($e);

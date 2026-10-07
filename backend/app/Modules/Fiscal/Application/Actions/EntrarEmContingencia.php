@@ -6,12 +6,9 @@ namespace App\Modules\Fiscal\Application\Actions;
 
 use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfe;
 use App\Modules\Fiscal\Domain\Emissao\NotaParaEmissao;
-use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsulta;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
-use App\Modules\Fiscal\Domain\Enums\SituacaoNaSefaz;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Enums\TipoDeContingencia;
-use App\Modules\Fiscal\Domain\Exceptions\FalhaDeComunicacaoException;
 use App\Modules\Fiscal\Domain\Models\Emitente;
 use App\Modules\Fiscal\Domain\Models\Nota;
 use App\Modules\Fiscal\Domain\Models\NotaEvento;
@@ -30,6 +27,7 @@ final class EntrarEmContingencia
     public function __construct(
         private readonly EmissorDeNfe $emissor,
         private readonly AplicarResultadoDaEmissao $aplicar,
+        private readonly ConsultarChaveOriginal $consultarChaveOriginal,
     ) {}
 
     public function executar(string $notaId): Nota
@@ -40,7 +38,7 @@ final class EntrarEmContingencia
         }
         $emitente = Emitente::query()->findOrFail($nota->emitente_id);
 
-        $consulta = $this->consultarChaveOriginal($emitente, $nota);
+        $consulta = $this->consultarChaveOriginal->executar($emitente, $nota);
         if ($consulta !== null) {
             return $this->aplicar->aplicarConsulta($nota->id, $consulta);
         }
@@ -65,23 +63,5 @@ final class EntrarEmContingencia
 
             return $nota;
         });
-    }
-
-    /**
-     * @return ResultadoDeConsulta|null a consulta, só quando a SEFAZ já tem a nota (autorizada ou cancelada);
-     *                                  nulo quando não há chave, não foi encontrada, deu erro ou a consulta também falhou por comunicação.
-     */
-    private function consultarChaveOriginal(Emitente $emitente, Nota $nota): ?ResultadoDeConsulta
-    {
-        if ($nota->chave === null) {
-            return null;
-        }
-        try {
-            $consulta = $this->emissor->consultarPorChave($emitente, $nota->chave, $nota->xml_enviado, (string) $nota->ambiente);
-        } catch (FalhaDeComunicacaoException) {
-            return null;
-        }
-
-        return in_array($consulta->situacao, [SituacaoNaSefaz::Autorizada, SituacaoNaSefaz::Cancelada], true) ? $consulta : null;
     }
 }
