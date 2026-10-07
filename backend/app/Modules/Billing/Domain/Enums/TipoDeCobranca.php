@@ -7,4 +7,12 @@ namespace App\Modules\Billing\Domain\Enums;
 enum TipoDeCobranca: string
 {
     case Assinatura = 'ASSINATURA';
+
+    /** Só a cobrança da assinatura estende o período pago e reativa o tenant (o excedente, na F5b, não). */
+    public function estendePeriodo(): bool
+    {
+        return match ($this) {
+            self::Assinatura => true,
+        };
+    }
 }
