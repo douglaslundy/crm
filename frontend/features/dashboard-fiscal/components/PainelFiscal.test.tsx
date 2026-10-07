@@ -139,7 +139,7 @@ describe('PainelFiscal', () => {
   it('sem contingências mostra o cartão zerado e nenhum aviso de prazo', () => {
     render(<PainelFiscal />);
 
-    expect(screen.getByRole('region', { name: 'NFC-e em contingência' })).toHaveTextContent('0');
+    expect(screen.getByRole('region', { name: 'Notas em contingência' })).toHaveTextContent('0');
     expect(screen.queryByText(/perto do prazo/)).not.toBeInTheDocument();
     expect(screen.queryByText(/prazo vencido/i)).not.toBeInTheDocument();
   });
@@ -148,7 +148,7 @@ describe('PainelFiscal', () => {
     comDados(dados({ contingencias: { quantidade: 2, em_alerta: 1, vencidas: 0, limite_mais_proximo: '2026-10-06T10:00:00Z' } }));
     render(<PainelFiscal />);
 
-    expect(screen.getByRole('region', { name: 'NFC-e em contingência' })).toHaveTextContent('2');
+    expect(screen.getByRole('region', { name: 'Notas em contingência' })).toHaveTextContent('2');
     const aviso = screen.getByRole('status', { name: /prazo/i });
     expect(aviso).toHaveTextContent('1 nota perto do prazo');
     expect(screen.queryByText(/prazo vencido/i)).not.toBeInTheDocument();

@@ -57,6 +57,9 @@ export interface Nota {
   modelo: ModeloDaNota;
   contingencia_limite_em: string | null;
   contingencia_motivo: string | null;
+  contingencia_tipo: 'OFFLINE_NFCE' | 'EPEC' | null;
+  epec_protocolo: string | null;
+  epec_registrado_em: string | null;
   status: StatusNota;
   ambiente: 'HOMOLOGACAO' | 'PRODUCAO' | null;
   numero: number | null;

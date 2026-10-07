@@ -44,7 +44,7 @@ export function renderizar(ui: ReactNode) {
 }
 
 export const NOTA: Nota = {
-  id: 'n1', modelo: 'NFE', contingencia_limite_em: null, contingencia_motivo: null, status: 'AUTORIZADA', ambiente: 'HOMOLOGACAO', numero: 7, serie: '1', chave: '3'.repeat(44), protocolo: '135', cstat: '100', motivo: 'Autorizado',
+  id: 'n1', modelo: 'NFE', contingencia_limite_em: null, contingencia_motivo: null, contingencia_tipo: null, epec_protocolo: null, epec_registrado_em: null, status: 'AUTORIZADA', ambiente: 'HOMOLOGACAO', numero: 7, serie: '1', chave: '3'.repeat(44), protocolo: '135', cstat: '100', motivo: 'Autorizado',
   cancelamento_justificativa: null, cancelado_em: null, cancelamento_protocolo: null, cancelamento_cstat: null, cancelamento_motivo: null,
   mensagem_erro: null, natureza_operacao: 'Venda de mercadoria', consumidor_final: true, subtotal_centavos: 2500, desconto_centavos: 0, total_centavos: 2500,
   informacoes_complementares: null, emitido_em: '2026-10-02T10:00:00-03:00', created_at: '2026-10-02T09:00:00-03:00', cliente: { id: 'c1', nome: 'Maria Teste' },
@@ -579,7 +579,7 @@ describe('NFC-e: cupom e cancelamento', () => {
 
 describe('NFC-e em contingência', () => {
   const EM_CONTINGENCIA: Nota = {
-    ...NOTA, modelo: 'NFCE', status: 'CONTINGENCIA', protocolo: null, emitido_em: null,
+    ...NOTA, modelo: 'NFCE', status: 'CONTINGENCIA', protocolo: null, emitido_em: null, contingencia_tipo: 'OFFLINE_NFCE',
     contingencia_limite_em: '2099-01-01T00:00:00Z', contingencia_motivo: 'Falha de comunicação com a SEFAZ na emissão; emitida em contingência offline.',
   };
 
@@ -618,6 +618,44 @@ describe('NFC-e em contingência', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Retransmitir agora' }));
 
     await waitFor(() => expect(notasApi.retransmitir).toHaveBeenCalledWith('n1'));
+  });
+
+  const EM_EPEC: Nota = {
+    ...NOTA, modelo: 'NFE', status: 'CONTINGENCIA', protocolo: null, emitido_em: null,
+    contingencia_tipo: 'EPEC', epec_protocolo: '891260000000001', epec_registrado_em: '2026-10-06T12:00:00Z',
+    contingencia_limite_em: '2099-01-01T00:00:00Z', contingencia_motivo: 'Falha de comunicação com a SEFAZ na emissão; emitida em contingência EPEC.',
+  };
+
+  it('NF-e em EPEC explica o EPEC, mostra o protocolo, o prazo e oferece o DANFE', async () => {
+    comPapel('LEITURA');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: EM_EPEC });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    const aviso = await screen.findByRole('status');
+    expect(aviso).toHaveTextContent(/EPEC/);
+    expect(aviso).toHaveTextContent('891260000000001');
+    expect(aviso).toHaveTextContent(/restam/i);
+    expect(aviso).not.toHaveTextContent(/cupom/i);
+    expect(screen.getByRole('link', { name: 'Abrir DANFE (PDF)' })).toBeInTheDocument();
+  });
+
+  it('NF-e em EPEC com prazo vencido vira alerta e quem emite retransmite', async () => {
+    comPapel('ADMIN');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: { ...EM_EPEC, contingencia_limite_em: '2020-01-01T00:00:00Z' } });
+    vi.mocked(notasApi.retransmitir).mockResolvedValue({ data: { id: 'n1', status: 'AUTORIZADA', numero: 7, serie: '1', chave: null, cstat: null, motivo: null, mensagem_erro: null, cancelamento_cstat: null, cancelamento_motivo: null } });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/vencido/i);
+    await userEvent.click(screen.getByRole('button', { name: 'Retransmitir agora' }));
+    await waitFor(() => expect(notasApi.retransmitir).toHaveBeenCalledWith('n1'));
+  });
+
+  it('nota em contingência sem tipo (legada) continua com o texto do cupom offline', async () => {
+    comPapel('LEITURA');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: { ...EM_CONTINGENCIA, contingencia_tipo: null } });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    expect(await screen.findByRole('status')).toHaveTextContent(/contingência offline/i);
   });
 
   it('a lista filtra por contingência', async () => {

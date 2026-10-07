@@ -40,7 +40,7 @@ function AvisosDeContingencia({ contingencias }: { contingencias: DashboardFisca
     <>
       {contingencias.vencidas > 0 ? (
         <Banner tom="perigo" rotulo="Prazo das contingências">
-          {contingencias.vencidas} {plural(contingencias.vencidas)} com prazo vencido: retransmita agora ou confirme o prazo da sua UF.
+          {contingencias.vencidas} {plural(contingencias.vencidas)} com prazo vencido: retransmita agora ou confirme o prazo legal da contingência.
         </Banner>
       ) : null}
       {contingencias.em_alerta > 0 ? (
@@ -79,8 +79,8 @@ export function PainelFiscal() {
           <StatCard titulo="Pedem ação" valor={data.rejeicoes.quantidade} tom={data.rejeicoes.quantidade > 0 ? 'perigo' : 'info'} legenda="Rejeitadas ou com erro" />
         </section>
         <Certificado certificado={data.certificado} />
-        <section aria-label="NFC-e em contingência">
-          <StatCard titulo="NFC-e em contingência" valor={data.contingencias.quantidade} tom={data.contingencias.vencidas > 0 ? 'perigo' : data.contingencias.quantidade > 0 ? 'primario' : 'info'} legenda="Aguardam transmissão à SEFAZ" />
+        <section aria-label="Notas em contingência">
+          <StatCard titulo="Notas em contingência" valor={data.contingencias.quantidade} tom={data.contingencias.vencidas > 0 ? 'perigo' : data.contingencias.quantidade > 0 ? 'primario' : 'info'} legenda="NFC-e offline e NF-e em EPEC aguardam transmissão à SEFAZ" />
         </section>
       </div>
 

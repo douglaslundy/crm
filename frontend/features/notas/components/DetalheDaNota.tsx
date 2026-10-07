@@ -301,7 +301,9 @@ function BlocoDeContingencia({ nota, podeRetransmitir, retransmitindo, aoRetrans
   return (
     <Banner tom={prazo?.vencido ? 'perigo' : 'alerta'}>
       <p>
-        Emitida em contingência offline: o cupom já vale para o consumidor, mas a nota ainda não foi autorizada pela SEFAZ.
+        {nota.contingencia_tipo === 'EPEC'
+          ? `Emitida em contingência EPEC: o DANFE já vale para o destinatário e a Receita recebeu o evento prévio${nota.epec_protocolo ? ` (protocolo ${nota.epec_protocolo})` : ''}, mas a nota ainda não foi autorizada pela SEFAZ.`
+          : 'Emitida em contingência offline: o cupom já vale para o consumidor, mas a nota ainda não foi autorizada pela SEFAZ.'}
         {nota.contingencia_motivo ? ` ${nota.contingencia_motivo}` : ''}
       </p>
       {prazo ? (
