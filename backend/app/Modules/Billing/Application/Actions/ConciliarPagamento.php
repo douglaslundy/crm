@@ -74,25 +74,52 @@ final class ConciliarPagamento
             throw new BillingException('BILLING_VALOR_DIVERGENTE', 'O valor pago não confere com o da cobrança.', 409);
         }
 
+        $baixa = ['status' => StatusDaCobranca::Paga, 'gateway_pagamento_id' => $pagamento->id, 'pago_em' => now()];
+
+        if (! $cobranca->tipo->estendePeriodo()) {
+            // Excedente (e, depois, upgrade): só quita a cobrança; não mexe no período pago da assinatura.
+            $cobranca->forceFill($baixa)->save();
+            $this->reativarSeEmDia($assinatura);
+
+            return $cobranca;
+        }
+
         $hoje = CarbonImmutable::today((string) config('app.fuso_negocio'));
         $pagaAte = $assinatura->paga_ate === null ? null : CarbonImmutable::parse($assinatura->paga_ate->toDateString());
         $periodo = PeriodoPago::proximo($pagaAte, $hoje, $assinatura->ciclo);
 
-        $cobranca->forceFill([
-            'status' => StatusDaCobranca::Paga, 'gateway_pagamento_id' => $pagamento->id, 'pago_em' => now(),
-            'periodo_inicio' => $periodo['inicio']->toDateString(), 'periodo_fim' => $periodo['fim']->toDateString(),
-        ])->save();
+        $cobranca->forceFill($baixa + ['periodo_inicio' => $periodo['inicio']->toDateString(), 'periodo_fim' => $periodo['fim']->toDateString()])->save();
 
-        if ($cobranca->tipo->estendePeriodo() && $assinatura->situacao !== StatusDaAssinatura::Cancelada) {
+        if ($assinatura->situacao !== StatusDaAssinatura::Cancelada) {
             $assinatura->forceFill(['paga_ate' => $periodo['fim']->toDateString(), 'situacao' => StatusDaAssinatura::Ativa])->save();
-            // O pagamento quita a dívida: as cobranças vencidas ficam sem efeito. Sem isso o tenant seria suspenso de novo
-            // na próxima rodada de inadimplência, que conta a partir da cobrança vencida mais antiga.
-            Cobranca::query()->where('assinatura_id', $assinatura->id)->where('status', StatusDaCobranca::Vencida->value)
-                ->whereKeyNot($cobranca->id)->update(['status' => StatusDaCobranca::Cancelada->value]);
+            // O pagamento da mensalidade quita as mensalidades vencidas (o excedente vencido continua devido): sem isso o
+            // tenant seria suspenso de novo na próxima rodada, que conta a partir da cobrança vencida mais antiga.
+            Cobranca::query()->where('assinatura_id', $assinatura->id)->where('tipo', TipoDeCobranca::Assinatura->value)
+                ->where('status', StatusDaCobranca::Vencida->value)->whereKeyNot($cobranca->id)
+                ->update(['status' => StatusDaCobranca::Cancelada->value]);
             $this->ativarTenant($assinatura);
         }
 
         return $cobranca;
+    }
+
+    /**
+     * Quem foi levado à inadimplência ou à suspensão por uma cobrança que não estende o período (o excedente) volta a
+     * ATIVA ao quitá-la, desde que a assinatura esteja ativa e paga até hoje e não reste nenhuma cobrança vencida.
+     */
+    private function reativarSeEmDia(Assinatura $assinatura): void
+    {
+        $hoje = CarbonImmutable::today((string) config('app.fuso_negocio'));
+        if ($assinatura->situacao !== StatusDaAssinatura::Ativa || $assinatura->paga_ate === null || $assinatura->paga_ate->toDateString() < $hoje->toDateString()) {
+            return;
+        }
+        if (Cobranca::query()->where('assinatura_id', $assinatura->id)->where('status', StatusDaCobranca::Vencida->value)->exists()) {
+            return;
+        }
+        $tenant = Tenant::query()->lockForUpdate()->findOrFail($assinatura->tenant_id);
+        if (in_array($tenant->situacao, [SituacaoAssinatura::Inadimplente, SituacaoAssinatura::Suspensa], true)) {
+            $this->mudarSituacao->executar($tenant, SituacaoAssinatura::Ativa, 'Pagamento confirmado.', null);
+        }
     }
 
     /**

@@ -206,4 +206,73 @@ class ConciliarPagamentoTest extends TestCase
         $this->assertNull(app(ConciliarPagamento::class)->executar('pg-x'));
         $this->assertSame(SituacaoAssinatura::Teste, $this->tenant->refresh()->situacao);
     }
+
+    public function test_pagar_excedente_marca_paga_sem_estender_o_periodo(): void
+    {
+        $c = $this->excedentePendente();
+        $pagaAte = $c->assinatura->paga_ate?->toDateString();
+        $this->tenant->forceFill(['situacao' => SituacaoAssinatura::Ativa])->save();
+        $this->aprovado($c, 'pg-1', 300);
+
+        app(ConciliarPagamento::class)->executar('pg-1');
+
+        $c->refresh();
+        $this->assertSame(StatusDaCobranca::Paga, $c->status);
+        $this->assertNotNull($c->pago_em);
+        $this->assertNull($c->periodo_inicio);
+        $this->assertNull($c->periodo_fim);
+        $this->assertSame($pagaAte, $c->assinatura->refresh()->paga_ate?->toDateString());
+        $this->assertSame(SituacaoAssinatura::Ativa, $this->tenant->refresh()->situacao);
+    }
+
+    public function test_pagar_o_excedente_reativa_conta_suspensa_que_nao_deve_mais_nada(): void
+    {
+        $c = $this->excedentePendente(['status' => StatusDaCobranca::Vencida]);
+        $this->tenant->forceFill(['situacao' => SituacaoAssinatura::Suspensa])->save();
+        $this->aprovado($c, 'pg-1', 300);
+
+        app(ConciliarPagamento::class)->executar('pg-1');
+
+        $this->assertSame(SituacaoAssinatura::Ativa, $this->tenant->refresh()->situacao);
+    }
+
+    public function test_pagar_o_excedente_nao_reativa_se_resta_outra_cobranca_vencida(): void
+    {
+        $c = $this->excedentePendente(['status' => StatusDaCobranca::Vencida]);
+        Cobranca::factory()->for($c->assinatura)->create()->forceFill(['status' => StatusDaCobranca::Vencida])->save();
+        $this->tenant->forceFill(['situacao' => SituacaoAssinatura::Suspensa])->save();
+        $this->aprovado($c, 'pg-1', 300);
+
+        app(ConciliarPagamento::class)->executar('pg-1');
+
+        $this->assertSame(SituacaoAssinatura::Suspensa, $this->tenant->refresh()->situacao);
+    }
+
+    public function test_pagar_o_excedente_nao_reativa_se_o_periodo_pago_acabou(): void
+    {
+        $c = $this->excedentePendente(['status' => StatusDaCobranca::Vencida]);
+        $c->assinatura->forceFill(['paga_ate' => $this->hoje()->subDay()->toDateString()])->save();
+        $this->tenant->forceFill(['situacao' => SituacaoAssinatura::Suspensa])->save();
+        $this->aprovado($c, 'pg-1', 300);
+
+        app(ConciliarPagamento::class)->executar('pg-1');
+
+        $this->assertSame(StatusDaCobranca::Paga, $c->refresh()->status);
+        $this->assertSame(SituacaoAssinatura::Suspensa, $this->tenant->refresh()->situacao);
+    }
+
+    public function test_pagar_a_mensalidade_nao_baixa_o_excedente_vencido(): void
+    {
+        $excedente = $this->excedentePendente(['status' => StatusDaCobranca::Vencida]);
+        $mensalidade = Cobranca::factory()->for($excedente->assinatura)->create();
+        $this->tenant->forceFill(['situacao' => SituacaoAssinatura::Inadimplente])->save();
+        $this->aprovado($mensalidade);
+
+        app(ConciliarPagamento::class)->executar('pg-1');
+
+        $this->assertSame(StatusDaCobranca::Paga, $mensalidade->refresh()->status);
+        $this->assertSame(StatusDaCobranca::Vencida, $excedente->refresh()->status, 'pagar a mensalidade não perdoa o excedente');
+        // Ruling: a mensalidade ativa a conta mesmo com excedente vencido; a inadimplência do dia seguinte a leva de volta.
+        $this->assertSame(SituacaoAssinatura::Ativa, $this->tenant->refresh()->situacao);
+    }
 }

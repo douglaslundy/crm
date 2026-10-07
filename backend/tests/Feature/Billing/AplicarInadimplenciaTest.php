@@ -167,4 +167,18 @@ class AplicarInadimplenciaTest extends TestCase
 
         $this->assertSame(SituacaoAssinatura::Ativa, $this->tenant->refresh()->situacao);
     }
+
+    public function test_excedente_vencido_leva_a_inadimplente_e_a_suspensa_nos_limites(): void
+    {
+        $assinatura = $this->assinaturaAtiva('2026-11-30');
+        $c = $this->excedentePendente(['vence_em' => '2026-09-28'], $assinatura);   // venceu há 9 dias
+
+        $this->rodar();
+        $this->assertSame(StatusDaCobranca::Vencida, $c->refresh()->status);
+        $this->assertSame(SituacaoAssinatura::Inadimplente, $this->tenant->refresh()->situacao);
+
+        $c->forceFill(['vence_em' => '2026-09-27'])->save();                          // venceu há 10 dias
+        $this->rodar();
+        $this->assertSame(SituacaoAssinatura::Suspensa, $this->tenant->refresh()->situacao);
+    }
 }

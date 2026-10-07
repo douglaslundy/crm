@@ -7,6 +7,8 @@ namespace Tests\Fixtures;
 use App\Modules\Billing\Domain\Contracts\GatewayDeCobranca;
 use App\Modules\Billing\Domain\Enums\MetodoDePagamento;
 use App\Modules\Billing\Domain\Enums\StatusDaAssinatura;
+use App\Modules\Billing\Domain\Enums\StatusDaCobranca;
+use App\Modules\Billing\Domain\Enums\TipoDeCobranca;
 use App\Modules\Billing\Domain\Models\Assinatura;
 use App\Modules\Billing\Domain\Models\Cobranca;
 use App\Modules\Identity\Domain\Enums\Papel;
@@ -48,6 +50,32 @@ trait CenarioDeCobranca
         $assinatura->forceFill(['situacao' => StatusDaAssinatura::Pendente, 'gateway_assinatura_id' => 'pre-1', 'metodo' => MetodoDePagamento::Boleto])->save();
         $cobranca = Cobranca::factory()->for($assinatura)->create();
         $cobranca->forceFill($campos)->save();
+
+        return $cobranca->refresh();
+    }
+
+    /**
+     * Cobrança de excedente (R$ 3,00 = 3 documentos x R$ 1,00) pendente, sem método, vencendo hoje, numa assinatura
+     * ATIVA paga por mais 10 dias (a menos que se passe a assinatura).
+     *
+     * @param  array<string, mixed>  $campos  sobrescreve campos da cobrança
+     */
+    protected function excedentePendente(array $campos = [], ?Assinatura $assinatura = null): Cobranca
+    {
+        if ($assinatura === null) {
+            $assinatura = Assinatura::factory()->create(['plano_id' => $this->plano->id]);
+            $assinatura->forceFill([
+                'situacao' => StatusDaAssinatura::Ativa, 'gateway_assinatura_id' => 'pre-1', 'metodo' => MetodoDePagamento::Cartao,
+                'paga_ate' => today((string) config('app.fuso_negocio'))->addDays(10)->toDateString(),
+            ])->save();
+        }
+        $cobranca = new Cobranca;
+        $cobranca->forceFill([
+            'assinatura_id' => $assinatura->id, 'tipo' => TipoDeCobranca::Excedente, 'valor_centavos' => 300,
+            'vence_em' => today((string) config('app.fuso_negocio'))->toDateString(), 'status' => StatusDaCobranca::Pendente,
+            'metodo' => null, 'mes_referencia' => '2026-09-01', 'documentos_excedentes' => 3, 'valor_unitario_centavos' => 100,
+            ...$campos,
+        ])->save();
 
         return $cobranca->refresh();
     }
