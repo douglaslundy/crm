@@ -18,8 +18,15 @@ final class VerificarSituacaoDoTenant
     /** Rotas que uma conta PENDENTE pode ler. O /me fica fora deste grupo. */
     public const LIBERADAS_EM_PENDENTE = ['app.assinatura'];
 
+    /** Quem está pendente, inadimplente ou suspenso precisa poder pagar: estas rotas passam em qualquer situação. */
+    public const LIBERADAS_PARA_PAGAR = ['app.assinatura.checkout', 'app.assinatura.cobrancas', 'app.assinatura.cancelar'];
+
     public function handle(Request $request, Closure $next): Response
     {
+        if ($request->routeIs(...self::LIBERADAS_PARA_PAGAR)) {
+            return $next($request);
+        }
+
         /** @var Usuario $usuario */
         $usuario = $request->user();
         $situacao = $usuario->tenant->situacao ?? SituacaoAssinatura::Pendente;

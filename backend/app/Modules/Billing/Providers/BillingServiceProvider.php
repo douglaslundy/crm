@@ -29,6 +29,7 @@ final class BillingServiceProvider extends ServiceProvider
             $this->commands([GerarBoletosDoCicloCommand::class, AplicarInadimplenciaCommand::class]);
         }
 
+        Route::middleware('api')->prefix('api/app')->group(__DIR__.'/../Http/routes-app.php');
         Route::middleware(['api', 'throttle:120,1'])->prefix('api/webhooks')->group(__DIR__.'/../Http/routes-webhooks.php');
     }
 }

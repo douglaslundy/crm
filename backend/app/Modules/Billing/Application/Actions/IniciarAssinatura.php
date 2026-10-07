@@ -18,6 +18,7 @@ use App\Modules\Billing\Domain\Models\Assinatura;
 use App\Modules\Billing\Domain\Models\Cobranca;
 use App\Modules\Identity\Domain\Models\Usuario;
 use App\Modules\Platform\Domain\Models\Plano;
+use App\Modules\Tenancy\Domain\Enums\SituacaoAssinatura;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -33,6 +34,10 @@ final class IniciarAssinatura
     public function executar(Usuario $autor, string $planoId, CicloDeCobranca $ciclo, MetodoDePagamento $metodo, ?string $tokenDoCartao): ResultadoDoCheckout
     {
         $this->politica->garantirPodeGerenciar($autor);
+
+        if ($autor->tenant?->situacao === SituacaoAssinatura::Cancelada) {
+            throw new BillingException('BILLING_EMPRESA_CANCELADA', 'Esta empresa foi cancelada e não pode assinar de novo por aqui. Fale com o suporte.', 403);
+        }
 
         $plano = Plano::query()->where('ativo', true)->where('visivel', true)->find($planoId);
         if ($plano === null) {
