@@ -51,6 +51,11 @@ final class EntitlementService
         }
 
         if ($this->uso($tenant, $recurso) + $adicionar > $limite) {
+            // O documento acima do limite é cobrado no fechamento do mês seguinte (FecharExcedenteDoMes).
+            if ($recurso === Recurso::DocumentosMes && $tenant->plano?->permiteExcederDocumentos() === true) {
+                return;
+            }
+
             throw LimiteDoPlanoAtingidoException::para($recurso, $limite);
         }
     }

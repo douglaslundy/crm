@@ -85,6 +85,14 @@ class Plano extends Model
         return $this->modulos->contains(fn (PlanoModulo $m): bool => $m->modulo === $modulo);
     }
 
+    /** Só `COBRAR` com preço maior que zero deixa passar do limite de documentos: sem preço não há o que cobrar. */
+    public function permiteExcederDocumentos(): bool
+    {
+        return $this->politica_excedente === PoliticaExcedente::Cobrar
+            && $this->preco_documento_excedente_centavos !== null
+            && $this->preco_documento_excedente_centavos > 0;
+    }
+
     /** Fail-closed: recurso sem linha vale 0 (bloqueado), nunca ilimitado. */
     public function limiteDe(Recurso $recurso): int
     {
