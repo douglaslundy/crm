@@ -12,7 +12,8 @@ use NFePHP\Common\Certificate;
 /** O `.pfx` e a senha ficam criptografados no banco e só existem decifrados em memória, dentro desta chamada. */
 final class CertificadoStore
 {
-    public function paraEmitente(Emitente $emitente): Certificate
+    /** @return array{pfx: string, senha: string} */
+    public function pfxESenha(Emitente $emitente): array
     {
         if ($emitente->certificado_pfx_encrypted === null || $emitente->certificado_senha_encrypted === null) {
             throw new EmissaoBloqueadaException('FISCAL_CERTIFICADO_INVALIDO', 'Envie o certificado A1 em Configurações > Fiscal.');
@@ -23,6 +24,13 @@ final class CertificadoStore
             throw new EmissaoBloqueadaException('FISCAL_CERTIFICADO_INVALIDO', 'O certificado armazenado está corrompido. Envie-o novamente.');
         }
 
-        return Certificate::readPfx($pfx, Crypt::decryptString($emitente->certificado_senha_encrypted));
+        return ['pfx' => $pfx, 'senha' => Crypt::decryptString($emitente->certificado_senha_encrypted)];
+    }
+
+    public function paraEmitente(Emitente $emitente): Certificate
+    {
+        ['pfx' => $pfx, 'senha' => $senha] = $this->pfxESenha($emitente);
+
+        return Certificate::readPfx($pfx, $senha);
     }
 }
