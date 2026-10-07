@@ -6,6 +6,8 @@ namespace App\Modules\Fiscal\Application\Jobs;
 
 use App\Modules\Fiscal\Application\Actions\AplicarResultadoDoCancelamento;
 use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfe;
+use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfse;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Models\Emitente;
 use App\Modules\Fiscal\Domain\Models\Nota;
@@ -28,7 +30,7 @@ final class CancelarNotaJob implements ShouldQueue
 
     public function __construct(public readonly string $notaId, public readonly string $tenantId) {}
 
-    public function handle(EmissorDeNfe $emissor, AplicarResultadoDoCancelamento $aplicar, TenantContext $contexto): void
+    public function handle(EmissorDeNfe $emissor, AplicarResultadoDoCancelamento $aplicar, TenantContext $contexto, EmissorDeNfse $emissorNfse): void
     {
         // Num worker o contexto anterior é nulo; com fila `sync` restauramos o do chamador.
         $anterior = $contexto->id();
@@ -41,10 +43,12 @@ final class CancelarNotaJob implements ShouldQueue
             $emitente = Emitente::query()->findOrFail($nota->emitente_id);
             $nota->makeVisible('xml_autorizado');
 
-            $resultado = $emissor->cancelar(
-                $emitente, (string) $nota->chave, (string) $nota->protocolo, (string) $nota->cancelamento_justificativa,
-                (string) $nota->ambiente, (string) $nota->xml_autorizado,
-            );
+            $resultado = $nota->modelo === ModeloDocumento::Dps
+                ? $emissorNfse->cancelar($emitente, (string) $nota->chave, (string) $nota->cancelamento_justificativa, (string) $nota->ambiente)
+                : $emissor->cancelar(
+                    $emitente, (string) $nota->chave, (string) $nota->protocolo, (string) $nota->cancelamento_justificativa,
+                    (string) $nota->ambiente, (string) $nota->xml_autorizado,
+                );
             $aplicar->executar($nota->id, $resultado);
         } catch (Throwable $e) {
             report($e);

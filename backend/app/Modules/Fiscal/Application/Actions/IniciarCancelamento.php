@@ -42,14 +42,25 @@ final class IniciarCancelamento
                 throw AssinaturaSemEscritaException::para($tenant->situacao);
             }
             $nfce = $nota->modelo === ModeloDocumento::Nfce;
-            $this->planos->garantirModulo($tenant, $nfce ? Modulo::FiscalNfce : Modulo::FiscalNfe);
+            $servico = $nota->modelo === ModeloDocumento::Dps;
+            $this->planos->garantirModulo($tenant, match (true) {
+                $servico => Modulo::FiscalNfse,
+                $nfce => Modulo::FiscalNfce,
+                default => Modulo::FiscalNfe,
+            });
+            $rotulo = match (true) {
+                $servico => 'NFS-e',
+                $nfce => 'NFC-e',
+                default => 'NF-e',
+            };
 
             if ($nota->status !== StatusNota::Autorizada) {
-                throw new CancelamentoNaoPermitidoException('Só é possível cancelar uma '.($nfce ? 'NFC-e' : 'NF-e').' autorizada. Status atual: '.$nota->status->value.'.');
+                throw new CancelamentoNaoPermitidoException("Só é possível cancelar uma {$rotulo} autorizada. Status atual: {$nota->status->value}.");
             }
             $nota->makeVisible('xml_autorizado');
-            if ($nota->chave === null || $nota->protocolo === null || $nota->xml_autorizado === null) {
-                throw new CancelamentoNaoPermitidoException('A nota não tem chave, protocolo ou XML autorizado: concilie-a com a SEFAZ antes de cancelar.');
+            // A NFS-e não tem protocolo: o evento 101101 usa só a chave de 50 dígitos.
+            if ($nota->chave === null || (! $servico && $nota->protocolo === null) || $nota->xml_autorizado === null) {
+                throw new CancelamentoNaoPermitidoException('A nota não tem chave, '.($servico ? '' : 'protocolo ').'ou XML autorizado: concilie-a antes de cancelar.');
             }
 
             $nota->forceFill([

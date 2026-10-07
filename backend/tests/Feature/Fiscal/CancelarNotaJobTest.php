@@ -15,6 +15,7 @@ use App\Modules\Tenancy\Domain\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use RuntimeException;
 use Tests\Fixtures\CenarioDeNota;
+use Tests\Fixtures\EmissorDeNfseFake;
 use Tests\Fixtures\EmissorFake;
 use Tests\TestCase;
 
@@ -104,7 +105,7 @@ class CancelarNotaJobTest extends TestCase
         $nota = $this->autorizada();
 
         (new CancelarNotaJob($nota->id, $this->tenant->id))->handle(
-            $this->emissor, app(AplicarResultadoDoCancelamento::class), app(TenantContext::class),
+            $this->emissor, app(AplicarResultadoDoCancelamento::class), app(TenantContext::class), new EmissorDeNfseFake,
         );
 
         $this->assertSame([], $this->emissor->chamadas);
