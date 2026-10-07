@@ -12,6 +12,7 @@ use App\Modules\Fiscal\Application\Actions\IniciarCancelamento;
 use App\Modules\Fiscal\Application\Actions\IniciarEmissao;
 use App\Modules\Fiscal\Application\Actions\RetransmitirNota;
 use App\Modules\Fiscal\Application\PoliticaDeNotas;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Exceptions\NotaSemXmlCancelamentoException;
 use App\Modules\Fiscal\Domain\Exceptions\NotaSemXmlException;
@@ -105,7 +106,7 @@ final class NotaController
 
         return response($nota->xml_autorizado, 200, [
             'Content-Type' => 'application/xml',
-            'Content-Disposition' => 'attachment; filename="NFe-'.$nota->numero.'.xml"',
+            'Content-Disposition' => 'attachment; filename="'.$this->nomeDoXml($nota).'"',
         ]);
     }
 
@@ -135,8 +136,16 @@ final class NotaController
 
         return response($nota->xml_cancelamento, 200, [
             'Content-Type' => 'application/xml',
-            'Content-Disposition' => 'attachment; filename="NFe-'.$nota->numero.'-cancelamento.xml"',
+            'Content-Disposition' => 'attachment; filename="'.$this->nomeDoXml($nota, '-cancelamento').'"',
         ]);
+    }
+
+    /** A NFS-e leva o número oficial no nome; a NF-e e a NFC-e, o número da nota. */
+    private function nomeDoXml(Nota $nota, string $sufixo = ''): string
+    {
+        return $nota->modelo === ModeloDocumento::Dps
+            ? 'NFSe-'.($nota->numero_nfse ?? $nota->numero).$sufixo.'.xml'
+            : 'NFe-'.$nota->numero.$sufixo.'.xml';
     }
 
     private function autor(Request $request): Usuario

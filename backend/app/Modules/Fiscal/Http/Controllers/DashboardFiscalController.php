@@ -19,7 +19,8 @@ final class DashboardFiscalController
         /** @var Usuario $usuario */
         $usuario = $request->user();
         $tenant = $usuario->tenant;
-        if (! $planos->temModulo($tenant, Modulo::FiscalNfe) && ! $planos->temModulo($tenant, Modulo::FiscalNfce)) {
+        $temFiscal = $planos->temModulo($tenant, Modulo::FiscalNfe) || $planos->temModulo($tenant, Modulo::FiscalNfce) || $planos->temModulo($tenant, Modulo::FiscalNfse);
+        if (! $temFiscal) {
             throw ModuloNaoContratadoException::para(Modulo::FiscalNfe);
         }
 
