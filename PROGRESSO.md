@@ -8,7 +8,7 @@
 
 Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é decisão da SEFAZ (sem número fixo no código); cancelada continua contando na cota `DOCUMENTOS_MES`; `consultarPorChave` usa o ambiente da **nota** (corrige consulta no ambiente errado depois de "Ir para produção"); o XML do cancelamento é o `nfeProc` com `retEvento` (`Complements::cancelRegister`); aceitos 135/136/155; inutilização síncrona com guardas locais (faixa já alocada, sem nota autorizada/em processamento/cancelada na faixa), resultado sempre gravado.
 
-**F3c3 (EPEC da NF-e) em andamento (2026-10-06):** só EPEC (SVC fica no backlog), design aprovado no chat e spec escrito em `docs/superpowers/specs/2026-10-06-f3c3-epec-nfe-design.md`. **Próximo passo:** o usuário revisa o spec; depois `writing-plans` para o plano. Contexto necessário: o spec, `EntrarEmContingencia`, `RetransmitirNota`, `EmissorDeNfe`, `NfePhpEmissor`, `MontadorDeXml`, `GerarDanfe`, `SpedDaGeradorDeDanfe`.
+**F3c3 (EPEC da NF-e) em andamento (2026-10-06):** só EPEC (SVC fica no backlog), design aprovado no chat e spec escrito em `docs/superpowers/specs/2026-10-06-f3c3-epec-nfe-design.md`. Plano escrito em `docs/superpowers/plans/2026-10-06-f3c3-epec-nfe.md` (10 tarefas). **Próximo passo:** o usuário revisa o plano; depois execução (native, na master) a partir da Tarefa 1. Contexto necessário: o plano e o spec; ler só os arquivos que a tarefa em curso lista.
 
 ## Decisões pendentes com o usuário
 - **Push dos commits da F3a:** feitos na master; o último push foi `db2bc7d` (docs do backlog).
