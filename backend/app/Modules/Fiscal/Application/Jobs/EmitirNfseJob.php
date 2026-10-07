@@ -52,7 +52,7 @@ final class EmitirNfseJob implements ShouldQueue
                 SituacaoNaSefaz::Erro => $aplicar->executar($nota->id, ResultadoDeEmissaoNfse::erro(
                     ($consulta->mensagem ?? 'Não foi possível confirmar se a DPS já existe na ADN.').' Tente de novo: o número foi preservado.',
                 )),
-                SituacaoNaSefaz::NaoEncontrada => $aplicar->executar($nota->id, $emissor->emitir($emitente, $dto)),
+                SituacaoNaSefaz::NaoEncontrada => $this->enviar($nota->id, $emissor, $aplicar, $emitente, $dto),
             };
         } catch (Throwable $e) {
             report($e);
@@ -60,5 +60,23 @@ final class EmitirNfseJob implements ShouldQueue
         } finally {
             $contexto->set($anterior);
         }
+    }
+
+    /**
+     * Envia. Se a ADN recusar, pergunta de novo pela DPS: recusa por DPS duplicada (a ADN ainda processava um envio
+     * anterior) não pode virar REJEITADA, porque a nota existe lá.
+     */
+    private function enviar(string $notaId, EmissorDeNfse $emissor, AplicarResultadoDaNfse $aplicar, Emitente $emitente, NotaParaNfse $dto): void
+    {
+        $resultado = $emissor->emitir($emitente, $dto);
+        if ($resultado->status === StatusNota::Rejeitada) {
+            $reconsulta = $emissor->consultarDps($emitente, $dto);
+            if (in_array($reconsulta->situacao, [SituacaoNaSefaz::Autorizada, SituacaoNaSefaz::Cancelada], true)) {
+                $aplicar->aplicarConsulta($notaId, $reconsulta);
+
+                return;
+            }
+        }
+        $aplicar->executar($notaId, $resultado);
     }
 }

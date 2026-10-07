@@ -54,6 +54,15 @@ final class DanfseRenderer
         $retangulos = [];
         $filetes = [];
 
+        // Marcas grandes em cinza claro, desenhadas ANTES de todo o resto para o texto preto ficar por cima.
+        if ($cancelada) {
+            $textos[] = $this->marca('CANCELADA', 330.0, 70);
+        }
+        if ($d['tp_amb'] === '2') {
+            $textos[] = $this->marca('SEM VALOR FISCAL', 415.0, 40);
+            $textos[] = $this->marca('AMBIENTE DE HOMOLOGAÇÃO', 460.0, 26);
+        }
+
         // ---- Cabeçalho (3 células cinza + título centralizado + município/ambiente)
         foreach ([[8.5, 153.07], [153.07, 442.2], [442.2, 586.77]] as [$a, $b]) {
             $retangulos[] = ['x' => $a, 'y' => 5.67, 'w' => round($b - $a, 2), 'h' => 34.01];
@@ -409,6 +418,16 @@ final class DanfseRenderer
     private function texto(float $x, float $linhaBase, string $t, int $tamanho, bool $negrito = false, ?float $largura = null, string $alinhar = 'left'): array
     {
         return ['x' => $x, 'y' => $linhaBase, 't' => $t, 'size' => $tamanho, 'bold' => $negrito, 'w' => $largura, 'align' => $alinhar];
+    }
+
+    /**
+     * Marca centralizada na largura da página, em cinza claro (a única chamada com cor própria).
+     *
+     * @return array<string, mixed>
+     */
+    private function marca(string $texto, float $linhaBase, int $tamanho): array
+    {
+        return $this->texto(0.0, $linhaBase, $texto, $tamanho, true, 595.0, 'center') + ['cor' => '#d0d0d0'];
     }
 
     /** @return array<string,float> */

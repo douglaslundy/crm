@@ -66,6 +66,30 @@ class DanfseRendererTest extends TestCase
         $this->assertContains('R$ 10,00', $this->textos($xml));
     }
 
+    public function test_homologacao_imprime_a_marca_de_sem_valor_fiscal_e_producao_nao(): void
+    {
+        $homologacao = (string) str_replace('<tpAmb>1</tpAmb>', '<tpAmb>2</tpAmb>', $this->xml());
+
+        $this->assertContains('SEM VALOR FISCAL', $this->textos($homologacao));
+        $this->assertContains('AMBIENTE DE HOMOLOGAÇÃO', $this->textos($homologacao));
+        $this->assertNotContains('SEM VALOR FISCAL', $this->textos($this->xml()));
+    }
+
+    public function test_nota_cancelada_imprime_a_marca_cancelada_em_destaque(): void
+    {
+        $this->assertContains('CANCELADA', $this->textos($this->xml(), true));
+        $this->assertNotContains('CANCELADA', $this->textos($this->xml(), false));
+    }
+
+    public function test_as_marcas_vao_primeiro_e_em_cinza_para_nao_cobrir_o_texto(): void
+    {
+        $d = (new DanfseRenderer)->dadosParaTemplate((string) str_replace('<tpAmb>1</tpAmb>', '<tpAmb>2</tpAmb>', $this->xml()), true, null, 'x');
+
+        $this->assertSame('CANCELADA', $d['textos'][0]['t']);
+        $this->assertSame('#d0d0d0', $d['textos'][0]['cor']);
+        $this->assertArrayNotHasKey('cor', $d['textos'][count($d['textos']) - 1], 'o texto comum segue preto (sem cor própria)');
+    }
+
     public function test_xml_que_nao_e_nfse_nacional_lanca(): void
     {
         $this->expectException(RuntimeException::class);

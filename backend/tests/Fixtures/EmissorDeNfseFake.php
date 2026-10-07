@@ -26,6 +26,9 @@ final class EmissorDeNfseFake implements EmissorDeNfse
 
     public ?Throwable $falharEmConsultar = null;
 
+    /** Roda no meio do `emitir`, antes de responder: simula o que acontece com a nota durante o envio. */
+    public ?\Closure $aoEmitir = null;
+
     /** @var list<ResultadoDeConsultaNfse> */
     private array $consultasDps = [];
 
@@ -73,6 +76,9 @@ final class EmissorDeNfseFake implements EmissorDeNfse
         $this->chamadas[] = 'emitir';
         if ($this->falharEmEmitir !== null) {
             throw $this->falharEmEmitir;
+        }
+        if ($this->aoEmitir !== null) {
+            ($this->aoEmitir)();
         }
 
         return array_shift($this->emissoes) ?? ResultadoDeEmissaoNfse::autorizada(self::CHAVE, (string) $nota->numeroDps, '<NFSe>fake</NFSe>');

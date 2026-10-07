@@ -95,7 +95,7 @@ class EmissaoNfseTest extends TestCase
 
         // A resposta se perdeu, mas a ADN registrou a DPS: o retry concilia sem enviar de novo.
         $this->emissor->chamadas = [];
-        $this->emissor->enfileirarConsultaDps(ResultadoDeConsultaNfse::autorizada(EmissorDeNfseFake::CHAVE, '55', '<NFSe>ja-estava</NFSe>'));
+        $this->emissor->enfileirarConsultaDps(ResultadoDeConsultaNfse::autorizada(EmissorDeNfseFake::CHAVE, '55', $this->xmlDaNfse()));
         $this->spaComo($this->admin)->postJson("/api/app/notas/{$nota->id}/emitir")->assertStatus(202);
 
         $nota = $nota->refresh();
@@ -107,7 +107,7 @@ class EmissaoNfseTest extends TestCase
 
     public function test_dps_ja_existente_na_adn_nunca_vira_segunda_nota(): void
     {
-        $this->emissor->enfileirarConsultaDps(ResultadoDeConsultaNfse::autorizada(EmissorDeNfseFake::CHAVE, '9', '<NFSe>x</NFSe>'));
+        $this->emissor->enfileirarConsultaDps(ResultadoDeConsultaNfse::autorizada(EmissorDeNfseFake::CHAVE, '9', $this->xmlDaNfse()));
 
         $nota = $this->emitir();
 
@@ -144,5 +144,84 @@ class EmissaoNfseTest extends TestCase
         $nota = $this->emitir();
 
         $this->assertSame(StatusNota::Cancelada, $nota->status);
+    }
+
+    // --- Correções da revisão final ---
+
+    public function test_dps_de_outro_tomador_vira_erro_e_libera_o_numero(): void
+    {
+        // A numeração já foi usada por outra NFS-e (outro sistema): nunca adotar uma nota alheia.
+        $this->emissor->enfileirarConsultaDps(ResultadoDeConsultaNfse::autorizada(EmissorDeNfseFake::CHAVE, '9', $this->xmlDaNfse('11222333000181')));
+
+        $nota = $this->emitir();
+
+        $this->assertSame(StatusNota::Erro, $nota->status);
+        $this->assertStringContainsString('outra NFS-e', (string) $nota->mensagem_erro);
+        $this->assertNull($nota->numero, 'o número ocupado por outra nota é liberado para a próxima tentativa');
+        $this->assertNull($nota->chave);
+        $this->assertNull($nota->numero_nfse);
+        $this->assertNotContains('emitir', $this->emissor->chamadas);
+    }
+
+    public function test_dps_do_mesmo_tomador_com_valor_diferente_vira_erro_e_preserva_o_numero(): void
+    {
+        // Provável NFS-e anterior desta mesma nota, editada depois de um timeout: ambíguo, então preserva o número (sem duplicar).
+        $this->emissor->enfileirarConsultaDps(ResultadoDeConsultaNfse::autorizada(EmissorDeNfseFake::CHAVE, '9', $this->xmlDaNfse(null, '99.00')));
+
+        $nota = $this->emitir();
+
+        $this->assertSame(StatusNota::Erro, $nota->status);
+        $this->assertStringContainsString('valor', (string) $nota->mensagem_erro);
+        $this->assertSame(1, $nota->numero);
+        $this->assertNull($nota->numero_nfse);
+        $this->assertNotContains('emitir', $this->emissor->chamadas);
+    }
+
+    public function test_xml_sem_valor_ou_tomador_nao_pode_ser_adotado(): void
+    {
+        $this->emissor->enfileirarConsultaDps(ResultadoDeConsultaNfse::autorizada(EmissorDeNfseFake::CHAVE, '9', '<NFSe><infNFSe/></NFSe>'));
+
+        $nota = $this->emitir();
+
+        $this->assertSame(StatusNota::Erro, $nota->status);
+        $this->assertStringContainsString('conferir', (string) $nota->mensagem_erro);
+    }
+
+    public function test_rejeicao_com_a_dps_ja_autorizada_na_adn_concilia_em_vez_de_rejeitar(): void
+    {
+        // A ADN ainda processava o envio anterior: o reenvio é recusado por duplicidade, mas a nota existe.
+        $this->emissor->enfileirarConsultaDps(
+            ResultadoDeConsultaNfse::naoEncontrada(),
+            ResultadoDeConsultaNfse::autorizada(EmissorDeNfseFake::CHAVE, '12', $this->xmlDaNfse()),
+        );
+        $this->emissor->enfileirarEmissao(ResultadoDeEmissaoNfse::rejeitada('E0014', 'DPS já existente'));
+
+        $nota = $this->emitir();
+
+        $this->assertSame(StatusNota::Autorizada, $nota->status);
+        $this->assertSame('12', $nota->numero_nfse);
+        $this->assertSame(['consultarDps', 'emitir', 'consultarDps'], $this->emissor->chamadas);
+    }
+
+    public function test_rejeicao_sem_a_dps_na_adn_continua_rejeitada(): void
+    {
+        $this->emissor->enfileirarEmissao(ResultadoDeEmissaoNfse::rejeitada('E0625', 'Alíquota não permitida'));
+
+        $nota = $this->emitir();
+
+        $this->assertSame(StatusNota::Rejeitada, $nota->status);
+        $this->assertSame(['consultarDps', 'emitir', 'consultarDps'], $this->emissor->chamadas);
+    }
+
+    public function test_autorizacao_tardia_depois_de_a_reconciliacao_marcar_erro_nao_se_perde(): void
+    {
+        // O envio demora; a reconciliação marca ERRO ("vencida"); a ADN autoriza depois.
+        $this->emissor->aoEmitir = fn () => Nota::query()->update(['status' => StatusNota::Erro, 'mensagem_erro' => 'A ADN não recebeu a DPS.']);
+
+        $nota = $this->emitir();
+
+        $this->assertSame(StatusNota::Autorizada, $nota->status);
+        $this->assertSame(EmissorDeNfseFake::CHAVE, $nota->chave);
+        $this->assertNull($nota->mensagem_erro);
     }
 }

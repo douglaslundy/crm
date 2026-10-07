@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Fiscal\Application\Actions;
 
+use App\Modules\Fiscal\Application\Emissao\ConferenciaDaDps;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsultaNfse;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEmissaoNfse;
 use App\Modules\Fiscal\Domain\Enums\SituacaoNaSefaz;
@@ -15,11 +16,16 @@ use Illuminate\Support\Facades\DB;
 /** Única porta de saída de uma emissão de NFS-e: toda mudança de status vinda da ADN passa por aqui, com lock. */
 final class AplicarResultadoDaNfse
 {
+    public function __construct(private readonly ConferenciaDaDps $conferencia) {}
+
     public function executar(string $notaId, ResultadoDeEmissaoNfse $r): Nota
     {
         return DB::transaction(function () use ($notaId, $r): Nota {
             $nota = Nota::query()->whereKey($notaId)->lockForUpdate()->firstOrFail();
-            if ($nota->status !== StatusNota::Processando) {
+            // Autorização tardia: a reconciliação pode ter marcado ERRO ("a ADN não recebeu") enquanto o envio ainda andava.
+            // A ADN autorizou de verdade, então a nota ganha a autorização; só ela atravessa o ERRO.
+            $aceita = $nota->status === StatusNota::Processando || ($nota->status === StatusNota::Erro && $r->status === StatusNota::Autorizada);
+            if (! $aceita) {
                 return $nota;
             }
             $anterior = $nota->status;
@@ -48,6 +54,18 @@ final class AplicarResultadoDaNfse
             $anterior = $nota->status;
 
             if ($r->situacao === SituacaoNaSefaz::Autorizada) {
+                // Nunca adota uma NFS-e que não corresponde a esta nota (numeração usada por outro sistema, nota editada).
+                $divergencia = $this->conferencia->divergencia($nota, $r->xmlAutorizado);
+                if ($divergencia !== null) {
+                    $campos = ['status' => StatusNota::Erro, 'cstat' => null, 'motivo' => null, 'mensagem_erro' => $divergencia['mensagem']];
+                    if ($divergencia['outroTomador']) {
+                        $campos['numero'] = null; // o número é de outra nota: o próximo emitir aloca um novo
+                    }
+                    $nota->forceFill($campos)->save();
+                    NotaEvento::registrar($nota, $anterior, StatusNota::Erro, $divergencia['mensagem']);
+
+                    return $nota;
+                }
                 $nota->forceFill([
                     'status' => StatusNota::Autorizada, 'chave' => $r->chave, 'numero_nfse' => $r->numeroNfse, 'cstat' => $r->cstat,
                     'motivo' => 'NFS-e gerada', 'xml_autorizado' => $r->xmlAutorizado, 'emitido_em' => $nota->emitido_em ?? now(), 'mensagem_erro' => null,

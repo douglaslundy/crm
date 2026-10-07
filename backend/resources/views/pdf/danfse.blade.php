@@ -45,7 +45,7 @@
 
 {{-- textos, posicionados pela linha base --}}
 @foreach($textos as $t)
-<div class="t {{ $t['bold'] ? 'b' : '' }}" style="left:{{ $t['x'] }}pt; top:{{ round($t['y'] - $t['size'] * $K - 0.16, 2) }}pt; font-size:{{ $t['size'] }}pt; @if($t['w']) width:{{ $t['w'] }}pt; text-align:{{ $t['align'] }}; @endif">{{ $t['t'] }}</div>
+<div class="t {{ $t['bold'] ? 'b' : '' }}" style="left:{{ $t['x'] }}pt; top:{{ round($t['y'] - $t['size'] * $K - 0.16, 2) }}pt; font-size:{{ $t['size'] }}pt; color:{{ $t['cor'] ?? '#000' }}; @if($t['w']) width:{{ $t['w'] }}pt; text-align:{{ $t['align'] }}; @endif">{{ $t['t'] }}</div>
 @endforeach
 
 </body>

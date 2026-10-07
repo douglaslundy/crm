@@ -40,6 +40,14 @@ class GeradorDeDanfseTest extends TestCase
         $this->assertStringContainsString('Cancelada', $this->textoDoPdf($this->gerador()->gerar($this->xml(), true)));
     }
 
+    public function test_pdf_de_homologacao_traz_a_marca_sem_valor_fiscal(): void
+    {
+        $homologacao = (string) str_replace('<tpAmb>1</tpAmb>', '<tpAmb>2</tpAmb>', $this->xml());
+
+        $this->assertStringContainsString('SEM VALOR FISCAL', $this->textoDoPdf($this->gerador()->gerar($homologacao, false)));
+        $this->assertStringNotContainsString('SEM VALOR FISCAL', $this->textoDoPdf($this->gerador()->gerar($this->xml(), false)));
+    }
+
     public function test_xml_invalido_vira_pdf_indisponivel(): void
     {
         $this->expectException(PdfIndisponivelException::class);

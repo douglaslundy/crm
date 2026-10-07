@@ -60,7 +60,7 @@ class ReconciliarNfseTest extends TestCase
     public function test_dps_autorizada_na_adn_concilia_a_nota(): void
     {
         $nota = $this->processando(30);
-        $this->emissor->enfileirarConsultaDps(ResultadoDeConsultaNfse::autorizada(EmissorDeNfseFake::CHAVE, '31', '<NFSe>x</NFSe>'));
+        $this->emissor->enfileirarConsultaDps(ResultadoDeConsultaNfse::autorizada(EmissorDeNfseFake::CHAVE, '31', $this->xmlDaNfse()));
 
         $this->reconciliar();
 

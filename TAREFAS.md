@@ -104,6 +104,8 @@ Achados menores adiados e uma decisão de produto parcada durante a revisão das
 - [ ] ISS retido, Regime Normal, município legado (provider REST), e-mail ao tomador (F6/F7).
 - [ ] Conferência visual do formulário de serviços, do detalhe da NFS-e e do DANFSe (temas e celular), não feita; DANFSe com Helvetica no lugar da Microsoft Sans Serif (diferença conhecida do clone).
 - [ ] Cota `DOCUMENTOS_MES` conta só produção (regra da F3): a NFS-e de homologação não conta, como a NF-e.
+- [ ] **DPS adotada divergente (revisão final):** se a ADN já tem uma NFS-e com o mesmo nº de DPS e o mesmo tomador mas outro valor, a nota vira ERRO preservando o número e pede conferência no portal. Falta oferecer, na tela, "adotar a nota da ADN" (regravando itens e total a partir do XML) ou "cancelar a anterior".
+- [ ] Menores da revisão final da F4a: DPS achada já cancelada grava CANCELADA sem `numero_nfse` e sem XML (o DANFSe falha); a lista de notas mostra o nDPS e o detalhe mostra o número oficial, e falta filtro por modelo na lista; `PUT` sem `modelo` num rascunho DPS valida como NF-e; CPF/CNPJ do tomador sem validação de 11/14 dígitos; comentário "PFX só em memória" inexato (a lib grava um temporário e o apaga no destrutor: avaliar junto do TLS); QR do DANFSe extrai a chave por regex; tenant só com `FISCAL_NFSE` abre "Nova nota" em produtos; `NfseNacionalEmissor` sem teste com a lib simulada.
 
 ## Pendências da F3c3 (2026-10-06)
 - [ ] **EPEC real em homologação** (roteiro no `PROGRESSO.md`): a comunicação com o Ambiente Nacional e a conversão de falha real de rede em `FalhaDeComunicacaoException` nunca foram exercitadas; o evento `envEvento` do EPEC não é validado contra XSD nos testes.

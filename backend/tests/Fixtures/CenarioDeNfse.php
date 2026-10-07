@@ -65,6 +65,18 @@ trait CenarioDeNfse
         return $nota->refresh();
     }
 
+    /**
+     * XML mínimo de uma NFS-e autorizada (só o que a conferência da DPS lê): valor do serviço e documento do tomador.
+     * Sem argumentos, bate com a nota do cenário (R$ 150,00 para o CPF do cliente).
+     */
+    protected function xmlDaNfse(?string $documento = null, string $valor = '150.00'): string
+    {
+        $documento ??= (string) preg_replace('/\D/', '', (string) $this->cliente->cpf_cnpj);
+        $tag = strlen($documento) > 11 ? 'CNPJ' : 'CPF';
+
+        return "<NFSe><infNFSe><DPS><infDPS><toma><{$tag}>{$documento}</{$tag}></toma><valores><vServPrest><vServ>{$valor}</vServ></vServPrest></valores></infDPS></DPS></infNFSe></NFSe>";
+    }
+
     /** Troca o plano do tenant por um que só tem NF-e (`plano_id` não é fillable: só por forceFill). */
     protected function removerModuloNfse(): void
     {
