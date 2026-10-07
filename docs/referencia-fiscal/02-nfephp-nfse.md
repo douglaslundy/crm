@@ -72,3 +72,12 @@ Fonte: `mecanicapro/backend/app/Services/Fiscal/NfePhp/MotorNfse.php` (633 linha
 - A exigência de `cNBS` para serviço nacional não foi verificada. O XSD da lib (v1.01) marca o campo como obrigatório, mas a ADN aceitou notas sem ele em 09/2026.
 - Só o caminho "sem evento" foi observado ao vivo. O formato da resposta 200 de nota cancelada não foi confirmado.
 - O `cTribNac` só tem mapeamento para `14.01`. **No SaaS isso precisa ser um cadastro por serviço**, validado contra a tabela oficial (gov.br/nfse, "códigos de tributação nacional NBS").
+
+## Neste projeto (F4a, 2026-10-07)
+
+- `MontadorDeDps` monta a DPS a partir do retrato `NotaParaNfse`; `NfseNacionalEmissor` usa `NfseContext(certificateContent: <bytes do PFX>)` (a lib grava o temporário e o apaga no destrutor). Lib instalada: `nfse-php` v1.23.0-beta.
+- **Idempotência:** `verificarDps(idDps)` (404 = não existe; outra falha = incerteza) e `consultarDps(idDps)` (devolve a chave) antes de qualquer envio; incerteza vira ERRO e nunca reenvia.
+- **Desconto:** `valores.vDescCondIncond.vDescIncond`, entre `vServPrest` e `trib`.
+- **Status autorizados na 1.23:** o enum `CodigoStatus` só tem 100, 102, 103 e 107 (o 101, substituição, saiu); substituição está fora do escopo.
+- A lib desliga a verificação TLS (`CURLOPT_SSL_VERIFYPEER=0`, `VERIFYHOST=0`) nos clientes HTTP: pendência de segurança para o go-live.
+- O XSD `DPS_v1.01.xsd` não compila no libxml e o `DpsValidator` é mais rígido que a ADN: os testes conferem a estrutura do XML, não o XSD.

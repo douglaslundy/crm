@@ -30,12 +30,12 @@ A NFS-e é mais um modelo da tabela `notas`, como a NFC-e foi na F3b3. Reaprovei
 
 `VerificadorDoEmitente` e `PreparadorDaNota` passam a conhecer a NFS-e. Bloqueiam:
 
-- emitente sem inscrição municipal, código IBGE, regime tributário ou certificado A1; regime fora do Simples/MEI (o Regime Normal fica bloqueado nesta fatia);
+- emitente sem código IBGE, regime tributário (Simples/MEI) ou certificado A1; o Regime Normal fica bloqueado nesta fatia. A inscrição municipal NÃO é exigida: a DPS nunca a envia (E0120);
 - serviço sem `c_trib_nac` de 6 dígitos (a mensagem diz como cadastrar) ou sem alíquota (`aliquota_iss === null`; zero é valor válido);
 - itens com `c_trib_nac` ou alíquota diferentes entre si;
 - tomador sem documento (CPF/CNPJ válido) e nome;
-- descrição composta maior que o limite do schema (conferir no XSD da lib): bloqueia, nunca trunca em silêncio;
-- desconto: **a primeira tarefa do plano confirma no XSD da lib o campo do desconto incondicional**. Se a lib o expuser, envia; se não, a NFS-e bloqueia desconto com mensagem e fica como pendência.
+- descrição composta maior que 2000 caracteres (`xDescServ`, TSDesc2000) ou informações complementares maiores que 255: bloqueia, nunca trunca em silêncio;
+- desconto: confirmado que a lib o expõe; vai em `valores.vDescCondIncond.vDescIncond`, entre `vServPrest` e `trib` (a NFS-e aceita desconto incondicional; total zerado ou negativo bloqueia).
 
 ## 5. Motor
 
@@ -60,7 +60,7 @@ Mesmos endpoints e Actions, com `modelo=DPS`. O módulo `FISCAL_NFSE` controla o
 
 ## 9. Testes
 
-Com `EmissorFake` de NFS-e: rascunho e itens (mesmo código; códigos diferentes bloqueiam), bloqueios do §4 (um teste por bloqueio), fluxo de emissão (autorizada, rejeitada, erro técnico, número reaproveitado), reconciliação, consulta (nula vira ERRO), cancelamento (aceito, sem `eventoXmlGZipB64`, justificativa curta), isolamento por tenant e papéis, módulo `FISCAL_NFSE` desligado. Offline: XML da DPS validado contra o XSD da lib; DANFSe real conferido por texto (emitente, tomador, chave de 50 dígitos, QR, marca de homologação e de cancelada). `NfseNacionalEmissor` contra a ADN real **não** é testado: fica no roteiro de homologação.
+Com `EmissorFake` de NFS-e: rascunho e itens (mesmo código; códigos diferentes bloqueiam), bloqueios do §4 (um teste por bloqueio), fluxo de emissão (autorizada, rejeitada, erro técnico, número reaproveitado), reconciliação, consulta (nula vira ERRO), cancelamento (aceito, sem `eventoXmlGZipB64`, justificativa curta), isolamento por tenant e papéis, módulo `FISCAL_NFSE` desligado. Offline: estrutura do XML da DPS conferida elemento a elemento (o `DPS_v1.01.xsd` não compila no libxml, por regex com lookahead, e o `DpsValidator` da lib exige endereço do tomador, que a ADN aceita sem); DANFSe real conferido por texto (emitente, tomador, chave de 50 dígitos, QR, marca de homologação e de cancelada). `NfseNacionalEmissor` contra a ADN real **não** é testado: fica no roteiro de homologação.
 
 ## 10. Critério de pronto
 

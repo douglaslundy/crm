@@ -17,7 +17,9 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
     - [x] **F3c3 EPEC da NF-e** (10 de 10, concluída em 2026-10-06; SVC ficou no backlog por decisão do usuário): a NF-e com `FalhaDeComunicacaoException` consulta a chave, remonta com `tpEmis=4`, registra o evento EPEC (110140) no Ambiente Nacional e fica em `CONTINGENCIA` (`contingencia_tipo=EPEC`, prazo 168 h), com retransmissão, DANFE com o registro EPEC e alerta de 48 h no painel. Spec `docs/superpowers/specs/2026-10-06-f3c3-epec-nfe-design.md`; plano `docs/superpowers/plans/2026-10-06-f3c3-epec-nfe.md`.
   - [x] **F3c** (concluída em 2026-10-06; SVC no backlog): contingência (EPEC e offline), retransmissão, alertas de prazo, dashboard fiscal.
   - Critério de pronto da F3: nota autorizada em homologação para NF-e e NFC-e, com o XML validado contra o XSD.
-- [ ] **F4 NFS-e Nacional** (`nfse-php`): DANFSe, cancelamento, venda mista.
+- [ ] **F4 NFS-e Nacional** (`nfse-php`), cortada em duas fatias (2026-10-07), cada uma com spec e plano próprios:
+  - [x] **F4a NFS-e** (13 de 13, concluída em 2026-10-07): a NFS-e é o modelo `DPS` da tabela `notas`; emitir pela fila com consulta da DPS antes de enviar (incerteza nunca reenvia), reconciliação, consulta, cancelamento por evento 101101, DANFSe v2.0, formulário de serviços e módulo `FISCAL_NFSE`. Vários itens só se tiverem o mesmo código e a mesma alíquota. Spec `docs/superpowers/specs/2026-10-07-f4a-nfse-nacional-design.md`; plano `docs/superpowers/plans/2026-10-07-f4a-nfse-nacional.md`.
+  - [ ] **F4b Venda mista** (sem spec): Action que recebe produtos e serviços e gera NF-e e NFS-e independentes, com rateio de desconto.
 - [ ] **F5 Cobrança** (Mercado Pago): checkout transparente, assinatura, webhooks, inadimplência, excedente.
 - [ ] **F6 API pública:** `/api/v1`, chaves live/test, idempotência, webhooks de saída, OpenAPI e guia.
 - [ ] **F7 CRM:** funis, negócios, atividades, timeline, propostas → nota, relatórios, metas.
@@ -91,6 +93,17 @@ Achados menores adiados e uma decisão de produto parcada durante a revisão das
 - [ ] Contador de numeração único entre homologação e produção (decisão do spec; revisar antes do go-live na F8).
 - [ ] Listagem de notas sem paginação no frontend (a API pagina de 25 em 25; a tela mostra só a primeira página).
 - [ ] `NfePhpEmissor` sem teste automatizado (precisa de SEFAZ).
+
+## Pendências da F4a (2026-10-07)
+- [ ] **Segurança (go-live, F8):** a `nfse-php` desliga a verificação TLS nos clientes HTTP (`CURLOPT_SSL_VERIFYPEER=0` e `VERIFYHOST=0`), sem opção de configurar. Avaliar fork/patch, proxy com pinning ou aceitar o risco documentado.
+- [ ] **Emissão real da NFS-e em homologação** (roteiro no `PROGRESSO.md`): a comunicação com a ADN, a conversão de falha de rede em ERRO e o formato da resposta 200 de nota cancelada nunca foram exercitados. `NfseNacionalEmissor` não tem teste automatizado.
+- [ ] Município não aderido ao padrão nacional: hoje a recusa da ADN vira mensagem; `consultarParametrosConvenio(codigoIbge)` da lib pode checar a adesão antes de emitir.
+- [ ] Alíquota do ISS é exigida no cadastro do serviço mas não é enviada no Simples (E0625): revisar quando houver Regime Normal.
+- [ ] `cNBS` obrigatório no XSD da lib, mas a ADN aceitou notas sem ele em 09/2026: confirmar na homologação.
+- [ ] Substituição de NFS-e (cStat 101): a `nfse-php` 1.23 não tem mais o caso no enum `CodigoStatus`; uma resposta 101 viraria ERRO.
+- [ ] ISS retido, Regime Normal, município legado (provider REST), e-mail ao tomador (F6/F7).
+- [ ] Conferência visual do formulário de serviços, do detalhe da NFS-e e do DANFSe (temas e celular), não feita; DANFSe com Helvetica no lugar da Microsoft Sans Serif (diferença conhecida do clone).
+- [ ] Cota `DOCUMENTOS_MES` conta só produção (regra da F3): a NFS-e de homologação não conta, como a NF-e.
 
 ## Pendências da F3c3 (2026-10-06)
 - [ ] **EPEC real em homologação** (roteiro no `PROGRESSO.md`): a comunicação com o Ambiente Nacional e a conversão de falha real de rede em `FalhaDeComunicacaoException` nunca foram exercitadas; o evento `envEvento` do EPEC não é validado contra XSD nos testes.
