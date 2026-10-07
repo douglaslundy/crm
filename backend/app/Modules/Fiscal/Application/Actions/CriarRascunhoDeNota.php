@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Application\Actions;
 
 use App\Modules\Catalog\Domain\Models\Produto;
+use App\Modules\Catalog\Domain\Models\Servico;
 use App\Modules\Fiscal\Application\PoliticaDeNotas;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
@@ -30,6 +31,9 @@ final class CriarRascunhoDeNota
         if ($modelo === ModeloDocumento::Nfce) {
             $this->planos->garantirModulo($autor->tenant, Modulo::FiscalNfce);
         }
+        if ($modelo === ModeloDocumento::Dps) {
+            $this->planos->garantirModulo($autor->tenant, Modulo::FiscalNfse);
+        }
 
         return DB::transaction(function () use ($dados, $autor, $modelo): Nota {
             $emitente = Emitente::query()->firstOrCreate([], []);
@@ -52,17 +56,28 @@ final class CriarRascunhoDeNota
      */
     public function preencher(Nota $nota, array $dados): void
     {
+        $servico = $nota->modelo === ModeloDocumento::Dps;
         $itens = [];
         $subtotal = 0;
         foreach (array_values($dados['itens']) as $i => $linha) {
-            $produto = Produto::query()->findOrFail($linha['produto_id']);
             $milesimos = Quantidade::paraMilesimos((string) $linha['quantidade']);
-            $unitario = $linha['valor_unitario_centavos'] ?? $produto->preco_centavos;
+            if ($servico) {
+                $origem = Servico::query()->findOrFail($linha['servico_id']);
+                $unitario = $linha['valor_unitario_centavos'] ?? $origem->preco_centavos;
+                // Snapshot do cadastro: a nota não muda se o serviço for editado depois.
+                $extra = [
+                    'servico_id' => $origem->id, 'produto_id' => null, 'c_trib_nac' => $origem->c_trib_nac,
+                    'codigo_municipal' => $origem->codigo_municipal, 'aliquota_iss' => $origem->aliquota_iss, 'nbs' => $origem->nbs,
+                ];
+            } else {
+                $origem = Produto::query()->findOrFail($linha['produto_id']);
+                $unitario = $linha['valor_unitario_centavos'] ?? $origem->preco_centavos;
+                $extra = ['produto_id' => $origem->id];
+            }
             $total = RateioDeDesconto::totalDoItem($milesimos, $unitario);
             $subtotal += $total;
-            $itens[] = [
-                'produto_id' => $produto->id, 'ordem' => $i + 1, 'quantidade_milesimos' => $milesimos,
-                'valor_unitario_centavos' => $unitario, 'total_centavos' => $total,
+            $itens[] = $extra + [
+                'ordem' => $i + 1, 'quantidade_milesimos' => $milesimos, 'valor_unitario_centavos' => $unitario, 'total_centavos' => $total,
             ];
         }
 
@@ -79,8 +94,10 @@ final class CriarRascunhoDeNota
         $nota->itens()->delete();
         $nota->itens()->createMany($itens);
         $nota->pagamentos()->delete();
-        $nota->pagamentos()->createMany(array_map(fn (array $p): array => [
-            'tpag' => $p['tpag'], 'xpag' => $p['xpag'] ?? null, 'valor_centavos' => (int) $p['valor_centavos'],
-        ], array_values($dados['pagamentos'])));
+        if (! $servico) {
+            $nota->pagamentos()->createMany(array_map(fn (array $p): array => [
+                'tpag' => $p['tpag'], 'xpag' => $p['xpag'] ?? null, 'valor_centavos' => (int) $p['valor_centavos'],
+            ], array_values($dados['pagamentos'])));
+        }
     }
 }

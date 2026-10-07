@@ -35,7 +35,7 @@ final class NotaController
     {
         $dados = $request->validate([
             'status' => ['nullable', Rule::in(array_column(StatusNota::cases(), 'value'))],
-            'modelo' => ['nullable', Rule::in(['NFE', 'NFCE'])],
+            'modelo' => ['nullable', Rule::in(['NFE', 'NFCE', 'DPS'])],
             'de' => ['nullable', 'date_format:Y-m-d'],
             'ate' => ['nullable', 'date_format:Y-m-d'],
         ]);

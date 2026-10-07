@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Application\Actions;
 
 use App\Modules\Fiscal\Application\PoliticaDeNotas;
+use App\Modules\Fiscal\Domain\Exceptions\EmissaoBloqueadaException;
 use App\Modules\Fiscal\Domain\Exceptions\NotaNaoEditavelException;
 use App\Modules\Fiscal\Domain\Models\Nota;
 use App\Modules\Identity\Domain\Models\Usuario;
@@ -23,6 +24,9 @@ final class AtualizarRascunhoDeNota
             $nota = Nota::query()->whereKey($nota->id)->lockForUpdate()->firstOrFail();
             if (! $nota->status->editavel()) {
                 throw new NotaNaoEditavelException;
+            }
+            if (($dados['modelo'] ?? $nota->modelo->value) !== $nota->modelo->value) {
+                throw new EmissaoBloqueadaException('FISCAL_MODELO_IMUTAVEL', 'Não é possível trocar o modelo de um rascunho. Crie uma nova nota.');
             }
             $this->criar->preencher($nota, $dados);
 
