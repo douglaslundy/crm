@@ -6,6 +6,7 @@ namespace Tests\Feature\Billing;
 
 use App\Modules\Billing\Domain\Contracts\GatewayDeCobranca;
 use App\Modules\Billing\Domain\Enums\StatusDaCobranca;
+use App\Modules\Billing\Domain\Exceptions\BillingException;
 use App\Modules\Billing\Domain\Gateway\ResultadoDePagamento;
 use App\Modules\Billing\Domain\Gateway\StatusDoPagamento;
 use App\Modules\Billing\Domain\Models\WebhookRecebido;
@@ -135,6 +136,17 @@ class WebhookTest extends TestCase
         $this->enviar('pg-1', $this->evento('pg-1', 321))->assertOk();
         $this->assertNotNull(WebhookRecebido::query()->firstOrFail()->processado_em);
         $this->assertSame(StatusDaCobranca::Paga, $c->refresh()->status);
+    }
+
+    public function test_falha_do_gateway_real_billing_exception_tambem_da_503_e_nao_encerra_o_evento(): void
+    {
+        $c = $this->cobrancaPendente();
+        $this->gateway->falharEm('buscarPagamento', new BillingException('BILLING_GATEWAY_FALHOU', 'mp fora', 502));
+
+        $this->enviar('pg-1', $this->evento('pg-1', 987))->assertStatus(503);
+
+        $this->assertNull(WebhookRecebido::query()->firstOrFail()->processado_em);
+        $this->assertSame(StatusDaCobranca::Pendente, $c->refresh()->status);
     }
 
     public function test_valor_divergente_responde_200_e_nao_ativa(): void

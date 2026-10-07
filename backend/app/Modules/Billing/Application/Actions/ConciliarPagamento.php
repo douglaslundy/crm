@@ -65,7 +65,7 @@ final class ConciliarPagamento
             $cobranca = new Cobranca;
             $cobranca->forceFill([
                 'assinatura_id' => $assinatura->id, 'tipo' => TipoDeCobranca::Assinatura,
-                'valor_centavos' => $assinatura->ciclo->precoDo($assinatura->plano), 'vence_em' => today((string) config('app.fuso_negocio')),
+                'valor_centavos' => $this->valorDaRenovacao($assinatura), 'vence_em' => today((string) config('app.fuso_negocio')),
                 'status' => StatusDaCobranca::Pendente, 'metodo' => $assinatura->metodo,
             ]);
         }
@@ -91,6 +91,17 @@ final class ConciliarPagamento
         return $cobranca;
     }
 
+    /**
+     * O cartão renova pelo valor que o cliente aceitou na última cobrança paga; só sem histórico vale o preço do plano.
+     * Assim uma mudança de preço do plano não faz toda renovação falhar na conferência do valor.
+     */
+    private function valorDaRenovacao(Assinatura $assinatura): int
+    {
+        $anterior = Cobranca::query()->where('assinatura_id', $assinatura->id)->where('status', StatusDaCobranca::Paga->value)->latest('pago_em')->value('valor_centavos');
+
+        return is_int($anterior) ? $anterior : $assinatura->ciclo->precoDo($assinatura->plano);
+    }
+
     private function ativarTenant(Assinatura $assinatura): void
     {
         $tenant = Tenant::query()->lockForUpdate()->findOrFail($assinatura->tenant_id);
@@ -114,6 +125,11 @@ final class ConciliarPagamento
         $cobranca = Cobranca::withoutTenantScope()->where('gateway_pagamento_id', $pagamento->id)->first();
         if ($cobranca === null && $pagamento->referenciaExterna !== null && Str::isUuid($pagamento->referenciaExterna)) {
             $cobranca = Cobranca::withoutTenantScope()->whereKey($pagamento->referenciaExterna)->first();
+            // O gateway pode repetir a referência da primeira cobrança em cada pagamento recorrente: se ela já foi paga
+            // por outro pagamento e este é de uma assinatura, é uma renovação (cai na busca pela assinatura).
+            if ($cobranca !== null && $cobranca->status === StatusDaCobranca::Paga && $cobranca->gateway_pagamento_id !== $pagamento->id && $pagamento->assinaturaGatewayId !== null) {
+                $cobranca = null;
+            }
         }
         if ($cobranca !== null) {
             return ['cobranca' => $cobranca, 'assinatura' => null, 'tenantId' => $cobranca->tenant_id];

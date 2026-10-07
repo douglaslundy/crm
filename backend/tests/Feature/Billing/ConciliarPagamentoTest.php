@@ -140,6 +140,33 @@ class ConciliarPagamentoTest extends TestCase
         $this->assertSame($this->hoje()->addMonthsNoOverflow(2)->toDateString(), $c->assinatura->refresh()->paga_ate?->toDateString());
     }
 
+    public function test_renovacao_que_repete_a_referencia_da_primeira_cobranca_ainda_estende_o_periodo(): void
+    {
+        $c = $this->cobrancaPendente();
+        $this->aprovado($c);
+        app(ConciliarPagamento::class)->executar('pg-1');
+        // o Mercado Pago pode copiar o external_reference do preapproval para cada pagamento recorrente
+        $this->gateway->enfileirarPagamento(new ResultadoDePagamento('pg-2', StatusDoPagamento::Aprovado, $c->id, 10000, assinaturaGatewayId: 'pre-1'));
+
+        app(ConciliarPagamento::class)->executar('pg-2');
+
+        $this->assertSame(2, Cobranca::query()->where('assinatura_id', $c->assinatura_id)->where('status', StatusDaCobranca::Paga)->count());
+        $this->assertSame($this->hoje()->addMonthsNoOverflow(2)->toDateString(), $c->assinatura->refresh()->paga_ate?->toDateString());
+    }
+
+    public function test_renovacao_usa_o_valor_da_cobranca_anterior_e_nao_o_preco_atual_do_plano(): void
+    {
+        $c = $this->cobrancaPendente();
+        $this->aprovado($c);
+        app(ConciliarPagamento::class)->executar('pg-1');
+        $this->plano->forceFill(['preco_mensal_centavos' => 12000])->save();
+        $this->gateway->enfileirarPagamento(new ResultadoDePagamento('pg-2', StatusDoPagamento::Aprovado, null, 10000, assinaturaGatewayId: 'pre-1'));
+
+        app(ConciliarPagamento::class)->executar('pg-2');
+
+        $this->assertSame(2, Cobranca::query()->where('status', StatusDaCobranca::Paga)->count());
+    }
+
     public function test_pagamento_de_assinatura_cancelada_nao_ativa_o_tenant(): void
     {
         $c = $this->cobrancaPendente();

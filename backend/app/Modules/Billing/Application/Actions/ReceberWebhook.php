@@ -13,6 +13,9 @@ use App\Modules\Billing\Domain\Models\WebhookRecebido;
  */
 final class ReceberWebhook
 {
+    /** Códigos que encerram o evento: reenviar o mesmo webhook não muda o resultado. */
+    private const ERROS_DE_REGRA = ['BILLING_VALOR_DIVERGENTE'];
+
     public function __construct(private readonly ConciliarPagamento $conciliar) {}
 
     /** @param array<string, mixed> $corpo */
@@ -34,7 +37,12 @@ final class ReceberWebhook
         try {
             $this->conciliar->executar($dataId);
         } catch (BillingException $e) {
-            // Erro de regra (ex.: valor divergente) não melhora com reenvio: registra e encerra o evento.
+            // Só erro de regra (valor divergente) não melhora com reenvio: registra e encerra o evento. Falha de
+            // comunicação com o gateway (ou instalação sem token) é transitória: relança, o evento fica aberto e o
+            // Mercado Pago reenvia.
+            if (! in_array($e->codigo(), self::ERROS_DE_REGRA, true)) {
+                throw $e;
+            }
             report($e);
         }
         $evento->forceFill(['processado_em' => now()])->save();
