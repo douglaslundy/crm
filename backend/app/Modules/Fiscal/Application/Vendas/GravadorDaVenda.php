@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Application\Vendas;
 
 use App\Modules\Fiscal\Application\Actions\CriarRascunhoDeNota;
+use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
+use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Exceptions\EmissaoBloqueadaException;
+use App\Modules\Fiscal\Domain\Exceptions\VendaNaoEditavelException;
 use App\Modules\Fiscal\Domain\Models\Nota;
+use App\Modules\Fiscal\Domain\Models\Venda;
 use App\Modules\Fiscal\Domain\RateioDeDesconto;
 
 /**
@@ -17,6 +21,32 @@ use App\Modules\Fiscal\Domain\RateioDeDesconto;
 final class GravadorDaVenda
 {
     public function __construct(private readonly CriarRascunhoDeNota $notas) {}
+
+    /** @param array<string, mixed> $dados */
+    public static function exigirOsDoisTipos(array $dados): void
+    {
+        if (($dados['itens_produtos'] ?? []) === [] || ($dados['itens_servicos'] ?? []) === []) {
+            throw new EmissaoBloqueadaException('FISCAL_VENDA_MISTA_INCOMPLETA', 'A venda mista precisa de ao menos um produto e um serviço. Com um só tipo, use a nota comum.');
+        }
+    }
+
+    /**
+     * As duas notas da venda (produtos, serviços), travadas, só se ambas estiverem em rascunho.
+     * Chamar dentro de uma transação.
+     *
+     * @return array{0: Nota, 1: Nota}
+     */
+    public function notasEditaveis(Venda $venda): array
+    {
+        $notas = Nota::query()->where('venda_id', $venda->id)->lockForUpdate()->get();
+        $produtos = $notas->first(fn (Nota $n): bool => $n->modelo === ModeloDocumento::Nfe);
+        $servicos = $notas->first(fn (Nota $n): bool => $n->modelo === ModeloDocumento::Dps);
+        if ($produtos === null || $servicos === null || $notas->contains(fn (Nota $n): bool => $n->status !== StatusNota::Rascunho)) {
+            throw new VendaNaoEditavelException;
+        }
+
+        return [$produtos, $servicos];
+    }
 
     /**
      * @param  array<string, mixed>  $dados

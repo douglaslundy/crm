@@ -22,6 +22,9 @@ final class AtualizarRascunhoDeNota
 
         return DB::transaction(function () use ($nota, $dados): Nota {
             $nota = Nota::query()->whereKey($nota->id)->lockForUpdate()->firstOrFail();
+            if ($nota->venda_id !== null) {
+                throw new EmissaoBloqueadaException('FISCAL_NOTA_DA_VENDA', 'Esta nota pertence a uma venda mista. Altere ou exclua a venda.');
+            }
             if (! $nota->status->editavel()) {
                 throw new NotaNaoEditavelException;
             }
