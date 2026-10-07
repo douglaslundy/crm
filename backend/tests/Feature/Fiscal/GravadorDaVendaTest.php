@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Fiscal;
 
+use App\Modules\Catalog\Domain\Models\Servico;
 use App\Modules\Fiscal\Application\Actions\CriarRascunhoDeNota;
 use App\Modules\Fiscal\Application\Vendas\GravadorDaVenda;
 use App\Modules\Fiscal\Domain\Exceptions\EmissaoBloqueadaException;
@@ -19,13 +20,13 @@ class GravadorDaVendaTest extends TestCase
     use RefreshDatabase;
 
     /** @return array<string, mixed> */
-    private function dados(int $desconto): array
+    private function dados(int $desconto, ?int $pagamento = null): array
     {
         return [
             'cliente_id' => $this->cliente->id, 'desconto_centavos' => $desconto, 'informacoes_complementares' => null,
             'itens_produtos' => [['produto_id' => $this->produto->id, 'quantidade' => '1', 'valor_unitario_centavos' => null]],
             'itens_servicos' => [['servico_id' => $this->servico->id, 'quantidade' => '1', 'valor_unitario_centavos' => null]],
-            'pagamentos' => [['tpag' => '01', 'xpag' => null, 'valor_centavos' => 1000]],
+            'pagamentos' => [['tpag' => '01', 'xpag' => null, 'valor_centavos' => $pagamento ?? 1000 - intdiv($desconto * 1000, 16000)]],
         ];
     }
 
@@ -91,6 +92,51 @@ class GravadorDaVendaTest extends TestCase
         $this->expectException(EmissaoBloqueadaException::class);
 
         app(GravadorDaVenda::class)->gravar($p, $s, $this->dados(16000));
+    }
+
+    public function test_pagamentos_que_nao_fecham_com_o_total_da_nfe_bloqueiam_ao_salvar(): void
+    {
+        $this->montarCenarioNfse();
+        [$p, $s] = $this->rascunhos();
+
+        try {
+            app(GravadorDaVenda::class)->gravar($p, $s, $this->dados(1600, 1000));
+            $this->fail('deveria bloquear');
+        } catch (EmissaoBloqueadaException $e) {
+            $this->assertSame('FISCAL_PAGAMENTO_DIVERGENTE', $e->codigo());
+        }
+    }
+
+    public function test_servicos_com_aliquotas_diferentes_bloqueiam_ao_salvar(): void
+    {
+        $this->montarCenarioNfse();
+        [$p, $s] = $this->rascunhos();
+        $outro = Servico::factory()->completo()->create(['aliquota_iss' => '2.00']);
+        $dados = $this->dados(0);
+        $dados['itens_servicos'][] = ['servico_id' => $outro->id, 'quantidade' => '1', 'valor_unitario_centavos' => null];
+
+        try {
+            app(GravadorDaVenda::class)->gravar($p, $s, $dados);
+            $this->fail('deveria bloquear');
+        } catch (EmissaoBloqueadaException $e) {
+            $this->assertSame('FISCAL_SERVICOS_DIVERGENTES', $e->codigo());
+        }
+    }
+
+    public function test_rateio_que_zera_uma_das_notas_bloqueia_ao_salvar(): void
+    {
+        $this->montarCenarioNfse();
+        [$p, $s] = $this->rascunhos();
+        $dados = $this->dados(1000, 1);
+        $dados['itens_servicos'][0]['valor_unitario_centavos'] = 1; // serviço de R$ 0,01: o resíduo do desconto o zera
+
+        try {
+            app(GravadorDaVenda::class)->gravar($p, $s, $dados);
+            $this->fail('deveria bloquear');
+        } catch (EmissaoBloqueadaException $e) {
+            $this->assertSame('FISCAL_DESCONTO_INVALIDO', $e->codigo());
+            $this->assertStringContainsString('NFS-e', $e->getMessage());
+        }
     }
 
     public function test_executar_grava_o_venda_id_quando_informado(): void

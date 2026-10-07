@@ -7,7 +7,10 @@ import { notasApi } from '@/features/notas/api';
 import { vendasApi } from '../api';
 import { VendaForm } from './VendaForm';
 
-/** Abre a venda para edição: carrega o cabeçalho e as duas notas (de onde vêm itens e pagamentos). Só com as duas em rascunho. */
+// Rascunho, rejeitada e erro: a nota que falhou por dado próprio precisa poder ser corrigida pela venda.
+const EDITAVEIS = ['RASCUNHO', 'REJEITADA', 'ERRO'];
+
+/** Abre a venda para edição: carrega o cabeçalho e as duas notas (de onde vêm itens e pagamentos). Só com nenhuma das duas já emitida. */
 export function EditarVenda({ id }: { id: string }) {
   const dados = useQuery({
     queryKey: ['vendas', id, 'editar'],
@@ -28,8 +31,8 @@ export function EditarVenda({ id }: { id: string }) {
   if (dados.isPending) return <p className="text-muted-foreground">Carregando...</p>;
 
   const { venda, produtos, servicos } = dados.data;
-  if (produtos.status !== 'RASCUNHO' || servicos.status !== 'RASCUNHO') {
-    return <Banner tom="perigo">Esta venda não pode mais ser editada: as duas notas precisam estar em rascunho.</Banner>;
+  if (!EDITAVEIS.includes(produtos.status) || !EDITAVEIS.includes(servicos.status)) {
+    return <Banner tom="perigo">Esta venda não pode mais ser editada: nenhuma das duas notas pode já ter sido emitida.</Banner>;
   }
 
   return (

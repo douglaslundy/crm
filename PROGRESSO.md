@@ -1,14 +1,14 @@
 # Progresso do Projeto
 
 ## Última atualização
-2026-10-05
+2026-10-07
 
 ## Tarefa em andamento
-**Nenhuma execução em andamento. F3 concluída (2026-10-06) e F4a concluída (2026-10-07); falta a F4b (venda mista).**
+**Nenhuma execução em andamento. F3, F4a e F4b concluídas (2026-10-07); a F4 está fechada. Próxima: F5 (Cobrança, Mercado Pago).**
 
 Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é decisão da SEFAZ (sem número fixo no código); cancelada continua contando na cota `DOCUMENTOS_MES`; `consultarPorChave` usa o ambiente da **nota** (corrige consulta no ambiente errado depois de "Ir para produção"); o XML do cancelamento é o `nfeProc` com `retEvento` (`Complements::cancelRegister`); aceitos 135/136/155; inutilização síncrona com guardas locais (faixa já alocada, sem nota autorizada/em processamento/cancelada na faixa), resultado sempre gravado.
 
-**F4a (NFS-e Nacional) concluída em 2026-10-07 (13 tarefas).** Próxima: **F4b (venda mista)**, sem spec: começar por `superpowers:brainstorming`. Contexto necessário para a F4b: `TAREFAS.md` (F4b), o spec da F4a e o `CriarRascunhoDeNota`/`PreparadorDaNota`/`PreparadorDaNotaDeServico` (rateio de desconto em `RateioDeDesconto`).
+**F4b (venda mista) concluída em 2026-10-07 (10 tarefas).** Próxima: **F5 (Cobrança)**, sem spec: começar por `superpowers:brainstorming`. Contexto necessário para a F5: `TAREFAS.md` (F5), o spec mestre `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md` (seção 12 "Cobrança" e a linha da F5 na tabela de fases), o módulo `Platform` (planos, `EntitlementService`, situação da assinatura do tenant) e `docs/referencia-fiscal/01-arquitetura.md` só se precisar das fronteiras entre módulos.
 
 ## Decisões pendentes com o usuário
 - **Push dos commits da F3a:** feitos na master; o último push foi `db2bc7d` (docs do backlog).
@@ -36,6 +36,12 @@ Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é dec
 - **Verificado:** build, migrations de todas as fases no PostgreSQL 16 (primeira vez fora do SQLite), login com sessão pela API, CORS, URL da API embutida no front, worker e agendador de pé, API ~35 ms. **Não verificado:** as telas no navegador.
 - **Reimplantar:** `git -c core.autocrlf=false archive --format=tar.gz -o crm.tar.gz HEAD`, enviar para `~/crm-plataforma/`, extrair em `src/` (NÃO apagar `src/deploy/.env`: tem a senha do banco) e rodar `bash src/deploy/deploy.sh`. Detalhes em `deploy/README.md`.
 - **Diferenças para produção real:** HTTP sem domínio, `INSTALL_DEV=1` (Faker para o seeder), `SESSION_SECURE_COOKIE=false`. Antes de expor à internet: HTTPS, domínio, trocar a senha do usuário SSH e as contas de demonstração.
+
+## Fechamento da F4b (2026-10-07)
+- **Feito:** tabela `vendas` (Global Scope por tenant) e `notas.venda_id`; `GravadorDaVenda` (grava os itens das duas notas em duas passadas, ratea o desconto com `RateioDeDesconto`, exige pagamentos iguais ao total da NF-e, serviços do mesmo código e alíquota e nenhuma nota zerada); Actions `CriarVendaMista`, `AtualizarVendaMista`, `ExcluirVendaMista` e `EmitirVendaMista`; `IniciarEmissao::verificar` (valida sem emitir; `preparar` roda numa transação desfeita) e a extração `garantirPodeEmitirNota`; guarda `FISCAL_NOTA_DA_VENDA` nas Actions de nota; API `/api/app/vendas` (POST, GET, PUT, DELETE, POST emitir com 409 `FISCAL_VENDA_NOTA_BLOQUEADA` e `emitir_apenas_validas`); frontend `features/vendas` (rateio, schema, `VendaForm` com prévia do desconto, `DetalheDaVenda`, `EditarVenda`), atalho em `/notas`, link "Ver venda" e botões ocultos no detalhe da nota.
+- **Verificado:** backend 752 testes e frontend 305, Pint/PHPStan/tsc/build limpos (lint só com o warning antigo do `CadastroForm`). **NÃO verificado:** emissão real da venda (depende da homologação da F3a e da F4a); o visual das telas.
+- **Decisões:** venda mista só com NF-e (sem NFC-e); duas notas independentes, sem desfazer uma por causa da outra; sem confirmação, uma nota pendente impede a emissão das duas; o desconto da venda tem de ser menor que o total dos itens; editar a venda vale enquanto nenhuma nota saiu (rascunho, rejeitada ou erro) e excluir só com as duas em rascunho; `verificar` desfaz o que o `preparar` grava.
+- **Revisão final** por revisor independente: 1 Critical, 2 Important, 6 Minor. Corrigidos com teste: (C1, parcial) pagamento divergente e serviços de códigos diferentes agora bloqueiam ao salvar, e a venda se edita com nota rejeitada ou em erro; (I2) rateio que zera uma nota bloqueia ao salvar; (I3) teste de ids de outro tenant no corpo. O restante está em `TAREFAS.md`.
 
 ## Fechamento da F4a (2026-10-07)
 - **Feito:** dependências (`nfse-php` 1.23.0-beta, `dompdf`, `endroid/qr-code`) e teste de contrato da lib; migration (chave de 50 dígitos, `numero_nfse`, item de serviço com snapshot); rascunho de NFS-e (`modelo=DPS`, `servico_id`, sem pagamentos); `PreparadorDaNotaDeServico` (tomador, serviço, mesmo código e alíquota, limites) e `VerificadorDoEmitente::garantirAptoParaNfse`; domínio (`NotaParaNfse`, resultados, `EmissorDeNfse`, `EmissorDeNfseFake`); `MontadorDeDps`; `InterpretadorDeNfse`, `MontadorDeEventoDeCancelamento` e `NfseNacionalEmissor`; `EmitirNfseJob` com consulta da DPS antes de enviar, `AplicarResultadoDaNfse` e `ConciliarNfse`; cancelamento por evento 101101 (sem protocolo); DANFSe v2.0 (`DanfseRenderer` copiado da skill e adaptado, `DompdfGeradorDeDanfse`); downloads `NFSe-<n>.xml`, dashboard com `FISCAL_NFSE`, fronteiras do modelo; frontend (`NotaDeServicoForm`, `FormularioDeNota`, detalhe da NFS-e).
@@ -157,4 +163,4 @@ O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artis
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-F3c3: brainstorming para a spec do EPEC (e SVC) da NF-e. Antes ou em paralelo, o usuário pode: fazer o push (muitos commits locais), reimplantar o staging (desatualizado: tem o design system até a Fase 4, mas não DANFE, NFC-e, cupom, painel fiscal nem contingência), rodar os roteiros de homologação real (inclusive o da contingência) e conferir o design system no navegador (Fase 5, tarefas 21 e 22). O teste `CadastroForm` estoura 5 s às vezes na suíte completa do frontend, e `GeradorDeDanfeTest` (marca CANCELADA) falhou 1 vez em ~6 execuções completas do backend (passa isolado).
+F5 (Cobrança, Mercado Pago): brainstorming para a spec (checkout transparente com cartão e boleto, assinatura, webhooks, inadimplência e suspensão, excedente). Antes ou em paralelo, o usuário pode: fazer o push (muitos commits locais além de `db2bc7d`), reimplantar o staging (desatualizado), rodar os roteiros de homologação real (NF-e, NFC-e, contingência, EPEC, NFS-e) e conferir as telas no navegador.

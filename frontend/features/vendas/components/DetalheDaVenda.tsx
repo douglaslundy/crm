@@ -78,6 +78,7 @@ export function DetalheDaVenda({ id }: { id: string }) {
   const podeEmitir = Boolean(usuario && PAPEIS_QUE_EMITEM.includes(usuario.papel));
   const podeRascunhar = Boolean(usuario && PAPEIS_QUE_RASCUNHAM.includes(usuario.papel));
   const todasEmRascunho = notas.length === 2 && notas.every((n) => n.status === 'RASCUNHO');
+  const podeEditar = notas.length === 2 && notas.every((n) => EMITIVEIS.includes(n.status));
   const algumaEmitivel = notas.some((n) => EMITIVEIS.includes(n.status));
   const algumaValida = notas.some((n) => EMITIVEIS.includes(n.status) && !bloqueios.some((b) => b.nota_id === n.id));
 
@@ -136,7 +137,7 @@ export function DetalheDaVenda({ id }: { id: string }) {
             Emitir só a válida
           </Button>
         ) : null}
-        {podeRascunhar && todasEmRascunho ? (
+        {podeRascunhar && podeEditar ? (
           <Link href={`/vendas/${id}/editar`} className={buttonVariants({ variant: 'outline' })}>Editar venda</Link>
         ) : null}
         {podeRascunhar && todasEmRascunho ? (

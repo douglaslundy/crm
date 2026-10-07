@@ -24,7 +24,7 @@ final class ExcluirVendaMista
 
         DB::transaction(function () use ($venda): void {
             $venda = Venda::query()->whereKey($venda->id)->lockForUpdate()->firstOrFail();
-            foreach ($this->gravador->notasEditaveis($venda) as $nota) {
+            foreach ($this->gravador->notasEditaveis($venda, true) as $nota) {
                 $this->exclusao->executar($nota, true);
             }
             $venda->delete();

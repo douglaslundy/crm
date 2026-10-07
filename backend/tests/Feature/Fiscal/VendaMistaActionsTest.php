@@ -88,7 +88,18 @@ class VendaMistaActionsTest extends TestCase
         $this->assertSame(2, NotaItem::query()->count());
     }
 
-    public function test_atualizar_so_com_as_duas_notas_em_rascunho(): void
+    public function test_atualizar_aceita_notas_que_falharam_mas_nao_sairam(): void
+    {
+        $this->montarCenarioVenda();
+        $venda = $this->criar();
+        $venda->notas()->where('modelo', 'NFE')->firstOrFail()->forceFill(['status' => StatusNota::Rejeitada])->save();
+
+        $venda = app(AtualizarVendaMista::class)->executar($venda, $this->corpoVenda(['desconto_centavos' => 1600, 'pagamentos' => [['tpag' => '01', 'xpag' => null, 'valor_centavos' => 900]]]), $this->admin);
+
+        $this->assertSame(14400, $venda->total_centavos);
+    }
+
+    public function test_atualizar_nao_mexe_em_venda_com_nota_ja_enviada(): void
     {
         $this->montarCenarioVenda();
         $venda = $this->criar();

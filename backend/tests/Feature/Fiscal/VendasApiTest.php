@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Fiscal;
 
+use App\Modules\Catalog\Domain\Models\Produto;
+use App\Modules\Catalog\Domain\Models\Servico;
+use App\Modules\Customers\Domain\Models\Cliente;
 use App\Modules\Fiscal\Application\Actions\CriarVendaMista;
 use App\Modules\Fiscal\Domain\Models\Nota;
 use App\Modules\Fiscal\Domain\Models\Venda;
@@ -55,6 +58,22 @@ class VendasApiTest extends TestCase
         $api->postJson('/api/app/vendas', $this->corpoVenda(['cliente_id' => null]))->assertStatus(422)->assertJsonValidationErrors('cliente_id');
         $api->postJson('/api/app/vendas', $this->corpoVenda(['desconto_centavos' => -1]))->assertStatus(422)->assertJsonValidationErrors('desconto_centavos');
         $api->postJson('/api/app/vendas', $this->corpoVenda(['desconto_centavos' => 16000]))->assertStatus(422)->assertJsonPath('codigo', 'FISCAL_DESCONTO_INVALIDO');
+        $this->assertSame(0, Venda::query()->count());
+    }
+
+    public function test_ids_de_outro_tenant_no_corpo_sao_recusados(): void
+    {
+        $outro = Tenant::factory()->for(Plano::factory()->comModulos(Modulo::FiscalNfe, Modulo::FiscalNfse))->create();
+        app(TenantContext::class)->set($outro->id);
+        $clienteDeles = Cliente::factory()->comCpfValido()->create();
+        $produtoDeles = Produto::factory()->completo()->create();
+        $servicoDeles = Servico::factory()->completo()->create();
+        app(TenantContext::class)->set($this->tenant->id);
+        $api = $this->spaComo($this->admin);
+
+        $api->postJson('/api/app/vendas', $this->corpoVenda(['cliente_id' => $clienteDeles->id]))->assertStatus(422)->assertJsonValidationErrors('cliente_id');
+        $api->postJson('/api/app/vendas', $this->corpoVenda(['itens_produtos' => [['produto_id' => $produtoDeles->id, 'quantidade' => '1']]]))->assertStatus(422)->assertJsonValidationErrors('itens_produtos.0.produto_id');
+        $api->postJson('/api/app/vendas', $this->corpoVenda(['itens_servicos' => [['servico_id' => $servicoDeles->id, 'quantidade' => '1']]]))->assertStatus(422)->assertJsonValidationErrors('itens_servicos.0.servico_id');
         $this->assertSame(0, Venda::query()->count());
     }
 

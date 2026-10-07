@@ -102,6 +102,14 @@ describe('DetalheDaVenda', () => {
     await waitFor(() => expect(push).toHaveBeenCalledWith('/notas'));
   });
 
+  it('com uma nota rejeitada oferece editar a venda mas não excluir', async () => {
+    vi.mocked(vendasApi.buscar).mockResolvedValue({ data: { ...venda(), notas: venda().notas?.map((n) => (n.modelo === 'NFE' ? { ...n, status: 'REJEITADA' as const } : n)) } });
+    renderizar();
+
+    expect(await screen.findByRole('link', { name: 'Editar venda' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Excluir venda' })).not.toBeInTheDocument();
+  });
+
   it('com uma nota já emitida não oferece excluir nem editar', async () => {
     vi.mocked(vendasApi.buscar).mockResolvedValue({ data: venda('PROCESSANDO', 'RASCUNHO') });
     renderizar();
