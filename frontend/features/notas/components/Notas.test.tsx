@@ -750,3 +750,28 @@ describe('NFS-e', () => {
     expect(screen.getByRole('button', { name: 'Confirmar cancelamento' })).toBeInTheDocument();
   });
 });
+
+describe('DetalheDaNota de uma venda mista', () => {
+  const RASCUNHO_DA_VENDA: Nota = { ...NOTA, status: 'RASCUNHO', venda_id: 'v1', numero: null, serie: null, chave: null, protocolo: null, itens: [], pagamentos: [] };
+
+  it('a nota de uma venda mostra o link para a venda e não oferece editar nem excluir', async () => {
+    comPapel('ADMIN');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: RASCUNHO_DA_VENDA });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    expect(await screen.findByRole('link', { name: 'Ver venda' })).toHaveAttribute('href', '/vendas/v1');
+    expect(screen.queryByRole('button', { name: 'Editar' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Excluir rascunho' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Emitir NF-e' })).toBeInTheDocument();
+  });
+
+  it('a nota comum continua com editar, excluir e sem link para venda', async () => {
+    comPapel('ADMIN');
+    vi.mocked(notasApi.buscar).mockResolvedValue({ data: { ...RASCUNHO_DA_VENDA, venda_id: null } });
+    renderizar(<DetalheDaNota id="n1" />);
+
+    expect(await screen.findByRole('button', { name: 'Editar' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Excluir rascunho' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Ver venda' })).not.toBeInTheDocument();
+  });
+});

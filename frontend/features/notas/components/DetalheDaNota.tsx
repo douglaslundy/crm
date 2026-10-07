@@ -2,6 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
@@ -114,6 +115,8 @@ export function DetalheDaNota({ id }: { id: string }) {
   const podeRascunhar = Boolean(usuario && PAPEIS_QUE_RASCUNHAM.includes(usuario.papel));
   const editavel = nota.status === 'RASCUNHO' || nota.status === 'REJEITADA' || nota.status === 'ERRO';
   const corrigivel = nota.status === 'REJEITADA' || nota.status === 'ERRO';
+  // Nota de venda mista: itens e desconto são do rateio da venda, então só se alteram ou excluem por ela.
+  const daVenda = nota.venda_id !== null;
 
   return (
     <div className="space-y-4">
@@ -126,6 +129,10 @@ export function DetalheDaNota({ id }: { id: string }) {
         </div>
         <StatusDaNota status={nota.status} ambiente={nota.ambiente} />
       </div>
+
+      {nota.venda_id !== null ? (
+        <p className="text-sm">Esta nota faz parte de uma venda de produtos e serviços. <Link href={`/vendas/${nota.venda_id}`} className="underline">Ver venda</Link></p>
+      ) : null}
 
       {nota.status === 'REJEITADA' ? (
         <Banner tom="perigo">cStat {nota.cstat}: {nota.motivo}</Banner>
@@ -265,12 +272,12 @@ export function DetalheDaNota({ id }: { id: string }) {
           ) : (
             <p className="text-sm text-muted-foreground">Você pode editar, mas só um usuário fiscal pode emitir.</p>
           )}
-          {podeRascunhar ? (
+          {podeRascunhar && !daVenda ? (
             <Button type="button" variant="outline" onClick={() => setEditando(true)}>
               {corrigivel ? 'Corrigir e emitir de novo' : 'Editar'}
             </Button>
           ) : null}
-          {nota.status === 'RASCUNHO' && podeRascunhar ? (
+          {nota.status === 'RASCUNHO' && podeRascunhar && !daVenda ? (
             confirmandoExclusao ? (
               <Button type="button" variant="destructive" disabled={excluir.isPending} onClick={() => excluir.mutate()}>Confirmar exclusão</Button>
             ) : (
