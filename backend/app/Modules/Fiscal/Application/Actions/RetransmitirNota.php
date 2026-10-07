@@ -12,6 +12,7 @@ use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEmissao;
 use App\Modules\Fiscal\Domain\Emissao\XmlAssinado;
 use App\Modules\Fiscal\Domain\Enums\SituacaoNaSefaz;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
+use App\Modules\Fiscal\Domain\Enums\TipoDeContingencia;
 use App\Modules\Fiscal\Domain\Exceptions\FalhaDeComunicacaoException;
 use App\Modules\Fiscal\Domain\Exceptions\NotaNaoEmContingenciaException;
 use App\Modules\Fiscal\Domain\Models\Emitente;
@@ -103,16 +104,23 @@ final class RetransmitirNota
             if ($nota->status !== StatusNota::Contingencia) {
                 return $nota;
             }
+            $epec = $nota->contingencia_tipo === TipoDeContingencia::Epec;
 
             if ($r->status === StatusNota::Autorizada) {
                 $nota->forceFill([
                     'status' => StatusNota::Autorizada, 'cstat' => $r->cstat, 'motivo' => $r->motivo, 'protocolo' => $r->protocolo,
                     'xml_autorizado' => $r->xmlAutorizado, 'emitido_em' => now(), 'ultima_retransmissao_em' => now(),
                 ])->save();
-                NotaEvento::registrar($nota, StatusNota::Contingencia, StatusNota::Autorizada, 'Autorizada após contingência', $autor?->id);
+                NotaEvento::registrar($nota, StatusNota::Contingencia, StatusNota::Autorizada, $epec ? 'Autorizada após EPEC' : 'Autorizada após contingência', $autor?->id);
             } elseif ($r->status === StatusNota::Rejeitada) {
                 $nota->forceFill(['status' => StatusNota::Rejeitada, 'cstat' => $r->cstat, 'motivo' => $r->motivo, 'ultima_retransmissao_em' => now()])->save();
-                NotaEvento::registrar($nota, StatusNota::Contingencia, StatusNota::Rejeitada, "Rejeitada após contingência (cStat {$r->cstat}): o consumidor já recebeu o cupom", $autor?->id);
+                NotaEvento::registrar(
+                    $nota, StatusNota::Contingencia, StatusNota::Rejeitada,
+                    $epec
+                        ? "Rejeitada após EPEC (cStat {$r->cstat}): a NF-e precisa repetir os dados do evento EPEC; confira o motivo e fale com o contador"
+                        : "Rejeitada após contingência (cStat {$r->cstat}): o consumidor já recebeu o cupom",
+                    $autor?->id,
+                );
             } else {
                 // Processando ou erro técnico: a nota continua em contingência para uma nova tentativa.
                 $nota->forceFill(['ultima_retransmissao_em' => now()])->save();
