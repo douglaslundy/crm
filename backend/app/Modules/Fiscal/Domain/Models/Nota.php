@@ -36,6 +36,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $tentativas_numero
  * @property ?string $chave
  * @property ?string $numero_nfse
+ * @property ?string $venda_id
  * @property ?string $protocolo
  * @property ?string $cstat
  * @property ?string $motivo
@@ -128,6 +129,12 @@ class Nota extends Model
     public function cliente(): BelongsTo
     {
         return $this->belongsTo(Cliente::class);
+    }
+
+    /** @return BelongsTo<Venda, $this> */
+    public function venda(): BelongsTo
+    {
+        return $this->belongsTo(Venda::class);
     }
 
     protected static function newFactory(): NotaFactory
