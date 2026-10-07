@@ -7,6 +7,7 @@ namespace App\Modules\Fiscal\Domain\Models;
 use App\Modules\Customers\Domain\Models\Cliente;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
+use App\Modules\Fiscal\Domain\Enums\TipoDeContingencia;
 use App\Modules\Tenancy\Domain\Concerns\BelongsToTenant;
 use Carbon\CarbonInterface;
 use Database\Factories\NotaFactory;
@@ -53,6 +54,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property ?CarbonInterface $contingencia_limite_em
  * @property ?CarbonInterface $ultima_retransmissao_em
  * @property ?string $contingencia_motivo
+ * @property ?TipoDeContingencia $contingencia_tipo
+ * @property ?string $epec_protocolo
+ * @property ?CarbonInterface $epec_registrado_em
+ * @property ?string $xml_epec
  * @property CarbonInterface $created_at
  */
 class Nota extends Model
@@ -72,7 +77,7 @@ class Nota extends Model
         'subtotal_centavos', 'total_centavos',
     ];
 
-    protected $hidden = ['xml_enviado', 'xml_autorizado', 'xml_cancelamento'];
+    protected $hidden = ['xml_enviado', 'xml_autorizado', 'xml_cancelamento', 'xml_epec'];
 
     /** @var array<string, mixed> */
     protected $attributes = [
@@ -89,6 +94,8 @@ class Nota extends Model
             'contingencia_desde' => 'datetime',
             'contingencia_limite_em' => 'datetime',
             'ultima_retransmissao_em' => 'datetime',
+            'contingencia_tipo' => TipoDeContingencia::class,
+            'epec_registrado_em' => 'datetime',
             'consumidor_final' => 'boolean',
             'destinatario' => 'array',
             'iniciada_em' => 'datetime',

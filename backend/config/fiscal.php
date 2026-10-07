@@ -20,4 +20,10 @@ return [
 
     /** O painel alerta quando faltam menos horas que isto para o limite da contingência. */
     'contingencia_alerta_horas' => (int) env('FISCAL_CONTINGENCIA_ALERTA_HORAS', 6),
+
+    /** Prazo legal do EPEC da NF-e para transmitir o XML normal: 7 dias. */
+    'epec_prazo_horas' => (int) env('FISCAL_EPEC_PRAZO_HORAS', 168),
+
+    /** O painel alerta quando faltam menos horas que isto para o limite do EPEC. */
+    'epec_alerta_horas' => (int) env('FISCAL_EPEC_ALERTA_HORAS', 48),
 ];

@@ -10,6 +10,7 @@ use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsulta;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\SituacaoNaSefaz;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
+use App\Modules\Fiscal\Domain\Enums\TipoDeContingencia;
 use App\Modules\Fiscal\Domain\Exceptions\FalhaDeComunicacaoException;
 use App\Modules\Fiscal\Domain\Models\Emitente;
 use App\Modules\Fiscal\Domain\Models\Nota;
@@ -57,8 +58,8 @@ final class EntrarEmContingencia
             $nota->forceFill([
                 'status' => StatusNota::Contingencia, 'chave' => $xml->chave, 'xml_enviado' => $xml->xml,
                 'cstat' => null, 'motivo' => null, 'mensagem_erro' => null,
-                'contingencia_desde' => $agora, 'contingencia_limite_em' => $agora->addHours((int) config('fiscal.contingencia_prazo_horas')),
-                'contingencia_motivo' => self::JUSTIFICATIVA,
+                'contingencia_desde' => $agora, 'contingencia_limite_em' => $agora->addHours(TipoDeContingencia::OfflineNfce->prazoEmHoras()),
+                'contingencia_motivo' => self::JUSTIFICATIVA, 'contingencia_tipo' => TipoDeContingencia::OfflineNfce,
             ])->save();
             NotaEvento::registrar($nota, StatusNota::Processando, StatusNota::Contingencia, 'Entrou em contingência offline'.($chaveOriginal === null ? '' : " (chave original {$chaveOriginal})"));
 
