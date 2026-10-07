@@ -18,3 +18,9 @@ Schedule::command('fiscal:reconciliar-processando')->everyFifteenMinutes()
 
 Schedule::command('fiscal:retransmitir-contingencia')->hourly()
     ->withoutOverlapping()->onOneServer();
+
+Schedule::command('billing:gerar-boletos')->dailyAt('00:20')->timezone('America/Sao_Paulo')
+    ->withoutOverlapping()->onOneServer();
+
+Schedule::command('billing:aplicar-inadimplencia')->dailyAt('00:30')->timezone('America/Sao_Paulo')
+    ->withoutOverlapping()->onOneServer();
