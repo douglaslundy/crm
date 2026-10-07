@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Application\Actions;
 
 use App\Modules\Fiscal\Application\Emissao\PreparadorDaNota;
+use App\Modules\Fiscal\Application\Emissao\PreparadorDaNotaDeServico;
 use App\Modules\Fiscal\Application\Emissao\VerificadorDoEmitente;
+use App\Modules\Fiscal\Application\Jobs\EmitirNfseJob;
 use App\Modules\Fiscal\Application\Jobs\EmitirNotaJob;
 use App\Modules\Fiscal\Application\PoliticaDeNotas;
 use App\Modules\Fiscal\Domain\Enums\AmbienteFiscal;
@@ -30,6 +32,7 @@ final class IniciarEmissao
         private readonly EntitlementService $planos,
         private readonly VerificadorDoEmitente $verificador,
         private readonly PreparadorDaNota $preparador,
+        private readonly PreparadorDaNotaDeServico $preparadorDeServico,
     ) {}
 
     public function executar(string $notaId, Usuario $autor): Nota
@@ -51,10 +54,19 @@ final class IniciarEmissao
                 throw AssinaturaSemEscritaException::para($tenant->situacao);
             }
             $nfce = $nota->modelo === ModeloDocumento::Nfce;
-            $this->planos->garantirModulo($tenant, $nfce ? Modulo::FiscalNfce : Modulo::FiscalNfe);
+            $servico = $nota->modelo === ModeloDocumento::Dps;
+            $this->planos->garantirModulo($tenant, match (true) {
+                $servico => Modulo::FiscalNfse,
+                $nfce => Modulo::FiscalNfce,
+                default => Modulo::FiscalNfe,
+            });
 
             $emitente = Emitente::query()->findOrFail($nota->emitente_id);
-            $this->verificador->garantirApto($emitente, $tenant, $nota->modelo);
+            if ($servico) {
+                $this->verificador->garantirAptoParaNfse($emitente, $tenant);
+            } else {
+                $this->verificador->garantirApto($emitente, $tenant, $nota->modelo);
+            }
             if ($nfce) {
                 $this->verificador->garantirCsc($emitente, $emitente->ambiente_fiscal->value);
             }
@@ -62,7 +74,11 @@ final class IniciarEmissao
                 $this->planos->garantirCapacidade($tenant, Recurso::DocumentosMes);
             }
 
-            $this->preparador->preparar($nota, $emitente);
+            if ($servico) {
+                $this->preparadorDeServico->preparar($nota, $emitente);
+            } else {
+                $this->preparador->preparar($nota, $emitente);
+            }
 
             $ambiente = $emitente->ambiente_fiscal->value;
             $numeroNovo = $nota->numero === null || $nota->ambiente !== $ambiente;
@@ -91,7 +107,11 @@ final class IniciarEmissao
 
         [$nota, $despachar] = $resultado;
         if ($despachar) {
-            EmitirNotaJob::dispatch($nota->id, $nota->tenant_id);
+            if ($nota->modelo === ModeloDocumento::Dps) {
+                EmitirNfseJob::dispatch($nota->id, $nota->tenant_id);
+            } else {
+                EmitirNotaJob::dispatch($nota->id, $nota->tenant_id);
+            }
         }
 
         return $nota->refresh();

@@ -68,5 +68,8 @@ trait CenarioDeNfse
     protected function removerModuloNfse(): void
     {
         $this->tenant->forceFill(['plano_id' => Plano::factory()->comModulos(Modulo::FiscalNfe)->create()->id])->save();
+        // O usuário do teste guarda o tenant (e o plano) em cache: sem isto a requisição seguinte ainda enxerga o plano antigo.
+        $this->tenant->unsetRelation('plano');
+        $this->admin->unsetRelation('tenant');
     }
 }

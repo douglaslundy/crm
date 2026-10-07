@@ -36,10 +36,7 @@ final class VerificadorDoEmitente
         $this->crt->crt($emitente->regime_tributario);
         TabelaIbge::codigoDaUf((string) $emitente->uf);
 
-        $validade = $emitente->certificado_validade;
-        if ($emitente->certificado_status !== CertificadoStatus::Valido || $validade === null || $validade->lt(now()->startOfDay())) {
-            throw new EmissaoBloqueadaException('FISCAL_CERTIFICADO_INVALIDO', 'O certificado A1 está ausente, inválido ou vencido. Envie um certificado válido em Configurações > Fiscal.');
-        }
+        $this->garantirCertificado($emitente);
 
         if (! $emitente->series()->where('modelo', $modelo)->exists()) {
             $rotulo = $modelo === ModeloDocumento::Nfce ? 'NFC-e' : 'NF-e';
@@ -48,6 +45,33 @@ final class VerificadorDoEmitente
 
         if (trim($tenant->cnpj) === '') {
             throw new EmissaoBloqueadaException('FISCAL_EMITENTE_INCOMPLETO', 'O CNPJ da empresa não está cadastrado.');
+        }
+    }
+
+    /** A NFS-e não exige IE nem endereço do emitente (a ADN já tem o cadastro do CNPJ); exige o município, o regime, o certificado e a série DPS. */
+    public function garantirAptoParaNfse(Emitente $emitente, Tenant $tenant): void
+    {
+        if ($emitente->codigo_ibge === null || trim($emitente->codigo_ibge) === '') {
+            throw new EmissaoBloqueadaException('FISCAL_EMITENTE_INCOMPLETO', 'Complete em Configurações > Fiscal: código IBGE do município.');
+        }
+
+        $this->crt->crt($emitente->regime_tributario);
+        $this->garantirCertificado($emitente);
+
+        if (! $emitente->series()->where('modelo', ModeloDocumento::Dps)->exists()) {
+            throw new EmissaoBloqueadaException('FISCAL_SERIE_NAO_CONFIGURADA', 'Cadastre a série e o próximo número da NFS-e (DPS) em Configurações > Fiscal.');
+        }
+
+        if (trim($tenant->cnpj) === '') {
+            throw new EmissaoBloqueadaException('FISCAL_EMITENTE_INCOMPLETO', 'O CNPJ da empresa não está cadastrado.');
+        }
+    }
+
+    private function garantirCertificado(Emitente $emitente): void
+    {
+        $validade = $emitente->certificado_validade;
+        if ($emitente->certificado_status !== CertificadoStatus::Valido || $validade === null || $validade->lt(now()->startOfDay())) {
+            throw new EmissaoBloqueadaException('FISCAL_CERTIFICADO_INVALIDO', 'O certificado A1 está ausente, inválido ou vencido. Envie um certificado válido em Configurações > Fiscal.');
         }
     }
 
