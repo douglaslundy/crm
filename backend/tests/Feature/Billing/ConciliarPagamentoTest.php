@@ -167,6 +167,24 @@ class ConciliarPagamentoTest extends TestCase
         $this->assertSame(2, Cobranca::query()->where('status', StatusDaCobranca::Paga)->count());
     }
 
+    public function test_pagar_o_boleto_de_regularizacao_baixa_as_cobrancas_vencidas_e_o_tenant_nao_e_suspenso_de_novo(): void
+    {
+        $hoje = $this->hoje();
+        $vencida = $this->cobrancaPendente(['status' => StatusDaCobranca::Vencida, 'vence_em' => $hoje->subDays(12)->toDateString()]);
+        $vencida->assinatura->forceFill(['situacao' => StatusDaAssinatura::Ativa, 'paga_ate' => $hoje->subDays(12)->toDateString()])->save();
+        $this->tenant->forceFill(['situacao' => SituacaoAssinatura::Suspensa])->save();
+        $regularizacao = Cobranca::factory()->for($vencida->assinatura)->create();
+        $regularizacao->forceFill(['vence_em' => $hoje->addDays(3)->toDateString()])->save();
+        $this->aprovado($regularizacao);
+
+        app(ConciliarPagamento::class)->executar('pg-1');
+        $this->artisan('billing:aplicar-inadimplencia')->assertSuccessful();
+
+        $this->assertSame(StatusDaCobranca::Cancelada, $vencida->refresh()->status);
+        $this->assertSame(StatusDaCobranca::Paga, $regularizacao->refresh()->status);
+        $this->assertSame(SituacaoAssinatura::Ativa, $this->tenant->refresh()->situacao);
+    }
+
     public function test_pagamento_de_assinatura_cancelada_nao_ativa_o_tenant(): void
     {
         $c = $this->cobrancaPendente();

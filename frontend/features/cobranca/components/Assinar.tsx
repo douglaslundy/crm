@@ -57,6 +57,20 @@ export function Assinar() {
   if (planos.isError) return <Banner tom="perigo">Não foi possível carregar os planos. Recarregue a página.</Banner>;
 
   const atual = assinatura.data?.assinatura ?? null;
+  const emAtraso = assinatura.data?.situacao === 'INADIMPLENTE' || assinatura.data?.situacao === 'SUSPENSA';
+  const planoAtual = assinatura.data?.plano ?? null;
+  if (atual?.situacao === 'ATIVA' && emAtraso && planoAtual !== null) {
+    return (
+      <div className="space-y-4">
+        <Banner tom="alerta">Há um pagamento em atraso na sua assinatura. Gere o boleto de regularização para voltar à situação normal.</Banner>
+        <Card>
+          <CardHeader><CardTitle>Regularizar: {planoAtual.nome}</CardTitle></CardHeader>
+          <CardContent><Checkout key={planoAtual.id} plano={planoAtual} regularizar={{ ciclo: atual.ciclo }} /></CardContent>
+        </Card>
+        <Link href="/assinatura/faturas" className="text-sm underline">Ver faturas</Link>
+      </div>
+    );
+  }
   if (atual?.situacao === 'ATIVA') {
     return (
       <div className="space-y-2">

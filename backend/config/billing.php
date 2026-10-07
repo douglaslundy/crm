@@ -16,6 +16,9 @@ return [
 
     // Quantos dias antes do fim do período pago o boleto do próximo ciclo é gerado.
     'antecedencia_boleto_dias' => 5,
+    // Dias depois do vencimento em que um boleto ainda pode ser compensado (pagamento a caminho): enquanto isso a
+    // assinatura pendente dele não é substituída por outra.
+    'tolerancia_compensacao_dias' => 5,
     // Prazo do boleto da primeira cobrança.
     'dias_primeiro_boleto' => 3,
     // Diferença máxima entre o `ts` assinado do webhook e a hora do servidor.

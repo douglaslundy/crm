@@ -125,6 +125,34 @@ describe('Assinar (planos e checkout)', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('Esta empresa já tem uma assinatura.');
   });
 
+  it.each(['INADIMPLENTE', 'SUSPENSA'] as const)('assinatura ativa de quem está %s oferece só o boleto de regularização', async (situacao) => {
+    const ativa = { id: 'a1', plano_id: PLANO.id, ciclo: 'ANUAL', metodo: 'BOLETO', situacao: 'ATIVA', paga_ate: '2026-10-01', cancelada_em: null } as const;
+    vi.mocked(useAssinatura).mockReturnValue({ data: { situacao, teste_termina_em: null, plano: PLANO, consumo: [], assinatura: ativa } } as never);
+    vi.mocked(cobrancaApi.checkout).mockResolvedValue({
+      data: {
+        assinatura: ativa,
+        cobranca: { id: 'c2', tipo: 'ASSINATURA', valor_centavos: 99000, vence_em: '2026-10-10', status: 'PENDENTE', metodo: 'BOLETO', boleto_url: 'https://mp.test/b/2', boleto_linha_digitavel: '9999', pago_em: null },
+      },
+    });
+    renderizar(<Assinar />);
+
+    expect(await screen.findByText(/pagamento em atraso/i)).toBeInTheDocument();
+    expect(screen.queryByRole('radio')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /^Assinar/ })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Gerar boleto de regularização' }));
+
+    await waitFor(() => expect(cobrancaApi.checkout).toHaveBeenCalledWith({ plano_id: PLANO.id, ciclo: 'ANUAL', metodo: 'BOLETO', token_do_cartao: null }));
+    expect(await screen.findByRole('link', { name: 'Abrir boleto' })).toHaveAttribute('href', 'https://mp.test/b/2');
+  });
+
+  it('assinatura ativa e em dia só mostra o aviso de ativa', async () => {
+    vi.mocked(useAssinatura).mockReturnValue({ data: { situacao: 'ATIVA', teste_termina_em: null, plano: PLANO, consumo: [], assinatura: { id: 'a1', plano_id: PLANO.id, ciclo: 'MENSAL', metodo: 'BOLETO', situacao: 'ATIVA', paga_ate: '2026-11-01', cancelada_em: null } } } as never);
+    renderizar(<Assinar />);
+
+    expect(await screen.findByText(/Sua assinatura está ativa até 01\/11\/2026/)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Gerar boleto/ })).not.toBeInTheDocument();
+  });
+
   it('quem não é proprietário nem admin vê o aviso e nenhum botão de assinar', async () => {
     comPapel('VENDEDOR');
     renderizar(<Assinar />);

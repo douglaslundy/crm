@@ -23,8 +23,14 @@ use Throwable;
 
 /**
  * Gera o boleto do próximo ciclo das assinaturas de boleto ativas, `antecedencia_boleto_dias` antes do fim do período
- * pago. O Mercado Pago não renova boleto sozinho. Não duplica (uma cobrança pendente por assinatura) e uma falha do
- * gateway numa assinatura não impede as outras.
+ * pago. O Mercado Pago não renova boleto sozinho.
+ *
+ * - Uma cobrança pendente por assinatura: com boleto já emitido, não duplica.
+ * - Se o gateway falhar a cobrança fica sem boleto (ele pode ter sido criado do lado de lá): o dia seguinte refaz
+ *   com o mesmo id como chave de idempotência, em vez de abrir outra cobrança e outro boleto.
+ * - Assinatura com cobrança vencida não ganha boleto novo todo dia: quem regulariza é o cliente, pelo checkout.
+ * - Boleto vencido não se paga: sem cobrança em aberto e com o período já vencido, o novo boleto vence no futuro.
+ * - Uma falha numa assinatura não impede as outras.
  */
 final class GerarBoletosDoCicloCommand extends Command
 {
@@ -39,47 +45,63 @@ final class GerarBoletosDoCicloCommand extends Command
         $gerados = 0;
 
         $anterior = $contexto->id();
-        Assinatura::withoutTenantScope()
-            ->where('situacao', StatusDaAssinatura::Ativa->value)
-            ->where('metodo', MetodoDePagamento::Boleto->value)
-            ->whereNotNull('paga_ate')
-            ->whereDate('paga_ate', '<=', $limite)
-            ->lazyById(100)
-            ->each(function (Assinatura $assinatura) use ($gateway, $contexto, &$gerados): void {
-                $contexto->set($assinatura->tenant_id);
-                if ($this->gerar($assinatura, $gateway)) {
-                    $gerados++;
-                }
-            });
-        $contexto->set($anterior);
+        try {
+            Assinatura::withoutTenantScope()
+                ->where('situacao', StatusDaAssinatura::Ativa->value)
+                ->where('metodo', MetodoDePagamento::Boleto->value)
+                ->whereNotNull('paga_ate')
+                ->whereDate('paga_ate', '<=', $limite)
+                ->lazyById(100)
+                ->each(function (Assinatura $assinatura) use ($gateway, $contexto, $hoje, &$gerados): void {
+                    $contexto->set($assinatura->tenant_id);
+                    if ($this->gerar($assinatura, $gateway, $hoje)) {
+                        $gerados++;
+                    }
+                });
+        } finally {
+            $contexto->set($anterior);
+        }
 
         $this->info("{$gerados} boleto(s) gerado(s).");
 
         return self::SUCCESS;
     }
 
-    private function gerar(Assinatura $assinatura, GatewayDeCobranca $gateway): bool
+    private function gerar(Assinatura $assinatura, GatewayDeCobranca $gateway, CarbonImmutable $hoje): bool
     {
-        $jaTem = Cobranca::query()->where('assinatura_id', $assinatura->id)
-            ->where('tipo', TipoDeCobranca::Assinatura->value)->where('status', StatusDaCobranca::Pendente->value)->exists();
+        $tenant = Tenant::query()->find($assinatura->tenant_id);
         $pagador = Usuario::query()->where('tenant_id', $assinatura->tenant_id)
             ->whereIn('papel', [Papel::Proprietario->value, Papel::Admin->value])->oldest()->first();
-        $tenant = Tenant::query()->find($assinatura->tenant_id);
-        if ($jaTem || $pagador === null || $tenant === null || $assinatura->paga_ate === null) {
+        if ($tenant === null || $pagador === null || $assinatura->paga_ate === null) {
             return false;
         }
 
-        $vencimento = CarbonImmutable::parse($assinatura->paga_ate->toDateString());
-        $cobranca = new Cobranca;
+        $daAssinatura = Cobranca::query()->where('assinatura_id', $assinatura->id)->where('tipo', TipoDeCobranca::Assinatura->value);
+        if ((clone $daAssinatura)->where('status', StatusDaCobranca::Vencida->value)->exists()) {
+            return false;
+        }
+        $pendente = (clone $daAssinatura)->where('status', StatusDaCobranca::Pendente->value)->latest()->first();
+        if ($pendente !== null && $pendente->gateway_pagamento_id !== null) {
+            return false;   // boleto já emitido
+        }
+
         try {
-            $valor = $assinatura->ciclo->precoDo($assinatura->plano);
-            $cobranca->forceFill([
-                'assinatura_id' => $assinatura->id, 'tipo' => TipoDeCobranca::Assinatura, 'valor_centavos' => $valor,
-                'vence_em' => $vencimento->toDateString(), 'status' => StatusDaCobranca::Pendente, 'metodo' => MetodoDePagamento::Boleto,
-            ])->save();
+            $cobranca = $pendente ?? new Cobranca;
+            $vencePadrao = $this->vencimento($assinatura, $hoje);
+            if ($pendente === null) {
+                $cobranca->forceFill([
+                    'assinatura_id' => $assinatura->id, 'tipo' => TipoDeCobranca::Assinatura,
+                    'valor_centavos' => $assinatura->ciclo->precoDo($assinatura->plano),
+                    'vence_em' => $vencePadrao->toDateString(), 'status' => StatusDaCobranca::Pendente, 'metodo' => MetodoDePagamento::Boleto,
+                ])->save();
+            } elseif ($pendente->vence_em->lessThan($hoje)) {
+                $pendente->forceFill(['vence_em' => $vencePadrao->toDateString()])->save();   // retentativa de um boleto que não saiu a tempo
+            }
+
             $descricao = 'Assinatura '.$assinatura->plano->nome.' ('.($assinatura->ciclo === CicloDeCobranca::Anual ? 'anual' : 'mensal').')';
             $resultado = $gateway->criarBoleto(new DadosDoBoleto(
-                $cobranca->id, $valor, $descricao, $pagador->email, $tenant->nomeDeExibicao(), $tenant->cnpj, $vencimento, $cobranca->id,
+                $cobranca->id, $cobranca->valor_centavos, $descricao, $pagador->email, $tenant->nomeDeExibicao(), $tenant->cnpj,
+                CarbonImmutable::parse($cobranca->vence_em->toDateString()), $cobranca->id,
             ));
             $cobranca->forceFill([
                 'gateway_pagamento_id' => $resultado->id, 'boleto_url' => $resultado->boletoUrl, 'boleto_linha_digitavel' => $resultado->linhaDigitavel,
@@ -87,12 +109,18 @@ final class GerarBoletosDoCicloCommand extends Command
 
             return true;
         } catch (Throwable $e) {
+            // A cobrança fica (sem boleto) para o próximo dia refazer com a mesma chave de idempotência.
             report($e);
-            if ($cobranca->exists) {
-                $cobranca->delete();   // sem boleto no gateway não há cobrança para guardar; o próximo dia tenta de novo
-            }
 
             return false;
         }
+    }
+
+    /** O boleto vence no fim do período pago; com o período já vencido, daqui a `dias_primeiro_boleto` dias. */
+    private function vencimento(Assinatura $assinatura, CarbonImmutable $hoje): CarbonImmutable
+    {
+        $fimDoPeriodo = CarbonImmutable::parse((string) $assinatura->paga_ate?->toDateString());
+
+        return $fimDoPeriodo->lessThan($hoje) ? $hoje->addDays((int) config('billing.dias_primeiro_boleto')) : $fimDoPeriodo;
     }
 }

@@ -20,6 +20,7 @@ use App\Modules\Identity\Domain\Enums\Papel;
 use App\Modules\Identity\Domain\Models\Usuario;
 use App\Modules\Platform\Domain\Models\Plano;
 use App\Modules\Tenancy\Domain\Enums\SituacaoAssinatura;
+use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use RuntimeException;
 use Tests\Fixtures\CenarioDeCobranca;
@@ -139,6 +140,97 @@ class IniciarAssinaturaTest extends TestCase
 
         $this->assertSame(StatusDaAssinatura::Cancelada, $antiga->assinatura->refresh()->situacao);
         $this->assertSame(StatusDaAssinatura::Pendente, $r->assinatura->situacao);
+    }
+
+    /** Assinatura ATIVA de boleto, período pago vencido, com uma cobrança vencida; tenant inadimplente. */
+    private function assinaturaAtrasada(SituacaoAssinatura $situacao = SituacaoAssinatura::Inadimplente): Assinatura
+    {
+        $c = $this->cobrancaPendente(['status' => StatusDaCobranca::Vencida, 'vence_em' => today((string) config('app.fuso_negocio'))->subDays(3)->toDateString()]);
+        $c->assinatura->forceFill(['situacao' => StatusDaAssinatura::Ativa, 'paga_ate' => today((string) config('app.fuso_negocio'))->subDays(3)->toDateString()])->save();
+        $this->tenant->forceFill(['situacao' => $situacao])->save();
+        $this->admin->unsetRelation('tenant');
+
+        return $c->assinatura;
+    }
+
+    public function test_quem_esta_atrasado_regulariza_com_um_novo_boleto_na_mesma_assinatura(): void
+    {
+        $a = $this->assinaturaAtrasada();
+
+        $r = $this->iniciar(CicloDeCobranca::Mensal, MetodoDePagamento::Boleto);
+
+        $this->assertSame($a->id, $r->assinatura->id);
+        $this->assertSame(1, Assinatura::query()->count());
+        $this->assertSame(StatusDaCobranca::Pendente, $r->cobranca->status);
+        $this->assertSame(10000, $r->cobranca->valor_centavos);
+        $this->assertSame(today((string) config('app.fuso_negocio'))->addDays(3)->toDateString(), $r->cobranca->vence_em->toDateString(), 'vencimento no futuro: boleto vencido não se paga');
+        $this->assertNotNull($r->cobranca->boleto_url);
+    }
+
+    public function test_suspenso_tambem_regulariza_mas_com_boleto_em_aberto_recusa(): void
+    {
+        $this->assinaturaAtrasada(SituacaoAssinatura::Suspensa);
+        $this->iniciar(CicloDeCobranca::Mensal, MetodoDePagamento::Boleto);
+
+        $this->assertSame('BILLING_ASSINATURA_ATIVA', $this->codigoDoErro(fn () => $this->iniciar(CicloDeCobranca::Mensal, MetodoDePagamento::Boleto)));
+        $this->assertSame(2, Cobranca::query()->count());
+    }
+
+    public function test_assinatura_ativa_em_dia_continua_recusando_nova_assinatura(): void
+    {
+        $this->assinaturaAtrasada(SituacaoAssinatura::Ativa);
+
+        $this->assertSame('BILLING_ASSINATURA_ATIVA', $this->codigoDoErro(fn () => $this->iniciar(CicloDeCobranca::Mensal, MetodoDePagamento::Boleto)));
+    }
+
+    public function test_regularizacao_so_por_boleto(): void
+    {
+        $this->assinaturaAtrasada();
+
+        $this->assertSame('BILLING_ASSINATURA_ATIVA', $this->codigoDoErro(fn () => $this->iniciar(CicloDeCobranca::Mensal, MetodoDePagamento::Cartao, 'tok')));
+    }
+
+    public function test_trocar_a_assinatura_pendente_de_cartao_cancela_a_antiga_no_gateway(): void
+    {
+        $c = $this->cobrancaPendente();   // gateway_assinatura_id = pre-1
+        $c->assinatura->forceFill(['metodo' => MetodoDePagamento::Cartao])->save();
+        $c->forceFill(['metodo' => MetodoDePagamento::Cartao])->save();
+
+        $this->iniciar(CicloDeCobranca::Mensal, MetodoDePagamento::Boleto);
+
+        $this->assertContains(['cancelarAssinatura', ['pre-1']], $this->gateway->chamadas);
+        $this->assertSame(StatusDaAssinatura::Cancelada, $c->assinatura->refresh()->situacao);
+    }
+
+    public function test_boleto_que_acabou_de_vencer_ainda_pode_ser_pago_e_segura_a_troca(): void
+    {
+        $hoje = today((string) config('app.fuso_negocio'));
+        $c = $this->cobrancaPendente(['status' => StatusDaCobranca::Vencida, 'vence_em' => $hoje->copy()->subDays(2)->toDateString()]);
+
+        $this->assertSame('BILLING_ASSINATURA_ATIVA', $this->codigoDoErro(fn () => $this->iniciar(CicloDeCobranca::Mensal, MetodoDePagamento::Boleto)));
+
+        $c->forceFill(['vence_em' => $hoje->copy()->subDays(6)->toDateString()])->save();   // passou a tolerância de compensação
+        $this->iniciar(CicloDeCobranca::Mensal, MetodoDePagamento::Boleto);
+        $this->assertSame(StatusDaAssinatura::Cancelada, $c->assinatura->refresh()->situacao);
+    }
+
+    public function test_cartao_nao_autorizado_cancela_o_preapproval_criado_no_gateway(): void
+    {
+        $this->gateway->autorizar = false;
+
+        $this->assertSame('BILLING_CARTAO_RECUSADO', $this->codigoDoErro(fn () => $this->iniciar(CicloDeCobranca::Mensal, MetodoDePagamento::Cartao, 'tok')));
+
+        $this->assertSame(0, Assinatura::query()->count());
+        $this->assertContains(['cancelarAssinatura', ['pre-1']], $this->gateway->chamadas);
+    }
+
+    public function test_o_banco_nao_aceita_duas_assinaturas_nao_canceladas_no_mesmo_tenant(): void
+    {
+        $this->cobrancaPendente();
+
+        $this->expectException(QueryException::class);
+
+        Assinatura::factory()->create(['plano_id' => $this->plano->id]);
     }
 
     public function test_cancelar_cancela_o_preapproval_a_assinatura_e_as_cobrancas_pendentes_e_mantem_o_acesso(): void

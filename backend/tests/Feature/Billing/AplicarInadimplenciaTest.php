@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Billing;
 
+use App\Modules\Billing\Domain\Enums\MetodoDePagamento;
 use App\Modules\Billing\Domain\Enums\StatusDaAssinatura;
 use App\Modules\Billing\Domain\Enums\StatusDaCobranca;
+use App\Modules\Billing\Domain\Models\Assinatura;
 use App\Modules\Billing\Domain\Models\Cobranca;
 use App\Modules\Tenancy\Domain\Enums\SituacaoAssinatura;
 use Carbon\Carbon;
@@ -33,6 +35,14 @@ class AplicarInadimplenciaTest extends TestCase
         $c->assinatura->forceFill(['situacao' => StatusDaAssinatura::Ativa])->save();
 
         return $c;
+    }
+
+    private function assinaturaAtiva(string $pagaAte): Assinatura
+    {
+        $a = Assinatura::factory()->create(['plano_id' => $this->plano->id]);
+        $a->forceFill(['situacao' => StatusDaAssinatura::Ativa, 'metodo' => MetodoDePagamento::Cartao, 'gateway_assinatura_id' => 'pre-1', 'paga_ate' => $pagaAte])->save();
+
+        return $a;
     }
 
     private function rodar(): void
@@ -121,6 +131,27 @@ class AplicarInadimplenciaTest extends TestCase
     {
         config(['billing.carencia_inadimplente_dias' => 3]);
         $this->vencida(2);
+
+        $this->rodar();
+
+        $this->assertSame(SituacaoAssinatura::Ativa, $this->tenant->refresh()->situacao);
+    }
+
+    public function test_renovacao_do_cartao_que_nao_veio_leva_a_inadimplencia_e_a_suspensao_pelo_paga_ate(): void
+    {
+        $a = $this->assinaturaAtiva('2026-10-06');   // venceu ontem, sem nenhuma cobrança nossa vencida
+
+        $this->rodar();
+        $this->assertSame(SituacaoAssinatura::Inadimplente, $this->tenant->refresh()->situacao);
+
+        $a->forceFill(['paga_ate' => '2026-09-27'])->save();   // 10 dias
+        $this->rodar();
+        $this->assertSame(SituacaoAssinatura::Suspensa, $this->tenant->refresh()->situacao);
+    }
+
+    public function test_paga_ate_de_hoje_ou_futuro_nao_e_atraso(): void
+    {
+        $this->assinaturaAtiva('2026-10-07');
 
         $this->rodar();
 

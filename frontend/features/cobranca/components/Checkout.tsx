@@ -19,10 +19,11 @@ function precoDoCiclo(plano: Plano, ciclo: CicloDeCobranca): number | null {
 }
 
 /** Escolha de ciclo e método e pagamento de um plano. Monte com `key={plano.id}` para reiniciar ao trocar de plano. */
-export function Checkout({ plano }: { plano: Plano }) {
+export function Checkout({ plano, regularizar }: { plano: Plano; regularizar?: { ciclo: CicloDeCobranca } }) {
   const queryClient = useQueryClient();
-  const [ciclo, setCiclo] = useState<CicloDeCobranca>('MENSAL');
-  const [metodo, setMetodo] = useState<MetodoDePagamento>('CARTAO');
+  // Regularização: assinatura ativa com pagamento em atraso. Só boleto, no ciclo que o cliente já tem.
+  const [ciclo, setCiclo] = useState<CicloDeCobranca>(regularizar?.ciclo ?? 'MENSAL');
+  const [metodo, setMetodo] = useState<MetodoDePagamento>(regularizar ? 'BOLETO' : 'CARTAO');
   const [resultado, setResultado] = useState<CheckoutResultado | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const envioUnico = useEnvioUnico();
@@ -61,6 +62,8 @@ export function Checkout({ plano }: { plano: Plano }) {
 
   return (
     <div className="space-y-4">
+      {regularizar ? null : (
+      <>
       <fieldset className="space-y-1">
         <legend className="font-medium">Ciclo de cobrança</legend>
         <div className="flex gap-4">
@@ -84,6 +87,8 @@ export function Checkout({ plano }: { plano: Plano }) {
           ))}
         </div>
       </fieldset>
+      </>
+      )}
 
       {preco === null ? null : <p className="font-medium">Total: {formatarCentavos(preco)} ({ROTULO_CICLO[ciclo].toLowerCase()})</p>}
       {erro ? <Banner tom="perigo">{erro}</Banner> : null}
@@ -99,7 +104,7 @@ export function Checkout({ plano }: { plano: Plano }) {
         />
       ) : (
         <form onSubmit={envioUnico(async () => { setErro(null); await assinar.mutateAsync(null).catch(() => undefined); })}>
-          <Button type="submit" disabled={assinar.isPending}>Gerar boleto</Button>
+          <Button type="submit" disabled={assinar.isPending}>{regularizar ? 'Gerar boleto de regularização' : 'Gerar boleto'}</Button>
         </form>
       )}
     </div>

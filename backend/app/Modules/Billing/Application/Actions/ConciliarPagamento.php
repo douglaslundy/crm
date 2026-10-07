@@ -85,6 +85,10 @@ final class ConciliarPagamento
 
         if ($cobranca->tipo->estendePeriodo() && $assinatura->situacao !== StatusDaAssinatura::Cancelada) {
             $assinatura->forceFill(['paga_ate' => $periodo['fim']->toDateString(), 'situacao' => StatusDaAssinatura::Ativa])->save();
+            // O pagamento quita a dívida: as cobranças vencidas ficam sem efeito. Sem isso o tenant seria suspenso de novo
+            // na próxima rodada de inadimplência, que conta a partir da cobrança vencida mais antiga.
+            Cobranca::query()->where('assinatura_id', $assinatura->id)->where('status', StatusDaCobranca::Vencida->value)
+                ->whereKeyNot($cobranca->id)->update(['status' => StatusDaCobranca::Cancelada->value]);
             $this->ativarTenant($assinatura);
         }
 

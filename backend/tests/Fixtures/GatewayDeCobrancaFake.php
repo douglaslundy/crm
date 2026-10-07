@@ -26,6 +26,9 @@ final class GatewayDeCobrancaFake implements GatewayDeCobranca
     /** @var array<string, Throwable> */
     private array $falhas = [];
 
+    /** Resposta do `preapproval`: false simula uma assinatura criada no gateway mas não autorizada. */
+    public bool $autorizar = true;
+
     private int $sequencia = 0;
 
     public function enfileirarPagamento(ResultadoDePagamento ...$r): void
@@ -47,7 +50,7 @@ final class GatewayDeCobrancaFake implements GatewayDeCobranca
     {
         $this->registrar('criarAssinaturaDeCartao', [$dados]);
 
-        return new ResultadoDeAssinatura('pre-'.++$this->sequencia, true);
+        return new ResultadoDeAssinatura('pre-'.++$this->sequencia, $this->autorizar);
     }
 
     public function criarBoleto(DadosDoBoleto $dados): ResultadoDePagamento
