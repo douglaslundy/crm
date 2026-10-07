@@ -13,7 +13,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @property int $id
  * @property string $nota_id
- * @property string $produto_id
+ * @property ?string $produto_id
+ * @property ?string $servico_id
+ * @property ?string $c_trib_nac
+ * @property ?string $codigo_municipal
+ * @property ?string $aliquota_iss
+ * @property ?string $nbs
  * @property int $ordem
  * @property int $quantidade_milesimos
  * @property int $valor_unitario_centavos
@@ -42,12 +47,13 @@ class NotaItem extends Model
     protected $fillable = [
         'nota_id', 'produto_id', 'ordem', 'quantidade_milesimos', 'valor_unitario_centavos', 'desconto_centavos', 'total_centavos',
         'sku', 'descricao', 'unidade', 'gtin', 'ncm', 'cest', 'cfop', 'origem', 'tributacao_icms', 'csosn',
+        'servico_id', 'c_trib_nac', 'codigo_municipal', 'aliquota_iss', 'nbs',
     ];
 
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['origem' => 'integer'];
+        return ['origem' => 'integer', 'aliquota_iss' => 'decimal:2'];
     }
 
     /** @return BelongsTo<Nota, $this> */

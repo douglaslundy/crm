@@ -24,6 +24,7 @@ final class NotaResource extends JsonResource
             'serie' => $this->serie,
             'chave' => $this->chave,
             'protocolo' => $this->protocolo,
+            'numero_nfse' => $this->numero_nfse,
             'cstat' => $this->cstat,
             'motivo' => $this->motivo,
             'mensagem_erro' => $this->mensagem_erro,
@@ -51,6 +52,8 @@ final class NotaResource extends JsonResource
                 'unidade' => $i->unidade, 'quantidade' => Quantidade::formatar($i->quantidade_milesimos, 3),
                 'valor_unitario_centavos' => $i->valor_unitario_centavos, 'desconto_centavos' => $i->desconto_centavos, 'total_centavos' => $i->total_centavos,
                 'cfop' => $i->cfop, 'csosn' => $i->csosn,
+                'servico_id' => $i->servico_id, 'c_trib_nac' => $i->c_trib_nac, 'codigo_municipal' => $i->codigo_municipal,
+                'aliquota_iss' => $i->aliquota_iss, 'nbs' => $i->nbs,
             ])->all()),
             'pagamentos' => $this->whenLoaded('pagamentos', fn () => $this->pagamentos->map(fn ($p): array => [
                 'tpag' => $p->tpag, 'xpag' => $p->xpag, 'valor_centavos' => $p->valor_centavos,

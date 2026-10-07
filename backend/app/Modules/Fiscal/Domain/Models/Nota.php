@@ -35,6 +35,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property ?int $numero
  * @property int $tentativas_numero
  * @property ?string $chave
+ * @property ?string $numero_nfse
  * @property ?string $protocolo
  * @property ?string $cstat
  * @property ?string $motivo

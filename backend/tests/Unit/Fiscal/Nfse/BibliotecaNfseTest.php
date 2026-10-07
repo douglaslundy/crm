@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Fiscal\Nfse;
 
+use Barryvdh\DomPDF\Facade\Pdf;
+use Endroid\QrCode\Builder\Builder;
 use Nfse\Dto\Nfse\DpsData;
 use Nfse\Support\IdGenerator;
 use Nfse\Xml\DpsXmlBuilder;
@@ -55,7 +57,7 @@ class BibliotecaNfseTest extends TestCase
 
     public function test_dompdf_e_qr_code_estao_disponiveis(): void
     {
-        $this->assertTrue(class_exists(\Barryvdh\DomPDF\Facade\Pdf::class));
-        $this->assertTrue(class_exists(\Endroid\QrCode\Builder\Builder::class));
+        $this->assertTrue(class_exists(Pdf::class));
+        $this->assertTrue(class_exists(Builder::class));
     }
 }
