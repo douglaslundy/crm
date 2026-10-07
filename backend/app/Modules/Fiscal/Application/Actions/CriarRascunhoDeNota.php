@@ -24,7 +24,7 @@ final class CriarRascunhoDeNota
     public function __construct(private readonly PoliticaDeNotas $politica, private readonly EntitlementService $planos) {}
 
     /** @param array<string, mixed> $dados */
-    public function executar(array $dados, Usuario $autor): Nota
+    public function executar(array $dados, Usuario $autor, ?string $vendaId = null): Nota
     {
         $this->politica->garantirPodeRascunhar($autor);
         $modelo = ModeloDocumento::from((string) ($dados['modelo'] ?? 'NFE'));
@@ -35,12 +35,13 @@ final class CriarRascunhoDeNota
             $this->planos->garantirModulo($autor->tenant, Modulo::FiscalNfse);
         }
 
-        return DB::transaction(function () use ($dados, $autor, $modelo): Nota {
+        return DB::transaction(function () use ($dados, $autor, $modelo, $vendaId): Nota {
             $emitente = Emitente::query()->firstOrCreate([], []);
             $nota = new Nota;
             $nota->emitente_id = $emitente->id;
             $nota->modelo = $modelo;
             $nota->cliente_id = $dados['cliente_id'] ?? null;
+            $nota->venda_id = $vendaId;
             $nota->save();
             $this->preencher($nota, $dados);
             NotaEvento::registrar($nota, null, StatusNota::Rascunho, 'Rascunho criado', $autor->id);
