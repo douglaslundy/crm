@@ -93,12 +93,15 @@ Achados menores adiados e uma decisão de produto parcada durante a revisão das
 - [ ] `NfePhpEmissor` sem teste automatizado (precisa de SEFAZ).
 
 ## Pendências da F3c3 (2026-10-06)
-- [ ] **EPEC real em homologação** (roteiro no PROGRESSO.md): a comunicação com o Ambiente Nacional e a conversão de falha real de rede em FalhaDeComunicacaoException nunca foram exercitadas; o evento envEvento do EPEC não é validado contra XSD nos testes.
-- [ ] **SVC-AN/SVC-RS** (	pEmis 6 e 7): fora do escopo por decisão do usuário.
-- [ ] Cancelamento e inutilização de nota em contingência; fuso por UF no dhEmi/dhCont.
-- [ ] Rejeição após EPEC (dados diferentes do evento): conferir os cStat no ssets/cstat-table.md da skill na homologação.
+- [ ] **EPEC real em homologação** (roteiro no `PROGRESSO.md`): a comunicação com o Ambiente Nacional e a conversão de falha real de rede em `FalhaDeComunicacaoException` nunca foram exercitadas; o evento `envEvento` do EPEC não é validado contra XSD nos testes.
+- [ ] **EPEC registrado e não gravado (revisão final):** se a transação final falhar (banco fora, timeout) depois do registro no Ambiente Nacional, a chave, o XML e o protocolo do EPEC se perdem. Solução: persistir a chave/XML do EPEC antes do envio em colunas próprias, sem trocar a chave original.
+- [ ] **cStat 539 após o EPEC** (original autorizada com resposta perdida): hoje vira REJEITADA. Guardar `chave_original` e conciliar por 539 na retransmissão (existe também na NFC-e offline).
+- [ ] Menores da revisão: `nProt` vazio na resposta do EPEC; bloqueio por dado ausente com prefixo "Falha técnica" no job; `xml_epec` só com o `retEnvEvento` (falta o `procEventoNFe`); `idEstrangeiro` vazio bloqueia o EPEC.
+- [ ] **SVC-AN/SVC-RS** (`tpEmis` 6 e 7): fora do escopo por decisão do usuário.
+- [ ] Cancelamento e inutilização de nota em contingência; fuso por UF no `dhEmi`/`dhCont`.
+- [ ] Rejeição após EPEC (dados diferentes do evento): conferir os cStat no `assets/cstat-table.md` da skill na homologação.
 - [ ] Conferência visual do bloco de EPEC no detalhe da nota e do cartão "Notas em contingência" (temas e celular), não feita.
-- [ ] NfePhpEmissor::prepararEpec e egistrarEpec sem teste automatizado (precisam de certificado e SEFAZ); o XML 	pEmis=4 assinado e o corpo do evento são cobertos offline.
+- [ ] `NfePhpEmissor::prepararEpec` e `registrarEpec` sem teste automatizado (precisam de certificado e SEFAZ); o XML `tpEmis=4` assinado e o corpo do evento são cobertos offline.
 ## Pendências da F3b1 (2026-10-02)
 - [ ] **Cancelamento e inutilização reais em homologação** (roteiro no `PROGRESSO.md`): a comunicação com a SEFAZ nunca foi exercitada; a fumaça com `.pfx` autoassinado chegou a montar o evento, mas a lib decide CNPJ/CPF pelo OID ICP-Brasil do certificado.
 - [ ] Cancelamento por substituição, cancelamento extemporâneo e carta de correção (fora de escopo por decisão).

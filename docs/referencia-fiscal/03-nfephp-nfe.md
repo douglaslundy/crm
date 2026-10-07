@@ -79,7 +79,7 @@ $tools->model(55);              // 65 para NFC-e
   - cStat 135 ou 136 resulta em **CONTINGENCIA** (a chave, o número e o XML são guardados). Qualquer outro vira ERRO.
 - **Prazo:** transmitir o XML normal em até **7 dias**. Há alerta quando faltam 2 dias ou menos (`PrazoContingencia`) e reconciliação horária (`ReconciliarContingenciaNfe`).
 - **`retransmitir`:** consulta a chave antes de tudo. Se estiver AUTORIZADA ou CANCELADA, só concilia. Senão, reenvia o **mesmo XML salvo** (com `tpEmis=4`) e nunca o remonta, porque isso mudaria a chave impressa no DANFE.
-- **Neste projeto (F3c3, 2026-10-06):** EntrarEmEpec remonta a NF-e no MontadorDeXml (	pEmis=4, dhCont, xJust), sem ativar Contingency (portanto sem o workaround de UTC), e NfePhpEmissor::registrarEpec envia sefazEvento('AN', chave, EVT_EPEC, 1, tagAdic, null, null) com o corpo montado por MontadorDoEventoEpec. A nota fica em CONTINGENCIA com contingencia_tipo=EPEC, prazo de 168 h (FISCAL_EPEC_PRAZO_HORAS) e alerta de 48 h. RetransmitirNota reenvia o mesmo XML. O DANFE usa Danfe::epec(protocolo, data).
+- **Neste projeto (F3c3, 2026-10-06):** `EntrarEmEpec` remonta a NF-e no `MontadorDeXml` (`tpEmis=4`, `dhCont`, `xJust`), sem ativar `Contingency` (portanto sem o workaround de UTC), e `NfePhpEmissor::registrarEpec` envia `sefazEvento('AN', chave, EVT_EPEC, 1, tagAdic, null, null)` com o corpo montado por `MontadorDoEventoEpec`. A nota fica em `CONTINGENCIA` com `contingencia_tipo=EPEC`, prazo de 168 h (`FISCAL_EPEC_PRAZO_HORAS`) e alerta de 48 h. `RetransmitirNota` reenvia o mesmo XML. O DANFE usa `Danfe::epec(protocolo, data)`.
 
 ## Consultar, cancelar e inutilizar
 

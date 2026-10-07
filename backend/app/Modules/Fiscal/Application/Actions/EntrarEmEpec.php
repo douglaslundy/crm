@@ -17,6 +17,7 @@ use App\Modules\Fiscal\Domain\Models\NotaEvento;
 use App\Modules\Tenancy\Domain\Models\Tenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 /**
  * NF-e que perdeu a comunicação com a SEFAZ da UF: remonta com tpEmis 4, registra o EPEC no Ambiente Nacional e guarda
@@ -62,9 +63,16 @@ final class EntrarEmEpec
 
         return DB::transaction(function () use ($notaId, $xml, $registro, $agora): Nota {
             $nota = Nota::query()->whereKey($notaId)->lockForUpdate()->firstOrFail();
-            if ($nota->status !== StatusNota::Processando) {
+            // O EPEC já está registrado no Ambiente Nacional. A reconciliação pode ter levado a nota a ERRO enquanto o
+            // evento viajava: o EPEC vale, a nota segue em EPEC. Em qualquer outro estado não se mexe, mas fica o rastro.
+            if (! in_array($nota->status, [StatusNota::Processando, StatusNota::Erro], true)) {
+                $detalhe = "EPEC registrado no Ambiente Nacional fora de hora (protocolo {$registro->protocolo}, chave {$xml->chave}); a nota já estava {$nota->status->value}. Regularize o EPEC com o contador.";
+                NotaEvento::registrar($nota, $nota->status, $nota->status, $detalhe);
+                report(new RuntimeException($detalhe));
+
                 return $nota;
             }
+            $statusAnterior = $nota->status;
             $chaveOriginal = $nota->chave;
             $nota->forceFill([
                 'status' => StatusNota::Contingencia, 'chave' => $xml->chave, 'xml_enviado' => $xml->xml,
@@ -74,7 +82,7 @@ final class EntrarEmEpec
                 'contingencia_motivo' => self::JUSTIFICATIVA,
                 'epec_protocolo' => $registro->protocolo, 'epec_registrado_em' => $agora, 'xml_epec' => $registro->xmlEvento,
             ])->save();
-            NotaEvento::registrar($nota, StatusNota::Processando, StatusNota::Contingencia, 'Entrou em EPEC (protocolo '.$registro->protocolo.')'.($chaveOriginal === null ? '' : " (chave original {$chaveOriginal})"));
+            NotaEvento::registrar($nota, $statusAnterior, StatusNota::Contingencia, 'Entrou em EPEC (protocolo '.$registro->protocolo.')'.($chaveOriginal === null ? '' : " (chave original {$chaveOriginal})"));
 
             return $nota;
         });

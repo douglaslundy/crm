@@ -62,7 +62,7 @@ final class InutilizarNumeracao
         $ambiente = $emitente->ambiente_fiscal->value;
         $conflito = Nota::query()
             ->where('modelo', $modelo)->where('serie', $numeroSerie)->where('ambiente', $ambiente)->whereBetween('numero', [$inicial, $final])
-            ->whereIn('status', [StatusNota::Autorizada, StatusNota::Cancelando, StatusNota::Cancelada, StatusNota::Processando])
+            ->whereIn('status', [StatusNota::Autorizada, StatusNota::Cancelando, StatusNota::Cancelada, StatusNota::Processando, StatusNota::Contingencia])
             ->orderBy('numero')->first();
         if ($conflito !== null) {
             throw new EmissaoBloqueadaException('FISCAL_FAIXA_COM_NOTA', "O número {$conflito->numero} pertence a uma {$rotulo} {$conflito->status->value} nesta série e não pode ser inutilizado.");

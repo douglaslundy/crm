@@ -99,7 +99,7 @@ class InutilizarNumeracaoTest extends TestCase
 
     public function test_faixa_com_nota_autorizada_em_processamento_ou_cancelada_bloqueia_citando_o_numero(): void
     {
-        foreach ([StatusNota::Autorizada, StatusNota::Processando, StatusNota::Cancelando, StatusNota::Cancelada] as $status) {
+        foreach ([StatusNota::Autorizada, StatusNota::Processando, StatusNota::Cancelando, StatusNota::Cancelada, StatusNota::Contingencia] as $status) {
             Nota::query()->delete();
             $this->notaNaFaixa(4, $status);
             try {

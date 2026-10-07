@@ -39,6 +39,9 @@ final class EmissorFake implements EmissorDeNfe
 
     public ?Throwable $falharEmEpec = null;
 
+    /** Roda no meio do `registrarEpec`, antes de responder: simula o que acontece com a nota durante o envio. */
+    public ?\Closure $aoRegistrarEpec = null;
+
     /** @var list<string> Justificativas dos XMLs gerados em EPEC, em ordem. */
     public array $epecs = [];
 
@@ -117,6 +120,9 @@ final class EmissorFake implements EmissorDeNfe
         $this->chamadas[] = 'registrarEpec';
         if ($this->falharEmEpec !== null) {
             throw $this->falharEmEpec;
+        }
+        if ($this->aoRegistrarEpec !== null) {
+            ($this->aoRegistrarEpec)();
         }
 
         return array_shift($this->registrosEpec) ?? ResultadoDeEpec::registrado('891260000000001', '<retEnvEvento>fake</retEnvEvento>');

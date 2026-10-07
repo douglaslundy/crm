@@ -161,6 +161,34 @@ class EntradaEmEpecTest extends TestCase
         $this->assertNotContains('prepararEpec', $this->emissor->chamadas);
     }
 
+    public function test_epec_registrado_enquanto_a_reconciliacao_levou_a_nota_a_erro_nao_se_perde(): void
+    {
+        $this->emissor->falharEmTransmitir = new FalhaDeComunicacaoException;
+        $this->emissor->aoRegistrarEpec = fn () => Nota::query()->update(['status' => StatusNota::Erro]);
+
+        $nota = $this->emitir();
+
+        $this->assertSame(StatusNota::Contingencia, $nota->status, 'o EPEC foi registrado: a nota precisa seguir em EPEC');
+        $this->assertSame(TipoDeContingencia::Epec, $nota->contingencia_tipo);
+        $this->assertSame('891260000000001', $nota->epec_protocolo);
+        $this->assertSame('35'.str_pad((string) $nota->numero, 32, '0', STR_PAD_LEFT).'4'.str_repeat('7', 9), $nota->chave);
+    }
+
+    public function test_epec_registrado_para_nota_ja_autorizada_deixa_rastro_sem_mudar_o_estado(): void
+    {
+        $this->emissor->falharEmTransmitir = new FalhaDeComunicacaoException;
+        $this->emissor->aoRegistrarEpec = fn () => Nota::query()->update(['status' => StatusNota::Autorizada, 'protocolo' => '135000000000999']);
+
+        $nota = $this->emitir();
+
+        $this->assertSame(StatusNota::Autorizada, $nota->status);
+        $this->assertNull($nota->contingencia_tipo);
+        $evento = (string) $nota->eventos()->reorder('id', 'desc')->first()?->detalhe;
+        $this->assertStringContainsString('EPEC', $evento);
+        $this->assertStringContainsString('891260000000001', $evento);
+        $this->assertStringContainsString('35'.str_pad((string) $nota->numero, 32, '0', STR_PAD_LEFT).'4'.str_repeat('7', 9), $evento);
+    }
+
     public function test_nota_que_ja_nao_esta_processando_nao_e_sobrescrita(): void
     {
         $nota = $this->emitir();
