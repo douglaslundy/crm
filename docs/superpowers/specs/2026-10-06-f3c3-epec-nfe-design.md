@@ -10,7 +10,7 @@ A NF-e com falha real de comunicação com a SEFAZ da UF hoje vai para ERRO. A F
 
 ## 2. Fatos técnicos que moldam o design
 
-- `sped-nfe` 5.2.8: `Tools::sefazEPEC()` é inalcançável (`checkContingencyForWebServices` recusa 'EPEC'). Reproduz-se o corpo com métodos públicos: `Contingency` com `type='EPEC'`, `tpEmis=4`, `timestamp` e `motive`; `signNFe` com timezone temporariamente em UTC (senão `dhCont` adiantado e cStat 558; restaurar no `finally`); `chNFe` = `substr(Id,3,44)`, conferindo que a UF da chave bate com a do `Tools`; `tagAdic` com `cOrgaoAutor`, `tpAutor=1`, `verAplic`, `dhEmi`, `tpNF`, `IE` e `dest{UF, CNPJ|CPF|idEstrangeiro, IE, vNF, vICMS, vST}`; zera `contingency->type` e chama `sefazEvento('AN', $chNFe, Tools::EVT_EPEC, 1, $tagAdic)`. cStat 135 ou 136 = EPEC registrado.
+- `sped-nfe` 5.2.8: `Tools::sefazEPEC()` é inalcançável (`checkContingencyForWebServices` recusa 'EPEC'). Reproduz-se o corpo com métodos públicos: `Contingency` com `type='EPEC'`, `tpEmis=4`, `timestamp` e `motive`; o XML já nasce do `MontadorDeXml` com `tpEmis=4`, `dhCont` (com offset de São Paulo) e `xJust`; como a `Contingency` da biblioteca não é ativada, `signNFe` só assina e não há o `dhCont` 3 h adiantado (cStat 558) do vendor, então o workaround de UTC do Mecânica Pro não é necessário; `chNFe` = `substr(Id,3,44)`, conferindo que a UF da chave bate com a do `Tools`; `tagAdic` com `cOrgaoAutor`, `tpAutor=1`, `verAplic`, `dhEmi`, `tpNF`, `IE` e `dest{UF, CNPJ|CPF|idEstrangeiro, IE, vNF, vICMS, vST}`; zera `contingency->type` e chama `sefazEvento('AN', $chNFe, Tools::EVT_EPEC, 1, $tagAdic)`. cStat 135 ou 136 = EPEC registrado.
 - A chave muda ao remontar (o `tpEmis` faz parte dela). A NF-e transmitida depois precisa repetir os dados do evento, senão é rejeitada.
 - `sped-da` `Danfe::epec($protocolo, $data)` imprime "NÚMERO DE REGISTRO EPEC" e a mensagem "EPEC regularmente recebido pela Receita" quando `tpEmis=4`.
 
@@ -23,7 +23,7 @@ A NF-e com falha real de comunicação com a SEFAZ da UF hoje vai para ERRO. A F
 
 ## 4. Motor (`EmissorDeNfe`)
 
-- `prepararEpec(Emitente, NotaParaEmissao, justificativa, instante): XmlAssinado` — sem rede; remonta com `tpEmis=4`, `dhCont` e `xJust`, assina com o fuso em UTC e devolve chave e XML.
+- `prepararEpec(Emitente, NotaParaEmissao, justificativa, instante): XmlAssinado` — sem rede; remonta com `tpEmis=4`, `dhCont` e `xJust`, assina normalmente e devolve chave e XML.
 - `registrarEpec(Emitente, NotaParaEmissao, XmlAssinado, ambiente): ResultadoDeEpec` (DTO: `registrado`, `protocolo`, `cstat`, `motivo`, `xmlEvento`, `mensagemErro`). Falha de comunicação lança `FalhaDeComunicacaoException`. Os dados do `tagAdic` saem do XML assinado, nunca de defaults: dado ausente bloqueia com mensagem acionável (`=== null`, nunca `?? 0`).
 - Implementação no `NfePhpEmissor`; `EmissorFake` ganha o equivalente. O `MontadorDeXml` já remonta com `tpEmis` 9; ganha o parâmetro para 4 (sem `xJust` fora do tamanho 15 a 255).
 

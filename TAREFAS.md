@@ -5,17 +5,17 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
 - [x] **F0 Fundação:** repositório, Docker, CI, Laravel + Next, monólito modular, autenticação, tenancy com isolamento testado, layout responsivo com temas dark e light.
 - [x] **F1 Plataforma e planos:** admin do SaaS, planos (módulos e limites), onboarding de empresa, usuários e papéis, `EntitlementService`.
 - [x] **F2 Cadastros e emitente** (28 de 28, fechada em 2026-10-01): clientes, produtos, serviços, categorias fiscais, pendências, CSV, dados fiscais, certificado, CSC, séries.
-- [ ] **F3 NF-e e NFC-e** (NFePHP), dividida em três specs, cada uma com plano próprio:
+- [x] **F3 NF-e e NFC-e** (NFePHP, concluída em 2026-10-06), dividida em três specs, cada uma com plano próprio:
   - [x] **F3a Núcleo da NF-e** (23 de 23, fechada em 2026-10-02): modelo da nota, resolvers tributários, XML, emissão pela fila, numeração, polling, reconciliação, consulta, XML, confirmação de produção. Plano: `docs/superpowers/plans/2026-10-02-f3a-nfe-emissao.md`. Falta só a emissão real em homologação (precisa de certificado A1), roteiro no `PROGRESSO.md`.
-  - [ ] **F3b**, dividida em três specs (2026-10-02), cada uma com plano próprio, nesta ordem:
+  - [x] **F3b**, dividida em três specs (2026-10-02), cada uma com plano próprio, nesta ordem:
     - [x] **F3b1 Cancelamento e inutilização da NF-e** (15 de 15, fechada em 2026-10-02): cancelamento por fila com `CANCELANDO`, reconciliação, inutilização síncrona, API e telas. Plano: `docs/superpowers/plans/2026-10-02-f3b1-cancelamento-inutilizacao.md`. Falta só o cancelamento e a inutilização reais em homologação (certificado A1), roteiro no `PROGRESSO.md`.
     - [x] **F3b2 PDF (DANFE) da NF-e** (concluída em 2026-10-05): `GET /api/app/notas/{id}/pdf` inline, gerado do XML com `sped-da`, sem armazenar; link "Abrir DANFE (PDF)" no detalhe. Pendências: logo do emitente, DANFE da NFC-e (F3b3), e-mail com PDF e XML, ZIP em lote, cache se o volume pedir, DANFE simplificado, conferência visual do PDF contra o DANFE oficial (depende do usuário, ver PROGRESSO).
     - [x] **F3b3a Emissão da NFC-e** (concluída em 2026-10-05): `notas.modelo`, destinatário opcional, CSC, QR Code, série por modelo, inutilização por modelo, seletor na tela. Spec `docs/superpowers/specs/2026-10-05-f3b3a-nfce-emissao-design.md`.
     - [x] **F3b3b Cupom 80 mm (sped-da DANFCE) e cancelamento da NFC-e** (concluída em 2026-10-05, caminho curto sem spec em arquivo): `GeradorDeDanfe::gerar(xml, cancelada, modelo)`, cupom `CUPOM-<n>.pdf` pelo mesmo `GET /notas/{id}/pdf`, link "Abrir cupom (PDF)", rótulos de cancelamento/emissão por modelo, modelo na lista de inutilizações. Pendências: conferência visual do cupom (usuário), contingência offline (F3c).
     - [x] **F3c1 Dashboard fiscal** (concluída em 2026-10-05): `GET /api/app/dashboard/fiscal` (Action `ResumoFiscal`), bloco "Fiscal" no painel com cartões, gráfico `recharts` e tabela acessível. Spec `docs/superpowers/specs/2026-10-05-f3c1-dashboard-fiscal-design.md`. Pendências: contingências com prazo no painel (F3c2), índice em `notas(tenant_id, emitido_em)` se o volume pedir, filtros de período, cache do resumo.
     - [x] **F3c2 Contingência offline da NFC-e, retransmissão e prazo** (concluída em 2026-10-05): status `CONTINGENCIA`, `tpEmis=9` remontado pelo `MontadorDeXml`, entrada só em `FalhaDeComunicacaoException` (com consulta prévia), `RetransmitirNota` (comando horário + botão), cupom de duas vias, prazo configurável (padrão 24 h) e alerta no painel. Spec `docs/superpowers/specs/2026-10-05-f3c2-contingencia-nfce-design.md`. Pendências: prazo legal por UF a confirmar, prazo por empresa, fuso por UF, notificações (F6), rejeição após contingência pode exigir inutilização, a conversão `SoapException` → `FalhaDeComunicacaoException` só é exercitada contra a SEFAZ real.
-    - [ ] **F3c3 EPEC e SVC da NF-e**: sem spec; usa `FalhaDeComunicacaoException` e o status/colunas de contingência da F3c2 (a NF-e hoje vai para ERRO).
-  - [ ] **F3c** (sem spec nem plano): contingência (EPEC e offline), retransmissão, alertas de prazo, dashboard fiscal.
+    - [x] **F3c3 EPEC da NF-e** (10 de 10, concluída em 2026-10-06; SVC ficou no backlog por decisão do usuário): a NF-e com `FalhaDeComunicacaoException` consulta a chave, remonta com `tpEmis=4`, registra o evento EPEC (110140) no Ambiente Nacional e fica em `CONTINGENCIA` (`contingencia_tipo=EPEC`, prazo 168 h), com retransmissão, DANFE com o registro EPEC e alerta de 48 h no painel. Spec `docs/superpowers/specs/2026-10-06-f3c3-epec-nfe-design.md`; plano `docs/superpowers/plans/2026-10-06-f3c3-epec-nfe.md`.
+  - [x] **F3c** (concluída em 2026-10-06; SVC no backlog): contingência (EPEC e offline), retransmissão, alertas de prazo, dashboard fiscal.
   - Critério de pronto da F3: nota autorizada em homologação para NF-e e NFC-e, com o XML validado contra o XSD.
 - [ ] **F4 NFS-e Nacional** (`nfse-php`): DANFSe, cancelamento, venda mista.
 - [ ] **F5 Cobrança** (Mercado Pago): checkout transparente, assinatura, webhooks, inadimplência, excedente.
@@ -92,6 +92,13 @@ Achados menores adiados e uma decisão de produto parcada durante a revisão das
 - [ ] Listagem de notas sem paginação no frontend (a API pagina de 25 em 25; a tela mostra só a primeira página).
 - [ ] `NfePhpEmissor` sem teste automatizado (precisa de SEFAZ).
 
+## Pendências da F3c3 (2026-10-06)
+- [ ] **EPEC real em homologação** (roteiro no PROGRESSO.md): a comunicação com o Ambiente Nacional e a conversão de falha real de rede em FalhaDeComunicacaoException nunca foram exercitadas; o evento envEvento do EPEC não é validado contra XSD nos testes.
+- [ ] **SVC-AN/SVC-RS** (	pEmis 6 e 7): fora do escopo por decisão do usuário.
+- [ ] Cancelamento e inutilização de nota em contingência; fuso por UF no dhEmi/dhCont.
+- [ ] Rejeição após EPEC (dados diferentes do evento): conferir os cStat no ssets/cstat-table.md da skill na homologação.
+- [ ] Conferência visual do bloco de EPEC no detalhe da nota e do cartão "Notas em contingência" (temas e celular), não feita.
+- [ ] NfePhpEmissor::prepararEpec e egistrarEpec sem teste automatizado (precisam de certificado e SEFAZ); o XML 	pEmis=4 assinado e o corpo do evento são cobertos offline.
 ## Pendências da F3b1 (2026-10-02)
 - [ ] **Cancelamento e inutilização reais em homologação** (roteiro no `PROGRESSO.md`): a comunicação com a SEFAZ nunca foi exercitada; a fumaça com `.pfx` autoassinado chegou a montar o evento, mas a lib decide CNPJ/CPF pelo OID ICP-Brasil do certificado.
 - [ ] Cancelamento por substituição, cancelamento extemporâneo e carta de correção (fora de escopo por decisão).
