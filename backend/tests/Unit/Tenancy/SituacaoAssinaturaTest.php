@@ -53,6 +53,27 @@ class SituacaoAssinaturaTest extends TestCase
         $this->assertFalse($de->podeIrPara($para));
     }
 
+    public function test_tabela_de_transicoes_da_cobranca(): void
+    {
+        $permitidas = [
+            'PENDENTE' => ['ATIVA', 'CANCELADA'],
+            'TESTE' => ['ATIVA', 'SUSPENSA', 'CANCELADA'],
+            'ATIVA' => ['INADIMPLENTE', 'SUSPENSA', 'CANCELADA'],
+            'INADIMPLENTE' => ['ATIVA', 'SUSPENSA', 'CANCELADA'],
+            'SUSPENSA' => ['ATIVA', 'CANCELADA'],
+            'CANCELADA' => [],
+        ];
+        foreach (S::cases() as $origem) {
+            foreach (S::cases() as $destino) {
+                $this->assertSame(
+                    in_array($destino->value, $permitidas[$origem->value], true),
+                    $origem->podeIrPara($destino),
+                    "{$origem->value} → {$destino->value}",
+                );
+            }
+        }
+    }
+
     public function test_escrita_so_em_teste_ativa_e_inadimplente(): void
     {
         $comEscrita = array_values(array_filter(S::cases(), fn (S $s): bool => $s->permiteEscrita()));

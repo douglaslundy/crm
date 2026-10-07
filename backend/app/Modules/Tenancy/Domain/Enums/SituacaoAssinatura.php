@@ -19,7 +19,7 @@ enum SituacaoAssinatura: string
         return array_column(self::cases(), 'value');
     }
 
-    /** Transições permitidas na F1 (spec F1 §4). Não há estado implícito. */
+    /** Transições permitidas (spec F1 §4; F5a acrescentou ativa↔inadimplente). Não há estado implícito. */
     public function podeIrPara(self $destino): bool
     {
         if ($destino === self::Cancelada) {
@@ -29,7 +29,8 @@ enum SituacaoAssinatura: string
         $permitidos = match ($this) {
             self::Pendente => [self::Ativa],
             self::Teste => [self::Ativa, self::Suspensa],
-            self::Ativa, self::Inadimplente => [self::Suspensa],
+            self::Ativa => [self::Inadimplente, self::Suspensa],
+            self::Inadimplente => [self::Ativa, self::Suspensa],
             self::Suspensa => [self::Ativa],
             self::Cancelada => [],
         };
