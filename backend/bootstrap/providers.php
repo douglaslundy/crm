@@ -1,5 +1,6 @@
 <?php
 
+use App\Modules\Billing\Providers\BillingServiceProvider;
 use App\Modules\Catalog\Providers\CatalogServiceProvider;
 use App\Modules\Customers\Providers\CustomersServiceProvider;
 use App\Modules\Fiscal\Providers\FiscalServiceProvider;
@@ -16,4 +17,5 @@ return [
     CatalogServiceProvider::class,
     CustomersServiceProvider::class,
     FiscalServiceProvider::class,
+    BillingServiceProvider::class,
 ];
