@@ -7,6 +7,7 @@ namespace App\Modules\Fiscal\Infrastructure\NfePhp;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeCancelamento;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsulta;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEmissao;
+use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEpec;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeInutilizacao;
 use NFePHP\NFe\Complements;
 use RuntimeException;
@@ -125,6 +126,34 @@ final class InterpretadorDeResposta
             '563' => ResultadoDeInutilizacao::jaInutilizada($motivo),
             default => ResultadoDeInutilizacao::recusada($cStat, $motivo),
         };
+    }
+
+    public function epec(string $respostaXml): ResultadoDeEpec
+    {
+        $resp = $this->carregar($respostaXml);
+        if ($resp === null) {
+            throw new RuntimeException('Resposta ilegível da SEFAZ ao registrar o EPEC.');
+        }
+        $resp->registerXPathNamespace('n', 'http://www.portalfiscal.inf.br/nfe');
+
+        $evento = $resp->xpath('//n:retEvento/n:infEvento')[0] ?? null;
+        if ($evento === null) {
+            // Sem retEvento o lote foi recusado antes do evento: o cStat de topo é o do lote.
+            $cStat = (string) ($resp->xpath('//n:cStat')[0] ?? '');
+            if ($cStat === '') {
+                throw new RuntimeException('Resposta da SEFAZ sem status ao registrar o EPEC.');
+            }
+
+            return ResultadoDeEpec::recusado($cStat, (string) ($resp->xpath('//n:xMotivo')[0] ?? ''));
+        }
+
+        // O cStat que vale é o de dentro de retEvento; 135 e 136 são evento registrado.
+        $cStat = (string) $evento->cStat;
+        if (! in_array($cStat, ['135', '136'], true)) {
+            return ResultadoDeEpec::recusado($cStat, (string) $evento->xMotivo);
+        }
+
+        return ResultadoDeEpec::registrado((string) $evento->nProt, $respostaXml, $cStat);
     }
 
     private function autorizadaNaConsulta(SimpleXMLElement $resp, string $respostaXml, ?string $xmlEnviado): ResultadoDeConsulta
