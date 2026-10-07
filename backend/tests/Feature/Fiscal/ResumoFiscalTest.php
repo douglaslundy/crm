@@ -7,6 +7,7 @@ namespace Tests\Feature\Fiscal;
 use App\Modules\Fiscal\Application\ResumoFiscal;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
+use App\Modules\Fiscal\Domain\Enums\TipoDeContingencia;
 use App\Modules\Fiscal\Domain\Models\Nota;
 use App\Modules\Platform\Domain\Models\Plano;
 use App\Modules\Tenancy\Domain\Models\Tenant;
@@ -186,6 +187,47 @@ class ResumoFiscalTest extends TestCase
     public function test_sem_contingencias_o_bloco_vem_zerado_e_sem_data(): void
     {
         $this->assertSame(['quantidade' => 0, 'em_alerta' => 0, 'vencidas' => 0, 'limite_mais_proximo' => null], $this->resumo()['contingencias']);
+    }
+
+    private function emEpec(string $limite): void
+    {
+        $nota = $this->nota(StatusNota::Contingencia, 0, null, 'HOMOLOGACAO', ModeloDocumento::Nfe);
+        $nota->forceFill(['contingencia_tipo' => TipoDeContingencia::Epec, 'contingencia_desde' => '2026-10-15 08:00:00', 'contingencia_limite_em' => $limite])->save();
+    }
+
+    public function test_o_alerta_do_epec_usa_as_48_horas_e_o_da_offline_continua_em_6(): void
+    {
+        config(['fiscal.contingencia_alerta_horas' => 6, 'fiscal.epec_alerta_horas' => 48]);
+        // agora = 2026-10-15 15:00 UTC (como o banco guarda)
+        $this->emEpec('2026-10-17 12:00:00');         // +45h: alerta do EPEC (48 h)
+        $this->emEpec('2026-10-19 15:00:00');         // +96h: fora do alerta
+        $this->emContingencia('2026-10-15 21:00:00'); // offline +6h exatas: fora do alerta (a regra é "menos de 6 h")
+        $this->emContingencia('2026-10-15 20:00:00'); // offline +5h: em alerta
+
+        $c = $this->resumo()['contingencias'];
+
+        $this->assertSame(4, $c['quantidade']);
+        $this->assertSame(2, $c['em_alerta']);
+        $this->assertSame(0, $c['vencidas']);
+        $this->assertSame('2026-10-15T20:00:00+00:00', $c['limite_mais_proximo']);
+    }
+
+    public function test_epec_vencido_conta_como_vencida(): void
+    {
+        $this->emEpec('2026-10-15 14:00:00');
+
+        $c = $this->resumo()['contingencias'];
+
+        $this->assertSame(1, $c['vencidas']);
+        $this->assertSame(0, $c['em_alerta']);
+    }
+
+    public function test_nota_legada_sem_tipo_e_tratada_como_offline(): void
+    {
+        config(['fiscal.contingencia_alerta_horas' => 6, 'fiscal.epec_alerta_horas' => 48]);
+        $this->emContingencia('2026-10-16 09:00:00'); // +18h: fora do alerta offline (6 h), mas dentro dos 48 h do EPEC
+
+        $this->assertSame(0, $this->resumo()['contingencias']['em_alerta']);
     }
 
     public function test_contingencia_de_outro_ambiente_ou_tenant_nao_conta(): void

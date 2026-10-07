@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Application;
 
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
+use App\Modules\Fiscal\Domain\Enums\TipoDeContingencia;
 use App\Modules\Fiscal\Domain\Models\Emitente;
 use App\Modules\Fiscal\Domain\Models\Nota;
 use Carbon\CarbonImmutable;
@@ -129,33 +130,38 @@ final class ResumoFiscal
     }
 
     /**
-     * NFC-e emitidas offline que ainda esperam transmissão. "Em alerta" = faltam menos de `contingencia_alerta_horas`
-     * para o limite gravado na entrada; "vencida" = limite no passado.
+     * Notas emitidas sem a SEFAZ (NFC-e offline e NF-e em EPEC) que ainda esperam transmissão. "Em alerta" = faltam menos
+     * horas que o alerta do TIPO da nota para o limite gravado na entrada; "vencida" = limite no passado.
      *
      * @return array{quantidade: int, em_alerta: int, vencidas: int, limite_mais_proximo: ?string}
      */
     private function contingencias(string $ambiente, CarbonImmutable $agora): array
     {
-        $limites = Nota::query()->where('ambiente', $ambiente)->where('status', StatusNota::Contingencia)
-            ->whereNotNull('contingencia_limite_em')->orderBy('contingencia_limite_em')->pluck('contingencia_limite_em');
+        $notas = Nota::query()->where('ambiente', $ambiente)->where('status', StatusNota::Contingencia)
+            ->orderBy('contingencia_limite_em')->get(['id', 'contingencia_limite_em', 'contingencia_tipo']);
         $agoraNoBanco = $agora->setTimezone((string) config('app.timezone'));
-        $inicioDoAlerta = $agoraNoBanco->addHours((int) config('fiscal.contingencia_alerta_horas'));
 
         $vencidas = 0;
         $emAlerta = 0;
-        foreach ($limites as $limite) {
+        foreach ($notas as $nota) {
+            $limite = $nota->contingencia_limite_em;
+            if ($limite === null) {
+                continue;
+            }
+            // Nota anterior à F3c3 não tem tipo: sempre foi offline.
+            $alerta = ($nota->contingencia_tipo ?? TipoDeContingencia::OfflineNfce)->alertaEmHoras();
             if ($limite->lt($agoraNoBanco)) {
                 $vencidas++;
-            } elseif ($limite->lt($inicioDoAlerta)) {
+            } elseif ($limite->lt($agoraNoBanco->addHours($alerta))) {
                 $emAlerta++;
             }
         }
 
         return [
-            'quantidade' => Nota::query()->where('ambiente', $ambiente)->where('status', StatusNota::Contingencia)->count(),
+            'quantidade' => $notas->count(),
             'em_alerta' => $emAlerta,
             'vencidas' => $vencidas,
-            'limite_mais_proximo' => $limites->first()?->toIso8601String(),
+            'limite_mais_proximo' => $notas->first(fn (Nota $n): bool => $n->contingencia_limite_em !== null)?->contingencia_limite_em?->toIso8601String(),
         ];
     }
 }
