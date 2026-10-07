@@ -17,7 +17,7 @@ final class CheckoutRequest extends FormRequest
         return [
             'plano_id' => ['required', 'uuid'],
             'ciclo' => ['required', Rule::enum(CicloDeCobranca::class)],
-            'metodo' => ['required', Rule::enum(MetodoDePagamento::class)],
+            'metodo' => ['required', Rule::enum(MetodoDePagamento::class)->only([MetodoDePagamento::Cartao, MetodoDePagamento::Boleto])],
             // Obrigatório só no cartão; quem avisa é a Action (código estável BILLING_CARTAO_SEM_TOKEN).
             'token_do_cartao' => ['nullable', 'string', 'max:200'],
         ];

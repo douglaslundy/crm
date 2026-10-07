@@ -8,4 +8,5 @@ enum MetodoDePagamento: string
 {
     case Cartao = 'CARTAO';
     case Boleto = 'BOLETO';
+    case Pix = 'PIX';
 }

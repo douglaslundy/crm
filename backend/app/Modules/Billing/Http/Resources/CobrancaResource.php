@@ -20,9 +20,15 @@ final class CobrancaResource extends JsonResource
             'valor_centavos' => $this->valor_centavos,
             'vence_em' => $this->vence_em->toDateString(),
             'status' => $this->status->value,
-            'metodo' => $this->metodo->value,
+            'metodo' => $this->metodo?->value,
             'boleto_url' => $this->boleto_url,
             'boleto_linha_digitavel' => $this->boleto_linha_digitavel,
+            'pix_qr_code' => $this->pix_qr_code,
+            'pix_qr_code_base64' => $this->pix_qr_code_base64,
+            'pix_expira_em' => $this->pix_expira_em?->toIso8601String(),
+            'mes_referencia' => $this->mes_referencia?->toDateString(),
+            'documentos_excedentes' => $this->documentos_excedentes,
+            'valor_unitario_centavos' => $this->valor_unitario_centavos,
             'pago_em' => $this->pago_em?->toIso8601String(),
         ];
     }

@@ -23,10 +23,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $valor_centavos
  * @property CarbonInterface $vence_em
  * @property StatusDaCobranca $status
- * @property MetodoDePagamento $metodo
+ * @property ?MetodoDePagamento $metodo
  * @property ?string $gateway_pagamento_id
  * @property ?string $boleto_url
  * @property ?string $boleto_linha_digitavel
+ * @property ?string $pix_qr_code
+ * @property ?string $pix_qr_code_base64
+ * @property ?CarbonInterface $pix_expira_em
+ * @property ?CarbonInterface $mes_referencia
+ * @property ?int $documentos_excedentes
+ * @property ?int $valor_unitario_centavos
  * @property ?CarbonInterface $pago_em
  * @property ?CarbonInterface $periodo_inicio
  * @property ?CarbonInterface $periodo_fim
@@ -58,6 +64,10 @@ class Cobranca extends Model
             'pago_em' => 'datetime',
             'periodo_inicio' => 'date',
             'periodo_fim' => 'date',
+            'pix_expira_em' => 'datetime',
+            'mes_referencia' => 'date',
+            'documentos_excedentes' => 'integer',
+            'valor_unitario_centavos' => 'integer',
         ];
     }
 
