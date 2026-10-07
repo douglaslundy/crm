@@ -8,9 +8,12 @@ use App\Modules\Billing\Domain\Contracts\GatewayDeCobranca;
 use App\Modules\Billing\Domain\Exceptions\BillingException;
 use App\Modules\Billing\Domain\Gateway\DadosDaAssinatura;
 use App\Modules\Billing\Domain\Gateway\DadosDoBoleto;
+use App\Modules\Billing\Domain\Gateway\DadosDoPagamentoDeCartao;
+use App\Modules\Billing\Domain\Gateway\DadosDoPix;
 use App\Modules\Billing\Domain\Gateway\ResultadoDeAssinatura;
 use App\Modules\Billing\Domain\Gateway\ResultadoDePagamento;
 use App\Modules\Billing\Domain\Gateway\StatusDoPagamento;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
@@ -21,10 +24,13 @@ use Illuminate\Support\Facades\Log;
  * Adaptador do Mercado Pago. NUNCA foi exercitado contra o Mercado Pago de verdade: o formato dos pedidos e das
  * respostas vem da documentação e está coberto só por testes com `Http::fake()`. A conferir no sandbox (roteiro em
  * `docs/cobranca.md`): `transaction_details.digitable_line` e `external_resource_url` do boleto, `metadata.preapproval_id`
- * nos pagamentos do `preapproval` e se o `preapproval` aceita boleto.
+ * nos pagamentos do `preapproval` e se o `preapproval` aceita boleto. Do PIX e do cartão avulso, a conferir:
+ * `point_of_interaction.transaction_data.qr_code` e `qr_code_base64`, o `date_of_expiration` devolvido e o webhook do PIX.
  */
 final class MercadoPagoGateway implements GatewayDeCobranca
 {
+    private const FORMATO_DATA = 'Y-m-d\TH:i:s.vP';
+
     public function __construct(
         private readonly ?string $accessToken,
         private readonly string $baseUrl,
@@ -54,22 +60,47 @@ final class MercadoPagoGateway implements GatewayDeCobranca
 
     public function criarBoleto(DadosDoBoleto $dados): ResultadoDePagamento
     {
-        $documento = (string) preg_replace('/\D/', '', $dados->documento);
         $resposta = $this->enviar('POST', '/v1/payments', [
             'transaction_amount' => $this->reais($dados->valorCentavos),
             'description' => $dados->descricao,
             'payment_method_id' => 'bolbradesco',
             'external_reference' => $dados->cobrancaId,
-            'date_of_expiration' => $dados->venceEm->endOfDay()->format('Y-m-d\TH:i:s.vP'),
+            'date_of_expiration' => $dados->venceEm->endOfDay()->format(self::FORMATO_DATA),
             'notification_url' => $this->notificationUrl,
-            'payer' => [
-                'email' => $dados->emailDoPagador,
-                'first_name' => $dados->nomeDoPagador,
-                'identification' => ['type' => strlen($documento) > 11 ? 'CNPJ' : 'CPF', 'number' => $documento],
-            ],
+            'payer' => $this->pagador($dados->emailDoPagador, $dados->nomeDoPagador, $dados->documento),
         ], $dados->idempotencia);
 
         return $this->pagamento($resposta);
+    }
+
+    public function criarPagamentoDeCartao(DadosDoPagamentoDeCartao $dados): ResultadoDePagamento
+    {
+        $resposta = $this->enviar('POST', '/v1/payments', [
+            'transaction_amount' => $this->reais($dados->valorCentavos),
+            'token' => $dados->tokenDoCartao,
+            'installments' => 1,
+            'description' => $dados->descricao,
+            'external_reference' => $dados->cobrancaId,
+            'notification_url' => $this->notificationUrl,
+            'payer' => $this->pagador($dados->emailDoPagador, $dados->nomeDoPagador, $dados->documento),
+        ], $dados->idempotencia);
+
+        return $this->pagamento($resposta);
+    }
+
+    public function criarPix(DadosDoPix $dados): ResultadoDePagamento
+    {
+        $resposta = $this->enviar('POST', '/v1/payments', [
+            'transaction_amount' => $this->reais($dados->valorCentavos),
+            'description' => $dados->descricao,
+            'payment_method_id' => 'pix',
+            'external_reference' => $dados->cobrancaId,
+            'date_of_expiration' => $dados->expiraEm->format(self::FORMATO_DATA),
+            'notification_url' => $this->notificationUrl,
+            'payer' => $this->pagador($dados->emailDoPagador, $dados->nomeDoPagador, $dados->documento),
+        ], $dados->idempotencia);
+
+        return $this->pagamento($resposta, $dados->expiraEm);
     }
 
     public function buscarPagamento(string $id): ResultadoDePagamento
@@ -82,12 +113,27 @@ final class MercadoPagoGateway implements GatewayDeCobranca
         $this->enviar('PUT', '/preapproval/'.rawurlencode($id), ['status' => 'cancelled']);
     }
 
-    private function pagamento(Response $resposta): ResultadoDePagamento
+    /** @return array<string, mixed> */
+    private function pagador(string $email, string $nome, string $documento): array
+    {
+        $numero = (string) preg_replace('/\D/', '', $documento);
+
+        return [
+            'email' => $email,
+            'first_name' => $nome,
+            'identification' => ['type' => strlen($numero) > 11 ? 'CNPJ' : 'CPF', 'number' => $numero],
+        ];
+    }
+
+    private function pagamento(Response $resposta, ?CarbonImmutable $expiraEmDoPedido = null): ResultadoDePagamento
     {
         $referencia = $resposta->json('external_reference');
         $assinatura = $resposta->json('metadata.preapproval_id');
         $linha = $resposta->json('transaction_details.digitable_line') ?? $resposta->json('barcode.content');
         $url = $resposta->json('transaction_details.external_resource_url');
+        $qr = $resposta->json('point_of_interaction.transaction_data.qr_code');
+        $qrImagem = $resposta->json('point_of_interaction.transaction_data.qr_code_base64');
+        $expiraEm = $resposta->json('date_of_expiration');
 
         return new ResultadoDePagamento(
             (string) $resposta->json('id'),
@@ -97,6 +143,9 @@ final class MercadoPagoGateway implements GatewayDeCobranca
             is_string($assinatura) && $assinatura !== '' ? $assinatura : null,
             is_string($url) ? $url : null,
             is_string($linha) ? $linha : null,
+            is_string($qr) && $qr !== '' ? $qr : null,
+            is_string($qrImagem) && $qrImagem !== '' ? $qrImagem : null,
+            is_string($expiraEm) && $expiraEm !== '' ? CarbonImmutable::parse($expiraEm) : $expiraEmDoPedido,
         );
     }
 

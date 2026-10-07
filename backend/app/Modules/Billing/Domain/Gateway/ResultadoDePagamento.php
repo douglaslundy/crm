@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Billing\Domain\Gateway;
 
+use Carbon\CarbonImmutable;
+
 /** O pagamento como o gateway o vê. É a única fonte de status confiável: o corpo do webhook nunca vale. */
 final readonly class ResultadoDePagamento
 {
@@ -15,5 +17,8 @@ final readonly class ResultadoDePagamento
         public ?string $assinaturaGatewayId = null,
         public ?string $boletoUrl = null,
         public ?string $linhaDigitavel = null,
+        public ?string $pixCopiaECola = null,
+        public ?string $pixQrCodeBase64 = null,
+        public ?CarbonImmutable $pixExpiraEm = null,
     ) {}
 }

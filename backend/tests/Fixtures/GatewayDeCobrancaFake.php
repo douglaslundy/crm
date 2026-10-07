@@ -7,6 +7,8 @@ namespace Tests\Fixtures;
 use App\Modules\Billing\Domain\Contracts\GatewayDeCobranca;
 use App\Modules\Billing\Domain\Gateway\DadosDaAssinatura;
 use App\Modules\Billing\Domain\Gateway\DadosDoBoleto;
+use App\Modules\Billing\Domain\Gateway\DadosDoPagamentoDeCartao;
+use App\Modules\Billing\Domain\Gateway\DadosDoPix;
 use App\Modules\Billing\Domain\Gateway\ResultadoDeAssinatura;
 use App\Modules\Billing\Domain\Gateway\ResultadoDePagamento;
 use App\Modules\Billing\Domain\Gateway\StatusDoPagamento;
@@ -22,6 +24,12 @@ final class GatewayDeCobrancaFake implements GatewayDeCobranca
 
     /** @var list<ResultadoDePagamento> */
     private array $boletos = [];
+
+    /** @var list<ResultadoDePagamento> */
+    private array $cartoes = [];
+
+    /** @var list<ResultadoDePagamento> */
+    private array $pixes = [];
 
     /** @var array<string, Throwable> */
     private array $falhas = [];
@@ -39,6 +47,16 @@ final class GatewayDeCobrancaFake implements GatewayDeCobranca
     public function enfileirarBoleto(ResultadoDePagamento ...$r): void
     {
         array_push($this->boletos, ...$r);
+    }
+
+    public function enfileirarCartao(ResultadoDePagamento ...$r): void
+    {
+        array_push($this->cartoes, ...$r);
+    }
+
+    public function enfileirarPix(ResultadoDePagamento ...$r): void
+    {
+        array_push($this->pixes, ...$r);
     }
 
     public function falharEm(string $metodo, Throwable $erro): void
@@ -60,6 +78,25 @@ final class GatewayDeCobrancaFake implements GatewayDeCobranca
         return array_shift($this->boletos) ?? new ResultadoDePagamento(
             'bol-'.++$this->sequencia, StatusDoPagamento::Pendente, $dados->cobrancaId, $dados->valorCentavos,
             boletoUrl: 'https://mp.test/boleto/'.$this->sequencia, linhaDigitavel: '00000.00000 00000.000000',
+        );
+    }
+
+    public function criarPagamentoDeCartao(DadosDoPagamentoDeCartao $dados): ResultadoDePagamento
+    {
+        $this->registrar('criarPagamentoDeCartao', [$dados]);
+
+        return array_shift($this->cartoes) ?? new ResultadoDePagamento(
+            'car-'.++$this->sequencia, StatusDoPagamento::Aprovado, $dados->cobrancaId, $dados->valorCentavos,
+        );
+    }
+
+    public function criarPix(DadosDoPix $dados): ResultadoDePagamento
+    {
+        $this->registrar('criarPix', [$dados]);
+
+        return array_shift($this->pixes) ?? new ResultadoDePagamento(
+            'pix-'.++$this->sequencia, StatusDoPagamento::Pendente, $dados->cobrancaId, $dados->valorCentavos,
+            pixCopiaECola: '000201PIXFAKE', pixQrCodeBase64: 'QVJDRA==', pixExpiraEm: $dados->expiraEm,
         );
     }
 

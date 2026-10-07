@@ -21,6 +21,10 @@ return [
     'tolerancia_compensacao_dias' => 5,
     // Prazo do boleto da primeira cobrança.
     'dias_primeiro_boleto' => 3,
+    // Validade do PIX, em minutos.
+    'pix_expira_minutos' => 30,
+    // Prazo, em dias a partir do fechamento do mês, para pagar a cobrança de documentos excedentes.
+    'dias_vencimento_excedente' => 10,
     // Diferença máxima entre o `ts` assinado do webhook e a hora do servidor.
     'tolerancia_webhook_segundos' => 600,
 ];
