@@ -43,7 +43,9 @@ final class MontadorDeXml
 
         $ide = ['cUF' => $cUF, 'natOp' => $this->texto($nota->naturezaOperacao, 60), 'mod' => $nfce ? 65 : 55, 'serie' => (int) $nota->serie, 'nNF' => $nota->numero,
             'dhEmi' => now()->setTimezone('America/Sao_Paulo')->format('c'), 'tpNF' => 1, 'idDest' => $nota->idDest, 'cMunFG' => $e->codigoIbge,
-            'tpImp' => $nfce ? 4 : 1, 'tpEmis' => match ($contingencia?->tipo) { null => 1, TipoDeContingencia::Epec => 4, TipoDeContingencia::OfflineNfce => 9 }, 'tpAmb' => $tpAmb, 'finNFe' => 1, 'indFinal' => $nfce ? 1 : $destinatario->indFinal, 'indPres' => 1,
+            'tpImp' => $nfce ? 4 : 1, 'tpEmis' => match ($contingencia?->tipo) {
+                null => 1, TipoDeContingencia::Epec => 4, TipoDeContingencia::OfflineNfce => 9
+            }, 'tpAmb' => $tpAmb, 'finNFe' => 1, 'indFinal' => $nfce ? 1 : $destinatario->indFinal, 'indPres' => 1,
             'procEmi' => 0, 'verProc' => config('fiscal.ver_proc')];
         if ($cNF !== null) {
             $ide['cNF'] = $cNF;

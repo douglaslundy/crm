@@ -9,6 +9,7 @@ use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfe;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsulta;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
+use App\Modules\Fiscal\Domain\Enums\TipoDeContingencia;
 use App\Modules\Fiscal\Domain\Exceptions\FalhaDeComunicacaoException;
 use App\Modules\Fiscal\Domain\Models\EmitenteSerie;
 use App\Modules\Fiscal\Domain\Models\Nota;
@@ -82,7 +83,7 @@ class EntradaEmContingenciaTest extends TestCase
         $this->assertSame('2026-10-05 12:00:00', $nota->contingencia_desde?->format('Y-m-d H:i:s'));
         $this->assertSame('2026-10-06 12:00:00', $nota->contingencia_limite_em?->format('Y-m-d H:i:s'));
         $this->assertNotNull($nota->contingencia_motivo);
-        $this->assertSame(\App\Modules\Fiscal\Domain\Enums\TipoDeContingencia::OfflineNfce, $nota->contingencia_tipo);
+        $this->assertSame(TipoDeContingencia::OfflineNfce, $nota->contingencia_tipo);
         $this->assertStringContainsString('contingência', (string) $nota->eventos()->where('status_para', 'CONTINGENCIA')->first()?->detalhe);
     }
 

@@ -8,6 +8,7 @@ use App\Modules\Fiscal\Domain\Emissao\NotaParaEmissao;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeCancelamento;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsulta;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEmissao;
+use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEpec;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeInutilizacao;
 use App\Modules\Fiscal\Domain\Emissao\XmlAssinado;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
@@ -25,6 +26,18 @@ interface EmissorDeNfe
      * A biblioteca não faz isso para o modelo 65; o XML é remontado pelo montador.
      */
     public function prepararContingencia(Emitente $emitente, NotaParaEmissao $nota, string $justificativa, CarbonImmutable $em): XmlAssinado;
+
+    /**
+     * Só NF-e: remonta com `tpEmis=4` (EPEC), `dhCont` e `xJust`, com chave nova, e assina. Sem rede.
+     * A chave muda porque o `tpEmis` faz parte dela; a NF-e transmitida depois é ESTE XML.
+     */
+    public function prepararEpec(Emitente $emitente, NotaParaEmissao $nota, string $justificativa, CarbonImmutable $em): XmlAssinado;
+
+    /**
+     * Só NF-e: envia o evento EPEC (110140) ao Ambiente Nacional com os dados do XML assinado.
+     * Falha de comunicação lança `FalhaDeComunicacaoException`; recusa da SEFAZ volta em `ResultadoDeEpec::recusado`.
+     */
+    public function registrarEpec(Emitente $emitente, NotaParaEmissao $nota, XmlAssinado $xml): ResultadoDeEpec;
 
     /** Envia e interpreta a resposta. Falha de comunicação lança `FalhaDeComunicacaoException` (NFC-e vai para contingência; NF-e vira ERRO no job). */
     public function transmitir(Emitente $emitente, NotaParaEmissao $nota, XmlAssinado $xml): ResultadoDeEmissao;

@@ -10,12 +10,15 @@ use App\Modules\Fiscal\Domain\Emissao\NotaParaEmissao;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeCancelamento;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsulta;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEmissao;
+use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEpec;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeInutilizacao;
 use App\Modules\Fiscal\Domain\Emissao\XmlAssinado;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
+use App\Modules\Fiscal\Domain\Enums\TipoDeContingencia;
 use App\Modules\Fiscal\Domain\Exceptions\EmissaoBloqueadaException;
 use App\Modules\Fiscal\Domain\Exceptions\FalhaDeComunicacaoException;
 use App\Modules\Fiscal\Domain\Models\Emitente;
+use App\Modules\Fiscal\Domain\TabelaIbge;
 use App\Modules\Tenancy\Domain\Models\Tenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Crypt;
@@ -33,6 +36,7 @@ final class NfePhpEmissor implements EmissorDeNfe
         private readonly CertificadoStore $certificados,
         private readonly MontadorDeXml $montador,
         private readonly InterpretadorDeResposta $interpretador,
+        private readonly MontadorDoEventoEpec $eventoEpec,
     ) {}
 
     public function preparar(Emitente $emitente, NotaParaEmissao $nota): XmlAssinado
@@ -50,6 +54,35 @@ final class NfePhpEmissor implements EmissorDeNfe
         $assinado = $this->tools($emitente, $nota->emitente->razaoSocial, $nota->emitente->cnpj, $nota->ambiente, 65)->signNFe($xml);
 
         return new XmlAssinado($chave, $assinado);
+    }
+
+    public function prepararEpec(Emitente $emitente, NotaParaEmissao $nota, string $justificativa, CarbonImmutable $em): XmlAssinado
+    {
+        // O XML já nasce com tpEmis 4, dhCont (com offset) e xJust: não se ativa `Contingency` na biblioteca,
+        // então não há o dhCont 3 h adiantado do vendor e `signNFe` só assina.
+        ['xml' => $xml, 'chave' => $chave] = $this->montador->montar($nota, null, new ContingenciaDeEmissao($justificativa, $em, TipoDeContingencia::Epec));
+        $assinado = $this->tools($emitente, $nota->emitente->razaoSocial, $nota->emitente->cnpj, $nota->ambiente, 55)->signNFe($xml);
+
+        return new XmlAssinado($chave, $assinado);
+    }
+
+    public function registrarEpec(Emitente $emitente, NotaParaEmissao $nota, XmlAssinado $xml): ResultadoDeEpec
+    {
+        $tools = $this->tools($emitente, $nota->emitente->razaoSocial, $nota->emitente->cnpj, $nota->ambiente, 55);
+        ['chave' => $chave, 'tagAdic' => $tagAdic] = $this->eventoEpec->montar(
+            $xml->xml,
+            (string) TabelaIbge::codigoDaUf($nota->emitente->uf),
+            (string) config('fiscal.ver_proc'),
+        );
+
+        try {
+            // O EPEC é registrado no Ambiente Nacional ('AN'), não na SEFAZ da UF.
+            $resposta = $tools->sefazEvento('AN', $chave, Tools::EVT_EPEC, 1, $tagAdic, null, null);
+        } catch (SoapException $e) {
+            throw new FalhaDeComunicacaoException($e);
+        }
+
+        return $this->interpretador->epec($resposta);
     }
 
     public function transmitir(Emitente $emitente, NotaParaEmissao $nota, XmlAssinado $xml): ResultadoDeEmissao

@@ -9,6 +9,7 @@ use App\Modules\Fiscal\Domain\Emissao\NotaParaEmissao;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeCancelamento;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsulta;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEmissao;
+use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEpec;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeInutilizacao;
 use App\Modules\Fiscal\Domain\Emissao\XmlAssinado;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
@@ -36,6 +37,11 @@ final class EmissorFake implements EmissorDeNfe
     /** @var list<string> XMLs gerados em contingência, em ordem. */
     public array $contingencias = [];
 
+    public ?Throwable $falharEmEpec = null;
+
+    /** @var list<string> Justificativas dos XMLs gerados em EPEC, em ordem. */
+    public array $epecs = [];
+
     public ?Throwable $falharEmCancelar = null;
 
     public ?Throwable $falharEmInutilizar = null;
@@ -45,6 +51,9 @@ final class EmissorFake implements EmissorDeNfe
 
     /** @var list<ResultadoDeConsulta> */
     private array $consultas = [];
+
+    /** @var list<ResultadoDeEpec> */
+    private array $registrosEpec = [];
 
     /** @var list<ResultadoDeCancelamento> */
     private array $cancelamentos = [];
@@ -88,6 +97,29 @@ final class EmissorFake implements EmissorDeNfe
         $this->contingencias[] = $justificativa;
 
         return new XmlAssinado('35'.str_pad((string) $nota->numero, 33, '0', STR_PAD_LEFT).'9'.str_repeat('7', 9), '<NFe>contingencia</NFe>');
+    }
+
+    public function enfileirarEpec(ResultadoDeEpec ...$resultados): void
+    {
+        array_push($this->registrosEpec, ...$resultados);
+    }
+
+    public function prepararEpec(Emitente $emitente, NotaParaEmissao $nota, string $justificativa, CarbonImmutable $em): XmlAssinado
+    {
+        $this->chamadas[] = 'prepararEpec';
+        $this->epecs[] = $justificativa;
+
+        return new XmlAssinado('35'.str_pad((string) $nota->numero, 32, '0', STR_PAD_LEFT).'4'.str_repeat('7', 9), '<NFe>epec</NFe>');
+    }
+
+    public function registrarEpec(Emitente $emitente, NotaParaEmissao $nota, XmlAssinado $xml): ResultadoDeEpec
+    {
+        $this->chamadas[] = 'registrarEpec';
+        if ($this->falharEmEpec !== null) {
+            throw $this->falharEmEpec;
+        }
+
+        return array_shift($this->registrosEpec) ?? ResultadoDeEpec::registrado('891260000000001', '<retEnvEvento>fake</retEnvEvento>');
     }
 
     public function transmitir(Emitente $emitente, NotaParaEmissao $nota, XmlAssinado $xml): ResultadoDeEmissao
