@@ -1,3 +1,5 @@
+import Link from 'next/link';
+import { buttonVariants } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export function AguardandoAtivacao() {
@@ -9,6 +11,7 @@ export function AguardandoAtivacao() {
       <CardContent className="space-y-2 text-muted-foreground">
         <p>Recebemos seu cadastro. Assim que a conta for ativada, você terá acesso completo.</p>
         <p>Se tiver dúvidas, responda ao e-mail de boas-vindas.</p>
+        <Link href="/assinatura/planos" className={buttonVariants({ className: 'mt-2' })}>Escolher um plano e pagar</Link>
       </CardContent>
     </Card>
   );

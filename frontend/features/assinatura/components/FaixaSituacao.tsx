@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { SituacaoAssinatura } from '@/features/auth/types';
 import { formatarData } from '@/lib/formatos';
 import { cn } from '@/lib/utils';
@@ -11,18 +12,23 @@ export function FaixaSituacao({ situacao, testeTerminaEm }: Props) {
   const faixa = (() => {
     switch (situacao) {
       case 'TESTE':
-        return { tom: 'bg-info/10 text-info', texto: testeTerminaEm ? `Teste grátis até ${formatarData(testeTerminaEm)}.` : 'Teste grátis.' };
+        return { tom: 'bg-info/10 text-info', texto: testeTerminaEm ? `Teste grátis até ${formatarData(testeTerminaEm)}.` : 'Teste grátis.', acao: 'Escolher plano' };
       case 'INADIMPLENTE':
-        return { tom: 'bg-warning/10 text-warning', texto: 'Há um pagamento pendente na sua assinatura.' };
+        return { tom: 'bg-warning/10 text-warning', texto: 'Há um pagamento pendente na sua assinatura.', acao: 'Regularizar' };
       case 'SUSPENSA':
-        return { tom: 'bg-danger/10 text-danger', texto: 'Conta suspensa. Você ainda pode consultar e baixar seus dados.' };
+        return { tom: 'bg-danger/10 text-danger', texto: 'Conta suspensa. Você ainda pode consultar e baixar seus dados.', acao: 'Regularizar' };
       case 'CANCELADA':
-        return { tom: 'bg-danger/10 text-danger', texto: 'Conta cancelada. Você ainda pode consultar e baixar seus dados.' };
+        return { tom: 'bg-danger/10 text-danger', texto: 'Conta cancelada. Você ainda pode consultar e baixar seus dados.', acao: null };
       default:
         return null;
     }
   })();
 
   if (!faixa) return null;
-  return <p role="status" className={cn('rounded-md px-3 py-2 text-sm', faixa.tom)}>{faixa.texto}</p>;
+  return (
+    <p role="status" className={cn('rounded-md px-3 py-2 text-sm', faixa.tom)}>
+      {faixa.texto}
+      {faixa.acao ? <> <Link href="/assinatura/planos" className="font-medium underline">{faixa.acao}</Link></> : null}
+    </p>
+  );
 }

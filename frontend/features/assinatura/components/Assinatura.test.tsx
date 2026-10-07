@@ -1,11 +1,17 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { QUERY_KEY_USUARIO } from '@/features/auth/hooks/useUsuario';
 import type { SituacaoAssinatura } from '@/features/auth/types';
 import { AreaDaEmpresa } from './AreaDaEmpresa';
 import { ConsumoDoPlano } from './ConsumoDoPlano';
 import { FaixaSituacao } from './FaixaSituacao';
+
+const caminho = vi.hoisted(() => ({ valor: '/dashboard' }));
+vi.mock('next/navigation', () => ({ usePathname: () => caminho.valor }));
+afterEach(() => {
+  caminho.valor = '/dashboard';
+});
 
 function comUsuarioEm(situacao: SituacaoAssinatura) {
   const client = new QueryClient();
@@ -27,6 +33,18 @@ describe('FaixaSituacao', () => {
     expect(screen.getByRole('status')).toHaveTextContent('Conta suspensa. Você ainda pode consultar e baixar seus dados.');
   });
 
+  it.each([['TESTE', 'Escolher plano'], ['INADIMPLENTE', 'Regularizar'], ['SUSPENSA', 'Regularizar']] as const)('%s leva ao pagamento', (situacao, texto) => {
+    render(<FaixaSituacao situacao={situacao} testeTerminaEm={null} />);
+    expect(screen.getByRole('link', { name: texto })).toHaveAttribute('href', '/assinatura/planos');
+  });
+
+  it('ativa e cancelada não oferecem pagamento', () => {
+    const { rerender } = render(<FaixaSituacao situacao="CANCELADA" testeTerminaEm={null} />);
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+    rerender(<FaixaSituacao situacao="ATIVA" testeTerminaEm={null} />);
+    expect(screen.queryByRole('link')).not.toBeInTheDocument();
+  });
+
   it('ativa não mostra faixa', () => {
     const { container } = render(<FaixaSituacao situacao="ATIVA" testeTerminaEm={null} />);
     expect(container).toBeEmptyDOMElement();
@@ -38,6 +56,17 @@ describe('AreaDaEmpresa', () => {
     comUsuarioEm('PENDENTE');
     expect(screen.getByRole('heading', { name: 'Aguardando ativação' })).toBeInTheDocument();
     expect(screen.queryByText('conteúdo')).not.toBeInTheDocument();
+  });
+
+  it('conta pendente enxerga a página de assinatura para poder pagar e o aviso leva até ela', () => {
+    caminho.valor = '/assinatura/planos';
+    comUsuarioEm('PENDENTE');
+    expect(screen.getByText('conteúdo')).toBeInTheDocument();
+  });
+
+  it('o aviso de conta pendente oferece escolher um plano', () => {
+    comUsuarioEm('PENDENTE');
+    expect(screen.getByRole('link', { name: 'Escolher um plano e pagar' })).toHaveAttribute('href', '/assinatura/planos');
   });
 
   it('conta em teste vê a faixa e o conteúdo', () => {

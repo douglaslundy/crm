@@ -1,4 +1,5 @@
 import type { SituacaoAssinatura } from '@/features/auth/types';
+import type { AssinaturaDeCobranca } from '@/features/cobranca/types';
 
 export const MODULOS = ['FISCAL_NFE', 'FISCAL_NFCE', 'FISCAL_NFSE', 'CRM', 'API'] as const;
 export type Modulo = (typeof MODULOS)[number];
@@ -36,6 +37,8 @@ export interface Assinatura {
   teste_termina_em: string | null;
   plano: Plano | null;
   consumo: ItemConsumo[];
+  /** Assinatura de cobrança (a mais recente não cancelada), ou null. */
+  assinatura: AssinaturaDeCobranca | null;
 }
 
 export const ROTULO_MODULO: Record<Modulo, string> = {
