@@ -8,7 +8,7 @@
 
 Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é decisão da SEFAZ (sem número fixo no código); cancelada continua contando na cota `DOCUMENTOS_MES`; `consultarPorChave` usa o ambiente da **nota** (corrige consulta no ambiente errado depois de "Ir para produção"); o XML do cancelamento é o `nfeProc` com `retEvento` (`Complements::cancelRegister`); aceitos 135/136/155; inutilização síncrona com guardas locais (faixa já alocada, sem nota autorizada/em processamento/cancelada na faixa), resultado sempre gravado.
 
-**F3c3 (EPEC da NF-e) concluída em 2026-10-06 (10 tarefas); a F3 está fechada.** Próxima fase: **F4 NFS-e Nacional** (`TAREFAS.md`), ainda sem spec: começar por `superpowers:brainstorming`. Contexto necessário para a F4: `docs/referencia-fiscal/02-nfephp-nfse.md`, spec mestre §F4 (linha 378) e o padrão das Actions de emissão da F3 (`IniciarEmissao`, `EmitirNotaJob`, `AplicarResultadoDaEmissao`).
+**F4a (NFS-e Nacional) em andamento (2026-10-07):** F4 cortada em F4a (NFS-e) e F4b (venda mista); design aprovado no chat e spec escrito em `docs/superpowers/specs/2026-10-07-f4a-nfse-nacional-design.md`. **Próximo passo:** o usuário revisa o spec; depois `writing-plans`. (Antes: F3c3 concluída em 2026-10-06, 10 tarefas; a F3 está fechada.) Contexto necessário para a F4: `docs/referencia-fiscal/02-nfephp-nfse.md`, spec mestre §F4 (linha 378) e o padrão das Actions de emissão da F3 (`IniciarEmissao`, `EmitirNotaJob`, `AplicarResultadoDaEmissao`).
 
 ## Decisões pendentes com o usuário
 - **Push dos commits da F3a:** feitos na master; o último push foi `db2bc7d` (docs do backlog).
