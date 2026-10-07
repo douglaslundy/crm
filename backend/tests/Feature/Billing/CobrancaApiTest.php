@@ -160,4 +160,77 @@ class CobrancaApiTest extends TestCase
         $api->getJson('/api/app/assinatura')->assertOk()
             ->assertJsonPath('data.assinatura.situacao', 'PENDENTE')->assertJsonPath('data.assinatura.metodo', 'BOLETO');
     }
+
+    public function test_pagar_excedente_por_pix_devolve_o_qr_code(): void
+    {
+        $c = $this->excedentePendente();
+
+        $this->spaComo($this->admin)->postJson("/api/app/assinatura/cobrancas/{$c->id}/pagar", ['metodo' => 'PIX'])
+            ->assertOk()
+            ->assertJsonPath('data.id', $c->id)
+            ->assertJsonPath('data.metodo', 'PIX')
+            ->assertJsonPath('data.pix_qr_code', '000201PIXFAKE')
+            ->assertJsonPath('data.valor_centavos', 300);
+    }
+
+    public function test_pagar_por_cartao_sem_token_devolve_422_com_codigo(): void
+    {
+        $c = $this->excedentePendente();
+
+        $this->spaComo($this->admin)->postJson("/api/app/assinatura/cobrancas/{$c->id}/pagar", ['metodo' => 'CARTAO'])
+            ->assertStatus(422)->assertJsonPath('codigo', 'BILLING_CARTAO_SEM_TOKEN');
+    }
+
+    public function test_pagar_por_boleto_ou_sem_metodo_e_erro_de_validacao(): void
+    {
+        $c = $this->excedentePendente();
+        $api = $this->spaComo($this->admin);
+
+        $api->postJson("/api/app/assinatura/cobrancas/{$c->id}/pagar", ['metodo' => 'BOLETO'])->assertStatus(422)->assertJsonValidationErrors('metodo');
+        $api->postJson("/api/app/assinatura/cobrancas/{$c->id}/pagar", [])->assertStatus(422)->assertJsonValidationErrors('metodo');
+    }
+
+    public function test_so_proprietario_e_admin_pagam_a_cobranca(): void
+    {
+        $c = $this->excedentePendente();
+        foreach ([Papel::Fiscal, Papel::Vendedor, Papel::Leitura] as $papel) {
+            $usuario = Usuario::factory()->for($this->tenant)->create(['papel' => $papel]);
+
+            $this->spaComo($usuario)->postJson("/api/app/assinatura/cobrancas/{$c->id}/pagar", ['metodo' => 'PIX'])
+                ->assertForbidden()->assertJsonPath('codigo', 'BILLING_SEM_PERMISSAO');
+        }
+    }
+
+    public function test_outro_tenant_nao_paga_cobranca_alheia(): void
+    {
+        $c = $this->excedentePendente();
+        $outro = Tenant::factory()->create();
+        $intruso = Usuario::factory()->for($outro)->create(['papel' => Papel::Admin]);
+        app(TenantContext::class)->set($outro->id);
+
+        $this->spaComo($intruso)->postJson("/api/app/assinatura/cobrancas/{$c->id}/pagar", ['metodo' => 'PIX'])->assertNotFound();
+        $this->assertNull(Cobranca::withoutTenantScope()->findOrFail($c->id)->gateway_pagamento_id);
+        $this->spaComo($intruso)->getJson('/api/app/assinatura/cobrancas')->assertOk()->assertJsonCount(0, 'data');
+    }
+
+    #[DataProvider('situacoesQuePrecisamPoderPagar')]
+    public function test_conta_pendente_inadimplente_ou_suspensa_consegue_pagar_o_excedente(SituacaoAssinatura $situacao): void
+    {
+        $c = $this->excedentePendente();
+        $this->tenant->forceFill(['situacao' => $situacao])->save();
+
+        $this->spaComo($this->admin)->postJson("/api/app/assinatura/cobrancas/{$c->id}/pagar", ['metodo' => 'PIX'])->assertOk();
+    }
+
+    public function test_a_lista_traz_os_campos_do_excedente_com_metodo_nulo(): void
+    {
+        $this->excedentePendente();
+
+        $this->spaComo($this->admin)->getJson('/api/app/assinatura/cobrancas')->assertOk()
+            ->assertJsonPath('data.0.tipo', 'EXCEDENTE')
+            ->assertJsonPath('data.0.metodo', null)
+            ->assertJsonPath('data.0.mes_referencia', '2026-09-01')
+            ->assertJsonPath('data.0.documentos_excedentes', 3)
+            ->assertJsonPath('data.0.valor_unitario_centavos', 100);
+    }
 }

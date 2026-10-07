@@ -19,7 +19,7 @@ final class VerificarSituacaoDoTenant
     public const LIBERADAS_EM_PENDENTE = ['app.assinatura'];
 
     /** Quem está pendente, inadimplente ou suspenso precisa poder pagar: estas rotas passam em qualquer situação. */
-    public const LIBERADAS_PARA_PAGAR = ['app.assinatura.checkout', 'app.assinatura.cobrancas', 'app.assinatura.cancelar'];
+    public const LIBERADAS_PARA_PAGAR = ['app.assinatura.checkout', 'app.assinatura.cobrancas', 'app.assinatura.cobrancas.pagar', 'app.assinatura.cancelar'];
 
     public function handle(Request $request, Closure $next): Response
     {

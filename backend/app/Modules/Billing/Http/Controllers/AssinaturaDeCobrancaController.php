@@ -7,7 +7,9 @@ namespace App\Modules\Billing\Http\Controllers;
 use App\Modules\Billing\Application\Actions\CancelarAssinatura;
 use App\Modules\Billing\Application\Actions\IniciarAssinatura;
 use App\Modules\Billing\Application\Actions\ListarCobrancas;
+use App\Modules\Billing\Application\Actions\PagarCobranca;
 use App\Modules\Billing\Http\Requests\CheckoutRequest;
+use App\Modules\Billing\Http\Requests\PagarCobrancaRequest;
 use App\Modules\Billing\Http\Resources\AssinaturaDeCobrancaResource;
 use App\Modules\Billing\Http\Resources\CobrancaResource;
 use App\Modules\Identity\Domain\Models\Usuario;
@@ -36,6 +38,13 @@ final class AssinaturaDeCobrancaController
     public function cobrancas(Request $request, ListarCobrancas $acao): AnonymousResourceCollection
     {
         return CobrancaResource::collection($acao->executar($this->autor($request)));
+    }
+
+    public function pagar(PagarCobrancaRequest $request, PagarCobranca $acao, string $cobranca): JsonResponse
+    {
+        $paga = $acao->executar($this->autor($request), $cobranca, $request->metodo(), $request->validated('token_do_cartao'));
+
+        return response()->json(['data' => (new CobrancaResource($paga))->resolve($request)]);
     }
 
     public function cancelar(Request $request, CancelarAssinatura $acao): JsonResponse
