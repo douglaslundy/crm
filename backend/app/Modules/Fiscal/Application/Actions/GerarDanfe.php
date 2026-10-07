@@ -6,8 +6,10 @@ namespace App\Modules\Fiscal\Application\Actions;
 
 use App\Modules\Fiscal\Application\Emissao\ArquivoPdf;
 use App\Modules\Fiscal\Domain\Contracts\GeradorDeDanfe;
+use App\Modules\Fiscal\Domain\Emissao\RegistroEpec;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
+use App\Modules\Fiscal\Domain\Enums\TipoDeContingencia;
 use App\Modules\Fiscal\Domain\Exceptions\NotaSemPdfException;
 use App\Modules\Fiscal\Domain\Models\Nota;
 
@@ -20,13 +22,22 @@ final class GerarDanfe
     {
         $nota->makeVisible(['xml_autorizado', 'xml_cancelamento', 'xml_enviado']);
 
+        $epec = null;
         [$xml, $cancelada] = match ($nota->status) {
             StatusNota::Autorizada, StatusNota::Cancelando => [$nota->xml_autorizado, false],
             StatusNota::Cancelada => [$this->xmlDaCancelada($nota), true],
-            // Contingência offline: o XML assinado e ainda sem protocolo; a biblioteca imprime as duas vias sozinha (tpEmis 9).
+            // Contingência: o XML assinado e ainda sem protocolo de autorização. A NFC-e offline imprime as duas vias sozinha
+            // (tpEmis 9); a NF-e em EPEC imprime o registro do evento (tpEmis 4), então o protocolo precisa estar gravado.
             StatusNota::Contingencia => [$nota->xml_enviado, false],
             default => throw new NotaSemPdfException,
         };
+
+        if ($nota->status === StatusNota::Contingencia && $nota->contingencia_tipo === TipoDeContingencia::Epec) {
+            if ($nota->epec_protocolo === null || $nota->epec_registrado_em === null) {
+                throw new NotaSemPdfException('O registro do EPEC desta nota não está disponível para gerar o DANFE.');
+            }
+            $epec = new RegistroEpec($nota->epec_protocolo, $nota->epec_registrado_em);
+        }
 
         if (! is_string($xml) || $xml === '') {
             throw new NotaSemPdfException('O XML desta nota não está disponível para gerar o DANFE ou o cupom.');
@@ -34,7 +45,7 @@ final class GerarDanfe
 
         $prefixo = $nota->modelo === ModeloDocumento::Nfce ? 'CUPOM' : 'DANFE';
 
-        return new ArquivoPdf($prefixo.'-'.($nota->numero ?? 'sem-numero').'.pdf', $this->gerador->gerar($xml, $cancelada, $nota->modelo));
+        return new ArquivoPdf($prefixo.'-'.($nota->numero ?? 'sem-numero').'.pdf', $this->gerador->gerar($xml, $cancelada, $nota->modelo, $epec));
     }
 
     /** O fallback cru da F3b1 (só o retorno do evento) não serve de base: usa o autorizado, ainda com a marca. */

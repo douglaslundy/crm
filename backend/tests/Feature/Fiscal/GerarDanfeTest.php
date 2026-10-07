@@ -6,6 +6,7 @@ namespace Tests\Feature\Fiscal;
 
 use App\Modules\Fiscal\Application\Actions\GerarDanfe;
 use App\Modules\Fiscal\Domain\Contracts\GeradorDeDanfe;
+use App\Modules\Fiscal\Domain\Emissao\RegistroEpec;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Exceptions\NotaSemPdfException;
@@ -40,7 +41,7 @@ class GerarDanfeTest extends TestCase
              */
             public function __construct(private array &$chamadas, private array &$modelos) {}
 
-            public function gerar(string $xml, bool $cancelada, ModeloDocumento $modelo = ModeloDocumento::Nfe): string
+            public function gerar(string $xml, bool $cancelada, ModeloDocumento $modelo = ModeloDocumento::Nfe, ?RegistroEpec $epec = null): string
             {
                 $this->chamadas[] = [$xml, $cancelada];
                 $this->modelos[] = $modelo;
