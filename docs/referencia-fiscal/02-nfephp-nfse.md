@@ -81,3 +81,10 @@ Fonte: `mecanicapro/backend/app/Services/Fiscal/NfePhp/MotorNfse.php` (633 linha
 - **Status autorizados na 1.23:** o enum `CodigoStatus` só tem 100, 102, 103 e 107 (o 101, substituição, saiu); substituição está fora do escopo.
 - A lib desliga a verificação TLS (`CURLOPT_SSL_VERIFYPEER=0`, `VERIFYHOST=0`) nos clientes HTTP: pendência de segurança para o go-live.
 - O XSD `DPS_v1.01.xsd` não compila no libxml e o `DpsValidator` é mais rígido que a ADN: os testes conferem a estrutura do XML, não o XSD.
+
+## Venda mista (F4b, 2026-10-07)
+
+- Produtos e serviços na mesma venda viram **duas notas independentes**: uma NF-e (produtos) e uma NFS-e (serviços, modelo `DPS`). Cada uma segue seu fluxo, sua numeração e seu cancelamento; nenhuma regra fiscal muda.
+- O desconto geral é dividido em proporção aos subtotais (centavos inteiros, `RateioDeDesconto`); o resíduo vai para a última nota que comporta, então a soma dos descontos das notas é igual ao desconto da venda.
+- Antes de emitir, as duas notas são conferidas sem efeito colateral (`IniciarEmissao::verificar`). Com uma pendente, nada sai a menos que o usuário confirme emitir só a válida. Nota já emitida nunca é desfeita por causa da outra.
+- Fora da F4b: NFC-e na venda mista (a NFS-e exige tomador identificado), cancelar a venda inteira de uma vez, várias notas do mesmo tipo por venda.
