@@ -4,11 +4,11 @@
 2026-10-07
 
 ## Tarefa em andamento
-**Nenhuma execução em andamento. F3, F4 (a e b) e F5a concluídas (2026-10-07). Próxima: F5b (troca de plano e excedente).**
+**F5b1 (pagamento avulso e excedente) com spec e plano prontos e commitados; a EXECUÇÃO AINDA NÃO COMEÇOU (aguardando o "sim" do usuário; execução escolhida: Native, na master). F3, F4 (a e b) e F5a concluídas.** Retomar pela tarefa 1 do plano.
 
 Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é decisão da SEFAZ (sem número fixo no código); cancelada continua contando na cota `DOCUMENTOS_MES`; `consultarPorChave` usa o ambiente da **nota** (corrige consulta no ambiente errado depois de "Ir para produção"); o XML do cancelamento é o `nfeProc` com `retEvento` (`Complements::cancelRegister`); aceitos 135/136/155; inutilização síncrona com guardas locais (faixa já alocada, sem nota autorizada/em processamento/cancelada na faixa), resultado sempre gravado.
 
-**F5a (cobrança, núcleo) concluída em 2026-10-07 (11 tarefas).** Próxima: **F5b (troca de plano e excedente)**, sem spec: começar por `superpowers:brainstorming`. Contexto necessário para a F5b: `TAREFAS.md` (F5b), o spec mestre `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md` (seção 12 "Cobrança": troca de plano e documento excedente), o spec e o plano da F5a, `docs/cobranca.md`, e os arquivos `Platform/Application/Actions/TrocarPlanoDaEmpresa.php`, `Platform/Application/EntitlementService.php` (`excessos`, `garantirCapacidade`), `Platform/Application/RegistroDeContadores.php`, `Billing/Application/Actions/{IniciarAssinatura,ConciliarPagamento}.php` e `Billing/Console/AplicarInadimplenciaCommand.php`.
+**F5b dividida em F5b1 e F5b2 (decisão do usuário, 2026-10-08).** F5b1 = pagamento avulso (cartão e PIX) + documento excedente: spec `docs/superpowers/specs/2026-10-08-f5b1-excedente-pagamento-avulso-design.md`, plano `docs/superpowers/plans/2026-10-08-f5b1-excedente-pagamento-avulso.md` (9 tarefas). F5b2 = troca de plano (upgrade pago por cartão ou PIX, o plano só muda ao pagar; downgrade agendado para o `paga_ate`, bloqueado se o uso passar dos limites do novo plano), sem spec ainda. Para executar a F5b1: usar `superpowers:executing-plans` (Native), criar o workspace com `sdd-workspace`, ler SÓ o plano e o spec, e seguir da Task 1 (nenhuma tarefa foi feita). Cuidado com as armadilhas listadas em "Global Constraints" do plano (shell come barras invertidas: usar Write/Edit; CRLF; `use` esquecido em teste; `status()` reservado do PHPUnit).
 
 ## Decisões pendentes com o usuário
 - **Push dos commits da F3a:** feitos na master; o último push foi `db2bc7d` (docs do backlog).
@@ -168,4 +168,4 @@ O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artis
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-F5b (troca de plano e excedente): brainstorming para a spec. Antes ou em paralelo, o usuário pode: fazer o push (muitos commits locais além de `db2bc7d`), reimplantar o staging (desatualizado), rodar os roteiros de homologação real (NF-e, NFC-e, contingência, EPEC, NFS-e) e o de sandbox do Mercado Pago (`docs/cobranca.md`), e conferir as telas no navegador.
+Executar a F5b1 (plano pronto, Task 1 em diante). Depois: brainstorming da F5b2 (troca de plano). Antes ou em paralelo, o usuário pode: fazer o push (muitos commits locais além de `db2bc7d`), reimplantar o staging (desatualizado), rodar os roteiros de homologação real (NF-e, NFC-e, contingência, EPEC, NFS-e) e o de sandbox do Mercado Pago (`docs/cobranca.md`), e conferir as telas no navegador.
