@@ -48,7 +48,7 @@ export function renderizar(ui: ReactNode) {
 }
 
 export const NOTA: Nota = {
-  id: 'n1', modelo: 'NFE', numero_nfse: null, contingencia_limite_em: null, contingencia_motivo: null, contingencia_tipo: null, epec_protocolo: null, epec_registrado_em: null, status: 'AUTORIZADA', ambiente: 'HOMOLOGACAO', numero: 7, serie: '1', chave: '3'.repeat(44), protocolo: '135', cstat: '100', motivo: 'Autorizado',
+  id: 'n1', modelo: 'NFE', numero_nfse: null, venda_id: null, contingencia_limite_em: null, contingencia_motivo: null, contingencia_tipo: null, epec_protocolo: null, epec_registrado_em: null, status: 'AUTORIZADA', ambiente: 'HOMOLOGACAO', numero: 7, serie: '1', chave: '3'.repeat(44), protocolo: '135', cstat: '100', motivo: 'Autorizado',
   cancelamento_justificativa: null, cancelado_em: null, cancelamento_protocolo: null, cancelamento_cstat: null, cancelamento_motivo: null,
   mensagem_erro: null, natureza_operacao: 'Venda de mercadoria', consumidor_final: true, subtotal_centavos: 2500, desconto_centavos: 0, total_centavos: 2500,
   informacoes_complementares: null, emitido_em: '2026-10-02T10:00:00-03:00', created_at: '2026-10-02T09:00:00-03:00', cliente: { id: 'c1', nome: 'Maria Teste' },

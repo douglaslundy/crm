@@ -2,10 +2,10 @@ import { z } from 'zod';
 import { reaisParaCentavos } from '@/lib/formatos';
 import type { InutilizacaoPayload, NotaDeProdutosPayload, NotaDeServicosPayload } from './types';
 
-const DINHEIRO = /^\d+(,\d{1,2})?$/;
+export const DINHEIRO = /^\d+(,\d{1,2})?$/;
 const QUANTIDADE = /^\d{1,9}([.,]\d{1,3})?$/;
 
-const itemSchema = z.object({
+export const itemSchema = z.object({
   produto_id: z.string().uuid('Escolha um produto.'),
   quantidade: z
     .string()
@@ -14,7 +14,7 @@ const itemSchema = z.object({
   valor_unitario: z.string().refine((v) => v === '' || DINHEIRO.test(v), 'Use o formato 10,50.'),
 });
 
-const pagamentoSchema = z
+export const pagamentoSchema = z
   .object({
     tpag: z.enum(['01', '03', '04', '17', '99']),
     xpag: z.string().max(60, 'No máximo 60 caracteres.'),
@@ -61,7 +61,7 @@ export function paraPayload(d: NotaFormDados): NotaDeProdutosPayload {
   };
 }
 
-const servicoItemSchema = z.object({
+export const servicoItemSchema = z.object({
   servico_id: z.string().uuid('Escolha um serviço.'),
   quantidade: z
     .string()

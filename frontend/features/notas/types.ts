@@ -70,6 +70,7 @@ export interface Nota {
   chave: string | null;
   protocolo: string | null;
   numero_nfse: string | null;
+  venda_id: string | null;
   cstat: string | null;
   motivo: string | null;
   mensagem_erro: string | null;
