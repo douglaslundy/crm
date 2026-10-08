@@ -26,6 +26,7 @@ final class ValidadorDeWebhook
             'eventos' => ['sometimes', 'nullable', 'array'],
             'eventos.*' => ['string', 'distinct', Rule::in(EventoDeWebhook::assinaveis())],
             'ambiente' => [$obrigatorio, Rule::enum(AmbienteFiscal::class)],
+            'ativo' => ['sometimes', 'boolean'],
         ], [
             'eventos.*.in' => 'Evento desconhecido. Use: '.implode(', ', EventoDeWebhook::assinaveis()).'.',
         ])->validate();

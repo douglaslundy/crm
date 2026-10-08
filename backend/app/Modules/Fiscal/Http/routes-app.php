@@ -10,6 +10,7 @@ use App\Modules\Fiscal\Http\Controllers\EmitenteController;
 use App\Modules\Fiscal\Http\Controllers\InutilizacaoController;
 use App\Modules\Fiscal\Http\Controllers\NotaController;
 use App\Modules\Fiscal\Http\Controllers\VendaController;
+use App\Modules\Fiscal\Http\Controllers\WebhooksController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('empresa')->group(function (): void {
@@ -43,4 +44,15 @@ Route::middleware('empresa')->group(function (): void {
     Route::post('vendas/{venda}/emitir', [VendaController::class, 'emitir'])->name('app.vendas.emitir');
     Route::get('inutilizacoes', [InutilizacaoController::class, 'index'])->name('app.inutilizacoes.index');
     Route::post('inutilizacoes', [InutilizacaoController::class, 'store'])->name('app.inutilizacoes.store');
+
+    // Entregas antes de webhooks/{id}; {id} é sempre uuid.
+    Route::get('webhooks/entregas/{id}', [WebhooksController::class, 'entrega'])->whereUuid('id')->name('app.webhooks.entregas.show');
+    Route::post('webhooks/entregas/{id}/reenviar', [WebhooksController::class, 'reenviar'])->whereUuid('id')->name('app.webhooks.entregas.reenviar');
+    Route::get('webhooks', [WebhooksController::class, 'index'])->name('app.webhooks.index');
+    Route::post('webhooks', [WebhooksController::class, 'store'])->name('app.webhooks.store');
+    Route::get('webhooks/{id}', [WebhooksController::class, 'show'])->whereUuid('id')->name('app.webhooks.show');
+    Route::put('webhooks/{id}', [WebhooksController::class, 'update'])->whereUuid('id')->name('app.webhooks.update');
+    Route::delete('webhooks/{id}', [WebhooksController::class, 'destroy'])->whereUuid('id')->name('app.webhooks.destroy');
+    Route::get('webhooks/{id}/entregas', [WebhooksController::class, 'entregas'])->whereUuid('id')->name('app.webhooks.entregas.index');
+    Route::post('webhooks/{id}/testar', [WebhooksController::class, 'testar'])->whereUuid('id')->name('app.webhooks.testar');
 });

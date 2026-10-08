@@ -32,8 +32,8 @@ final class AtualizarWebhook
         $this->politica->garantirPodeGerenciar($autor);
         $this->entitlement->garantirModulo($autor->tenant, Modulo::Api);
 
-        $ativo = array_key_exists('ativo', $dados) ? filter_var($dados['ativo'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) : null;
         $validados = $this->validador->validar($dados, true);
+        $ativo = array_key_exists('ativo', $validados) ? (bool) $validados['ativo'] : null;
         if (isset($validados['url'])) {
             $this->urlSegura->validar((string) $validados['url']);
         }
