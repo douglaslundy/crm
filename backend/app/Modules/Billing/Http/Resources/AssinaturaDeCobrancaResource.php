@@ -22,6 +22,8 @@ final class AssinaturaDeCobrancaResource extends JsonResource
             'situacao' => $this->situacao->value,
             'paga_ate' => $this->paga_ate?->toDateString(),
             'cancelada_em' => $this->cancelada_em?->toIso8601String(),
+            'plano_proximo_id' => $this->plano_proximo_id,
+            'plano_proximo_em' => $this->plano_proximo_em?->toDateString(),
         ];
     }
 }

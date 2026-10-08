@@ -33,6 +33,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property ?CarbonInterface $mes_referencia
  * @property ?int $documentos_excedentes
  * @property ?int $valor_unitario_centavos
+ * @property ?string $plano_destino_id
  * @property ?CarbonInterface $pago_em
  * @property ?CarbonInterface $periodo_inicio
  * @property ?CarbonInterface $periodo_fim

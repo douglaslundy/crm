@@ -29,6 +29,7 @@ final class CobrancaResource extends JsonResource
             'mes_referencia' => $this->mes_referencia?->toDateString(),
             'documentos_excedentes' => $this->documentos_excedentes,
             'valor_unitario_centavos' => $this->valor_unitario_centavos,
+            'plano_destino_id' => $this->plano_destino_id,
             'pago_em' => $this->pago_em?->toIso8601String(),
         ];
     }

@@ -66,6 +66,7 @@ final class IniciarAssinatura
                 $assinatura = new Assinatura;
                 $assinatura->forceFill([
                     'plano_id' => $plano->id, 'ciclo' => $ciclo, 'metodo' => $metodo, 'situacao' => StatusDaAssinatura::Pendente,
+                    'valor_ciclo_centavos' => $valor,
                 ])->save();
                 $vencimento = $metodo === MetodoDePagamento::Boleto ? $hoje->addDays((int) config('billing.dias_primeiro_boleto')) : $hoje;
                 $cobranca = $this->novaCobranca($assinatura, $valor, $vencimento, $metodo);
@@ -132,8 +133,10 @@ final class IniciarAssinatura
     private function regularizar(Assinatura $assinatura, Usuario $autor, Tenant $tenant): ResultadoDoCheckout
     {
         $vencimento = CarbonImmutable::today((string) config('app.fuso_negocio'))->addDays((int) config('billing.dias_primeiro_boleto'));
-        $anterior = Cobranca::query()->where('assinatura_id', $assinatura->id)->where('status', StatusDaCobranca::Paga->value)->latest('pago_em')->value('valor_centavos');
-        $valor = is_int($anterior) ? $anterior : $assinatura->ciclo->precoDo($assinatura->plano);
+        // Só a mensalidade vale: excedente e upgrade pagos têm outro valor.
+        $anterior = Cobranca::query()->where('assinatura_id', $assinatura->id)->where('tipo', TipoDeCobranca::Assinatura->value)
+            ->where('status', StatusDaCobranca::Paga->value)->latest('pago_em')->value('valor_centavos');
+        $valor = $assinatura->valor_ciclo_centavos ?? (is_int($anterior) ? $anterior : $assinatura->ciclo->precoDo($assinatura->plano));
         $cobranca = $this->novaCobranca($assinatura, $valor, $vencimento, MetodoDePagamento::Boleto);
 
         try {

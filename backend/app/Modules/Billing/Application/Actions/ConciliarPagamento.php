@@ -134,7 +134,12 @@ final class ConciliarPagamento
      */
     private function valorDaRenovacao(Assinatura $assinatura): int
     {
-        $anterior = Cobranca::query()->where('assinatura_id', $assinatura->id)->where('status', StatusDaCobranca::Paga->value)->latest('pago_em')->value('valor_centavos');
+        if ($assinatura->valor_ciclo_centavos !== null) {
+            return $assinatura->valor_ciclo_centavos;
+        }
+        // Só a mensalidade vale: excedente e upgrade pagos têm outro valor.
+        $anterior = Cobranca::query()->where('assinatura_id', $assinatura->id)->where('tipo', TipoDeCobranca::Assinatura->value)
+            ->where('status', StatusDaCobranca::Paga->value)->latest('pago_em')->value('valor_centavos');
 
         return is_int($anterior) ? $anterior : $assinatura->ciclo->precoDo($assinatura->plano);
     }

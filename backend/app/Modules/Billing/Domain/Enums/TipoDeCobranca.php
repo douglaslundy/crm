@@ -8,13 +8,14 @@ enum TipoDeCobranca: string
 {
     case Assinatura = 'ASSINATURA';
     case Excedente = 'EXCEDENTE';
+    case Upgrade = 'UPGRADE';
 
     /** Só a cobrança da assinatura estende o período pago; o excedente apenas é quitado. */
     public function estendePeriodo(): bool
     {
         return match ($this) {
             self::Assinatura => true,
-            self::Excedente => false,
+            self::Excedente, self::Upgrade => false,
         };
     }
 }

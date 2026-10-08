@@ -27,6 +27,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property ?string $gateway_assinatura_id
  * @property ?CarbonInterface $paga_ate
  * @property ?CarbonInterface $cancelada_em
+ * @property ?int $valor_ciclo_centavos
+ * @property ?string $plano_proximo_id
+ * @property ?CarbonInterface $plano_proximo_em
  * @property-read Plano $plano
  */
 class Assinatura extends Model
@@ -52,7 +55,15 @@ class Assinatura extends Model
             'situacao' => StatusDaAssinatura::class,
             'paga_ate' => 'date',
             'cancelada_em' => 'datetime',
+            'valor_ciclo_centavos' => 'integer',
+            'plano_proximo_em' => 'date',
         ];
+    }
+
+    /** Preço contratado do ciclo atual; assinatura antiga, sem o valor gravado, vale o preço do plano no ciclo. */
+    public function valorDoCiclo(): int
+    {
+        return $this->valor_ciclo_centavos ?? $this->ciclo->precoDo($this->plano);
     }
 
     /** @return BelongsTo<Plano, $this> */
