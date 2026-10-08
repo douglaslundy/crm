@@ -67,9 +67,9 @@ class EnvioDeWebhookTest extends TestCase
         ]);
     }
 
-    private function enviar(WebhookEntrega $e, bool $reservada = false): WebhookEntrega
+    private function enviar(WebhookEntrega $e): WebhookEntrega
     {
-        app(EntregadorDeWebhook::class)->enviar($e->id, $reservada);
+        app(EntregadorDeWebhook::class)->enviar($e->id);
 
         return $e->fresh() ?? $this->fail('entrega sumiu');
     }
@@ -312,7 +312,7 @@ class EnvioDeWebhookTest extends TestCase
         $this->assertSame(EstadoDaEntrega::Entregue, $e->fresh()?->estado);
     }
 
-    public function test_comando_despacha_so_vencidas_reserva_e_retoma_a_travada(): void
+    public function test_comando_despacha_so_as_vencidas_e_o_envio_nao_duplica(): void
     {
         Bus::fake();
         $vencida = $this->entrega();
@@ -320,20 +320,48 @@ class EnvioDeWebhookTest extends TestCase
         $this->entrega(['estado' => EstadoDaEntrega::Falhou, 'proxima_tentativa_em' => null]);
 
         $this->artisan('webhooks:reenviar-pendentes')->assertSuccessful();
-        $this->artisan('webhooks:reenviar-pendentes')->assertSuccessful();
 
         Bus::assertDispatchedTimes(EnviarWebhookJob::class, 1);
-        Bus::assertDispatched(EnviarWebhookJob::class, fn (EnviarWebhookJob $j): bool => $j->entregaId === $vencida->id && $j->tenantId === $this->tenant->id && $j->reservada);
-        $this->assertTrue($vencida->fresh()?->proxima_tentativa_em?->equalTo(now()->addMinutes(5)));
-
-        // O worker morreu: passados 5 minutos a entrega volta a ser despachada.
-        $this->travelTo(now()->addMinutes(5));
-        $this->artisan('webhooks:reenviar-pendentes')->assertSuccessful();
-
-        Bus::assertDispatchedTimes(EnviarWebhookJob::class, 3); // a vencida de novo + a que estava a 2 minutos
+        Bus::assertDispatched(EnviarWebhookJob::class, fn (EnviarWebhookJob $j): bool => $j->entregaId === $vencida->id && $j->tenantId === $this->tenant->id && $j->queue === 'webhooks');
     }
 
-    public function test_job_reservado_pelo_comando_envia_mesmo_com_a_reserva_ativa(): void
+    public function test_jobs_repetidos_da_mesma_entrega_enviam_uma_so_vez(): void
+    {
+        $this->fakeHttp(Http::response('x', 500));
+        $e = $this->entrega();
+
+        // Fila atrasada: o comando despachou o mesmo job várias vezes antes de algum rodar.
+        foreach (range(1, 4) as $_) {
+            EnviarWebhookJob::dispatchSync($e->id, $this->tenant->id);
+        }
+
+        $this->assertCount(1, $this->enviadas());
+        $this->assertSame(1, $e->fresh()?->tentativas);
+        $this->assertTrue($e->fresh()?->proxima_tentativa_em?->equalTo(now()->addSeconds(60)));
+    }
+
+    public function test_worker_que_morre_no_envio_nao_gira_para_sempre(): void
+    {
+        $this->fakeHttp(fn () => throw new \Error('morreu'));
+        $e = $this->entrega();
+
+        for ($i = 1; $i <= 7; $i++) {
+            try {
+                $this->enviar($e);
+            } catch (\Error) {
+                // o processo "morreu": a reserva ficou, com a tentativa contada
+            }
+            $this->assertSame($i, $e->fresh()?->tentativas);
+            $this->assertTrue($e->fresh()?->proxima_tentativa_em?->equalTo(now()->addMinutes(5)));
+            $this->travelTo(now()->addMinutes(5));
+        }
+
+        $this->enviar($e);
+        $this->assertSame(EstadoDaEntrega::Falhou, $e->fresh()?->estado);
+        $this->assertNull($e->fresh()?->proxima_tentativa_em);
+    }
+
+    public function test_comando_com_fila_sincrona_envia_a_entrega_vencida(): void
     {
         Http::fake(['*' => Http::response('ok', 200)]);
         $e = $this->entrega();

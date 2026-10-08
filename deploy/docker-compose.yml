@@ -41,7 +41,7 @@ services:
 
   worker:
     <<: *app
-    command: ["php", "/var/www/html/artisan", "queue:work", "--sleep=3", "--tries=1", "--timeout=180", "--max-time=3600"]
+    command: ["php", "/var/www/html/artisan", "queue:work", "--queue=default,webhooks", "--sleep=3", "--tries=1", "--timeout=180", "--max-time=3600"]
     stop_grace_period: 60s
     healthcheck:
       disable: true # o healthcheck herdado é do nginx, que não roda aqui

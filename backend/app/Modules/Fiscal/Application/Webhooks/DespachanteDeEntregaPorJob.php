@@ -8,8 +8,8 @@ use App\Modules\Fiscal\Application\Jobs\EnviarWebhookJob;
 
 final class DespachanteDeEntregaPorJob implements DespachanteDeEntrega
 {
-    public function despachar(string $entregaId, string $tenantId, bool $reservada = false): void
+    public function despachar(string $entregaId, string $tenantId): void
     {
-        EnviarWebhookJob::dispatch($entregaId, $tenantId, $reservada);
+        EnviarWebhookJob::dispatch($entregaId, $tenantId);
     }
 }

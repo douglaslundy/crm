@@ -13,6 +13,7 @@ use App\Modules\Fiscal\Domain\Models\WebhookTentativa;
 use App\Modules\Platform\Application\EntitlementService;
 use App\Modules\Platform\Domain\Enums\Modulo;
 use App\Modules\Tenancy\Domain\Models\Tenant;
+use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\DB;
@@ -39,6 +40,8 @@ final class EntregadorDeWebhook
 
     private const RESPOSTA_MAXIMA_EM_BYTES = 1024;
 
+    private const RESPOSTA_LIMITE_EM_BYTES = 262144;
+
     private const ERRO_MAXIMO = 500;
 
     public function __construct(
@@ -47,15 +50,15 @@ final class EntregadorDeWebhook
         private readonly EntitlementService $entitlement,
     ) {}
 
-    /** @param bool $reservada quem despachou já reservou a entrega (comando de reenvio); senão reserva aqui */
-    public function enviar(string $entregaId, bool $reservada = false): void
+    public function enviar(string $entregaId): void
     {
-        if (! $reservada && ! $this->reservar($entregaId)) {
+        // Quem ganha a reserva já conta a tentativa: se o worker morrer no meio, ela não se perde.
+        if (! $this->reservar($entregaId)) {
             return;
         }
 
         $entrega = WebhookEntrega::query()->find($entregaId);
-        if ($entrega === null || $entrega->estado !== EstadoDaEntrega::Pendente) {
+        if ($entrega === null) {
             return;
         }
 
@@ -78,7 +81,17 @@ final class EntregadorDeWebhook
      */
     public function opcoesDeConexao(ValidacaoDeUrl $url): array
     {
-        $opcoes = ['allow_redirects' => false];
+        $opcoes = [
+            'allow_redirects' => false,
+            // O proxy do ambiente resolveria o nome por conta própria e anularia a fixação do IP.
+            'proxy' => '',
+            // Resposta enorme de um destino malicioso não pode esgotar a memória do worker.
+            'progress' => static function (int $baixarTotal, int $baixado): void {
+                if ($baixado > self::RESPOSTA_LIMITE_EM_BYTES) {
+                    throw new RespostaGrandeDemaisException;
+                }
+            },
+        ];
         if (filter_var($url->host, FILTER_VALIDATE_IP) === false && ! str_starts_with($url->host, '[')) {
             $enderecos = array_map(fn (string $ip): string => str_contains($ip, ':') ? "[{$ip}]" : $ip, $url->ips);
             $opcoes['curl'] = [CURLOPT_RESOLVE => ["{$url->host}:{$url->porta}:".implode(',', $enderecos)]];
@@ -87,14 +100,30 @@ final class EntregadorDeWebhook
         return $opcoes;
     }
 
-    /** UPDATE condicional: só uma execução ganha a entrega vencida e a trava por alguns minutos. */
+    /**
+     * UPDATE condicional: só uma execução ganha a entrega vencida. Ele trava a entrega por alguns minutos e já conta
+     * a tentativa; se o worker morrer, a próxima reserva (pelo comando) encontra o contador andado e a rodada acaba.
+     */
     private function reservar(string $entregaId): bool
     {
+        $esgotada = WebhookEntrega::query()->whereKey($entregaId)
+            ->where('estado', EstadoDaEntrega::Pendente->value)
+            ->where('proxima_tentativa_em', '<=', now())
+            ->where('tentativas_na_rodada', '>=', self::TENTATIVAS_POR_RODADA)
+            ->update(['estado' => EstadoDaEntrega::Falhou->value, 'proxima_tentativa_em' => null]);
+        if ($esgotada === 1) {
+            return false;
+        }
+
         return WebhookEntrega::query()
             ->whereKey($entregaId)
             ->where('estado', EstadoDaEntrega::Pendente->value)
             ->where('proxima_tentativa_em', '<=', now())
-            ->update(['proxima_tentativa_em' => now()->addSeconds(self::RESERVA_EM_SEGUNDOS)]) === 1;
+            ->update([
+                'proxima_tentativa_em' => now()->addSeconds(self::RESERVA_EM_SEGUNDOS),
+                'tentativas' => DB::raw('tentativas + 1'),
+                'tentativas_na_rodada' => DB::raw('tentativas_na_rodada + 1'),
+            ]) === 1;
     }
 
     private function motivoParaDescartar(WebhookEntrega $entrega, ?WebhookEndpoint $endpoint): ?string
@@ -120,10 +149,7 @@ final class EntregadorDeWebhook
     {
         DB::transaction(function () use ($entrega, $motivo): void {
             $this->registrar($entrega, null, 0, $motivo);
-            $entrega->forceFill([
-                'estado' => EstadoDaEntrega::Falhou, 'proxima_tentativa_em' => null,
-                'tentativas' => $entrega->tentativas + 1, 'tentativas_na_rodada' => $entrega->tentativas_na_rodada + 1,
-            ])->save();
+            $entrega->forceFill(['estado' => EstadoDaEntrega::Falhou, 'proxima_tentativa_em' => null])->save();
         });
     }
 
@@ -147,7 +173,7 @@ final class EntregadorDeWebhook
                 ->timeout(self::TIMEOUT_EM_SEGUNDOS)
                 ->withOptions($this->opcoesDeConexao($url))
                 ->post($url->url);
-        } catch (WebhookUrlInvalidaException|ConnectionException $e) {
+        } catch (WebhookUrlInvalidaException|ConnectionException|RespostaGrandeDemaisException|GuzzleException $e) {
             $erro = mb_substr(mb_scrub($e->getMessage()), 0, self::ERRO_MAXIMO);
         }
 
@@ -160,8 +186,9 @@ final class EntregadorDeWebhook
         DB::transaction(function () use ($entrega, $endpoint, $resposta, $duracao, $erro): void {
             $this->registrar($entrega, $resposta, $duracao, $erro);
 
-            $tentativas = $entrega->tentativas + 1;
-            $naRodada = $entrega->tentativas_na_rodada + 1;
+            // A reserva já contou esta tentativa.
+            $tentativas = $entrega->tentativas;
+            $naRodada = $entrega->tentativas_na_rodada;
 
             if ($resposta?->successful() === true) {
                 $entrega->forceFill([
@@ -223,7 +250,7 @@ final class EntregadorDeWebhook
         $tentativa = new WebhookTentativa;
         $tentativa->forceFill([
             'webhook_entrega_id' => $entrega->id,
-            'numero' => $entrega->tentativas + 1,
+            'numero' => $entrega->tentativas,
             'status_http' => $resposta?->status(),
             'duracao_ms' => $duracao,
             'erro' => $erro,

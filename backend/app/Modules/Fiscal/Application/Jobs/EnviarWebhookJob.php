@@ -23,11 +23,11 @@ final class EnviarWebhookJob implements ShouldQueue
 
     public int $timeout = 30;
 
-    public function __construct(
-        public readonly string $entregaId,
-        public readonly string $tenantId,
-        public readonly bool $reservada = false,
-    ) {}
+    public function __construct(public readonly string $entregaId, public readonly string $tenantId)
+    {
+        // Fila própria: webhooks lentos não atrasam a emissão fiscal.
+        $this->onQueue('webhooks');
+    }
 
     public function handle(EntregadorDeWebhook $entregador, TenantContext $contexto): void
     {
@@ -35,7 +35,7 @@ final class EnviarWebhookJob implements ShouldQueue
         $anterior = $contexto->id();
         $contexto->set($this->tenantId);
         try {
-            $entregador->enviar($this->entregaId, $this->reservada);
+            $entregador->enviar($this->entregaId);
         } catch (Throwable $e) {
             // A reserva expira sozinha e o comando retoma a entrega.
             report($e);

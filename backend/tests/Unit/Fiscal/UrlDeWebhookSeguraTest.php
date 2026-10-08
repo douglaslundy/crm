@@ -95,6 +95,7 @@ class UrlDeWebhookSeguraTest extends TestCase
             'url longa' => 'https://exemplo.test/'.str_repeat('a', 500),
             'porta zero' => 'https://exemplo.test:0/x',
             'porta alta' => 'https://exemplo.test:70000/x',
+            'ponto final' => 'https://exemplo.test./x',
             'texto' => 'isto nao e uma url',
             'vazio' => '',
             'sem host' => 'https:///x',

@@ -139,7 +139,7 @@ O sistema avisa o seu ERP quando uma nota muda de situação, sem você precisar
 
 | Evento | Quando |
 | --- | --- |
-| `nota.autorizada` | a nota foi autorizada. Também é enviado quando um **cancelamento é recusado** e a nota volta a autorizada: veja `cancelamento_motivo` no recurso |
+| `nota.autorizada` | a nota foi autorizada. Também é enviado quando um **cancelamento é recusado ou não confirmado** e a nota volta a autorizada: veja `cancelamento_motivo` no recurso |
 | `nota.rejeitada` | a SEFAZ/prefeitura rejeitou a nota |
 | `nota.cancelada` | o cancelamento foi confirmado |
 | `nota.erro` | erro na emissão (a nota pode ser corrigida e reemitida) |

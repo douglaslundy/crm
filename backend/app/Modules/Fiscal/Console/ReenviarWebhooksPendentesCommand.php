@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Console;
 
 use App\Modules\Fiscal\Application\Webhooks\DespachanteDeEntrega;
-use App\Modules\Fiscal\Application\Webhooks\EntregadorDeWebhook;
 use App\Modules\Fiscal\Domain\Enums\EstadoDaEntrega;
 use App\Modules\Fiscal\Domain\Models\WebhookEntrega;
 use Illuminate\Console\Command;
@@ -27,21 +26,12 @@ final class ReenviarWebhooksPendentesCommand extends Command
             ->limit(self::LOTE)
             ->get(['id', 'tenant_id']);
 
-        $despachadas = 0;
+        // O próprio envio disputa a entrega com um UPDATE condicional: despachar duas vezes não envia duas vezes.
         foreach ($entregas as $entrega) {
-            // A reserva é um UPDATE condicional: se outra execução já pegou a entrega, não despachamos de novo.
-            $reservou = WebhookEntrega::withoutTenantScope()
-                ->whereKey($entrega->id)
-                ->where('estado', EstadoDaEntrega::Pendente->value)
-                ->where('proxima_tentativa_em', '<=', now())
-                ->update(['proxima_tentativa_em' => now()->addSeconds(EntregadorDeWebhook::RESERVA_EM_SEGUNDOS)]) === 1;
-            if ($reservou) {
-                $despachante->despachar($entrega->id, $entrega->tenant_id, true);
-                $despachadas++;
-            }
+            $despachante->despachar($entrega->id, $entrega->tenant_id);
         }
 
-        $this->info("Entregas de webhook despachadas: {$despachadas}.");
+        $this->info("Entregas de webhook despachadas: {$entregas->count()}.");
 
         return self::SUCCESS;
     }

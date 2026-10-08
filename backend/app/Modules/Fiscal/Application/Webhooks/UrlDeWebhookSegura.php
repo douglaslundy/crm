@@ -44,7 +44,11 @@ final class UrlDeWebhookSegura
             throw new WebhookUrlInvalidaException('a porta precisa estar entre 1 e 65535.');
         }
 
-        $host = rtrim(strtolower($partes['host']), '.');
+        // Com ponto final o curl ignora o IP fixado e resolve o nome de novo (abre brecha para DNS rebinding).
+        if (str_ends_with($partes['host'], '.')) {
+            throw new WebhookUrlInvalidaException('o endereço do servidor não pode terminar com ponto.');
+        }
+        $host = strtolower($partes['host']);
         if ($host === '') {
             throw new WebhookUrlInvalidaException('a URL não tem um endereço válido.');
         }
