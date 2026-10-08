@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\Identity\Http\Middleware\AutenticarChaveDeApi;
 use App\Modules\Identity\Http\Middleware\GarantirUsuarioAtivo;
 use App\Modules\Platform\Http\Middleware\ExigirUsuarioDaEmpresa;
 use App\Modules\Platform\Http\Middleware\SomentePlataforma;
@@ -54,6 +55,15 @@ return Application::configure(basePath: dirname(__DIR__))
             ExigirUsuarioDaEmpresa::class,
             VerificarSituacaoDoTenant::class,
         ]);
+        // /api/v1: a chave de API substitui a sessão. Autentica e define o tenant antes da resolução de bindings.
+        $middleware->prependToPriorityList(
+            before: SubstituteBindings::class,
+            prepend: AutenticarChaveDeApi::class,
+        );
+        $middleware->group('api-v1', [
+            AutenticarChaveDeApi::class,
+            VerificarSituacaoDoTenant::class,
+        ]);
         $middleware->group('plataforma', [
             'auth:sanctum',
             GarantirUsuarioAtivo::class,
@@ -66,6 +76,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->render(fn (ErroDeNegocio $e) => response()->json(
             ['message' => $e->getMessage(), 'codigo' => $e->codigo()] + $e->extras(),
             $e->status(),
+            $e->headers(),
         ));
 
         // A mensagem de 429 do framework é fixa em inglês e não passa pela tradução.

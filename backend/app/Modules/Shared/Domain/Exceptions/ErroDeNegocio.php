@@ -21,4 +21,10 @@ abstract class ErroDeNegocio extends RuntimeException
     {
         return [];
     }
+
+    /** @return array<string, string> cabeçalhos HTTP da resposta (por exemplo, WWW-Authenticate) */
+    public function headers(): array
+    {
+        return [];
+    }
 }

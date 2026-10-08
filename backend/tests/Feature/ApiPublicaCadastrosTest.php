@@ -8,56 +8,61 @@ use App\Modules\Catalog\Domain\Models\Produto;
 use App\Modules\Customers\Domain\Models\Cliente;
 use App\Modules\Identity\Domain\Enums\Papel;
 use App\Modules\Identity\Domain\Models\Usuario;
-use App\Modules\Platform\Domain\Enums\Recurso;
 use App\Modules\Platform\Domain\Models\Plano;
 use App\Modules\Tenancy\Domain\Models\Tenant;
 use App\Modules\Tenancy\Domain\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Fixtures\CenarioDeApi;
 use Tests\TestCase;
 
 class ApiPublicaCadastrosTest extends TestCase
 {
+    use CenarioDeApi;
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->montarApi();
+    }
 
     public function test_cria_produto_pela_v1(): void
     {
-        $plano = Plano::factory()->comLimites([Recurso::Produtos->value => 10])->create();
-        $tenant = Tenant::factory()->for($plano)->create();
-        $admin = Usuario::factory()->for($tenant)->create(['papel' => Papel::Admin]);
-
-        $this->spa()->actingAs($admin)->postJson('/api/v1/produtos', [
+        $this->comoApi()->postJson('/api/v1/produtos', [
             'sku' => 'SKU-1', 'nome' => 'Parafuso', 'unidade' => 'UN', 'preco_centavos' => 500,
         ])->assertCreated();
     }
 
     public function test_produto_de_outro_tenant_responde_404_na_v1(): void
     {
-        $tenant = Tenant::factory()->for(Plano::factory())->create();
-        $admin = Usuario::factory()->for($tenant)->create(['papel' => Papel::Admin]);
         $outro = Tenant::factory()->create();
         app(TenantContext::class)->set($outro->id);
         $alheio = Produto::factory()->for($outro)->create();
-        app(TenantContext::class)->set($tenant->id);
+        app(TenantContext::class)->set($this->tenant->id);
 
-        $this->spa()->actingAs($admin)->getJson("/api/v1/produtos/{$alheio->id}")->assertNotFound();
+        $this->comoApi()->getJson("/api/v1/produtos/{$alheio->id}")->assertNotFound();
     }
 
     public function test_lista_clientes_pela_v1(): void
     {
-        $tenant = Tenant::factory()->for(Plano::factory())->create();
-        $admin = Usuario::factory()->for($tenant)->create(['papel' => Papel::Admin]);
-        app(TenantContext::class)->set($tenant->id);
-        Cliente::factory()->for($tenant)->create();
+        Cliente::factory()->for($this->tenant)->create();
 
-        $this->spa()->actingAs($admin)->getJson('/api/v1/clientes')->assertOk()->assertJsonCount(1, 'data');
+        $this->comoApi()->getJson('/api/v1/clientes')->assertOk()->assertJsonCount(1, 'data');
     }
 
-    public function test_leitura_nao_cria_pela_v1(): void
+    public function test_autor_sem_papel_de_gestao_nao_cria_pela_v1(): void
     {
-        $tenant = Tenant::factory()->for(Plano::factory())->create();
-        $leitura = Usuario::factory()->for($tenant)->create(['papel' => Papel::Leitura]);
+        $leitura = Usuario::factory()->for($this->tenant)->create(['papel' => Papel::Leitura]);
+        [, $texto] = $this->novaChave($leitura);
 
-        $this->spa()->actingAs($leitura)->postJson('/api/v1/clientes', ['tipo' => 'PF', 'nome' => 'Ana'])
-            ->assertForbidden();
+        $this->comoApi($texto)->postJson('/api/v1/clientes', ['tipo' => 'PF', 'nome' => 'Ana'])
+            ->assertUnauthorized()->assertJsonPath('codigo', 'API_CHAVE_INVALIDA');
+    }
+
+    public function test_plano_sem_o_modulo_api_nao_usa_a_v1(): void
+    {
+        $this->tenant->forceFill(['plano_id' => Plano::factory()->create()->id])->save();
+
+        $this->comoApi()->getJson('/api/v1/clientes')->assertForbidden()->assertJsonPath('codigo', 'API_NAO_CONTRATADA');
     }
 }
