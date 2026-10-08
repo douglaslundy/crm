@@ -47,6 +47,21 @@ Spec: `docs/superpowers/specs/2026-10-08-f5b1-excedente-pagamento-avulso-design.
 3. **Cartão avulso:** pagar com cartão de teste aprovado e com cartão recusado (`BILLING_CARTAO_RECUSADO`, nada gravado). Conferir o status `in_process` (fica pendente até o webhook).
 4. Conta suspensa só por excedente: pagar e conferir que volta a `ATIVA`.
 
+## Troca de plano (F5b2)
+
+Spec: `docs/superpowers/specs/2026-10-08-f5b2-troca-de-plano-design.md`. Só no mesmo ciclo, por proprietário ou admin, com assinatura ativa e em dia e conta `ATIVA`.
+
+- **Upgrade (plano de preço maior):** em **Assinatura > Planos**, **Trocar para este plano** cria uma cobrança `UPGRADE` com a diferença proporcional `(preço novo - preço contratado) x dias restantes / dias do ciclo`, vence em 1 dia e se paga por PIX ou cartão. **O plano só muda quando o pagamento é confirmado**; o período pago (`paga_ate`) não muda. No cartão, o valor da recorrência no Mercado Pago passa ao preço novo. Upgrade não pago vence sem efeito e sem inadimplência.
+- **Downgrade (preço menor):** agendado para o fim do período pago, se o uso atual couber nos limites do plano novo (senão a tela lista o que passa). No cartão, o valor da recorrência é atualizado na hora do pedido. No boleto, o boleto do próximo ciclo já sai no preço novo. Dá para cancelar a troca até o dia. O comando `billing:aplicar-trocas` (00:25) troca o plano no dia; se o uso passou do limite nesse meio tempo, o agendamento é cancelado e fica em log.
+- **Valor do ciclo:** `assinaturas.valor_ciclo_centavos` guarda o preço contratado; a renovação do cartão e a regularização usam esse valor (antes usavam a última cobrança paga, que podia ser um excedente).
+
+### Roteiro de sandbox da troca de plano (usuário, com credenciais de teste)
+
+1. **Upgrade por PIX e por cartão:** assinar com cartão no plano menor, trocar para o maior, pagar a diferença e conferir que o plano muda só depois do webhook (PIX) ou na hora (cartão aprovado).
+2. Conferir no painel do Mercado Pago se `PUT /preapproval` com o novo `auto_recurring.transaction_amount` vale já na próxima cobrança (o adaptador envia só esse campo).
+3. **Downgrade no cartão:** agendar, conferir o valor da recorrência no painel, deixar chegar o dia (ou rodar `php artisan billing:aplicar-trocas` com a data ajustada) e conferir a próxima cobrança no valor novo. Cancelar a troca e conferir que o valor volta.
+4. **Downgrade no boleto:** agendar e conferir que o boleto de `billing:gerar-boletos` sai no preço do plano novo.
+
 ## Fora da F5a
 
-Troca de plano (F5b2), estorno, NFS-e da própria plataforma, e-mails de aviso de cobrança.
+Crédito ou estorno pela diferença da troca, troca de ciclo, estorno, NFS-e da própria plataforma, e-mails de aviso de cobrança.
