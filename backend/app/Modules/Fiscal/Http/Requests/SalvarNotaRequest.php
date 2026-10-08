@@ -29,12 +29,23 @@ final class SalvarNotaRequest extends FormRequest
                 'nullable', 'uuid', Rule::exists('clientes', 'id')->where('tenant_id', $tenantId),
             ],
             'consumidor_final' => ['nullable', 'boolean'],
-            'desconto_centavos' => ['required', 'integer', 'min:0'],
-            'informacoes_complementares' => ['nullable', 'string', 'max:5000'],
             'itens' => ['required', 'array', 'min:1', 'max:990'],
             // Nota de serviço só tem servico_id; nota de produtos só tem produto_id.
             'itens.*.produto_id' => [$servico ? 'prohibited' : 'required', 'uuid', Rule::exists('produtos', 'id')->where('tenant_id', $tenantId)],
             'itens.*.servico_id' => [$servico ? 'required' : 'prohibited', 'uuid', Rule::exists('servicos', 'id')->where('tenant_id', $tenantId)],
+        ] + self::regrasComuns($servico);
+    }
+
+    /**
+     * Valor, quantidade e pagamento: as mesmas regras do app e da API pública.
+     *
+     * @return array<string, list<mixed>>
+     */
+    public static function regrasComuns(bool $servico): array
+    {
+        return [
+            'desconto_centavos' => ['required', 'integer', 'min:0'],
+            'informacoes_complementares' => ['nullable', 'string', 'max:5000'],
             'itens.*.quantidade' => ['required', 'string', 'regex:/^\d{1,9}(\.\d{1,3})?$/'],
             'itens.*.valor_unitario_centavos' => ['nullable', 'integer', 'min:0'],
             'pagamentos' => [$servico ? 'prohibited' : 'required', 'array', 'min:1'],
