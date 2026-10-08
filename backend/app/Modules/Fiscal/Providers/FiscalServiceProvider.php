@@ -17,8 +17,10 @@ use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfe;
 use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfse;
 use App\Modules\Fiscal\Domain\Contracts\GeradorDeDanfe;
 use App\Modules\Fiscal\Domain\Contracts\GeradorDeDanfse;
+use App\Modules\Fiscal\Domain\Models\NotaEvento;
 use App\Modules\Fiscal\Infrastructure\NfePhp\NfePhpEmissor;
 use App\Modules\Fiscal\Infrastructure\Nfse\NfseNacionalEmissor;
+use App\Modules\Fiscal\Infrastructure\ObservadorDeNotaEvento;
 use App\Modules\Fiscal\Infrastructure\Pdf\DompdfGeradorDeDanfse;
 use App\Modules\Fiscal\Infrastructure\Pdf\SpedDaGeradorDeDanfe;
 use App\Modules\Platform\Application\RegistroDeContadores;
@@ -41,6 +43,7 @@ final class FiscalServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->app->make(RegistroDeContadores::class)->registrar(new ContadorDeDocumentosMes);
+        NotaEvento::observe(ObservadorDeNotaEvento::class);
 
         if ($this->app->runningInConsole()) {
             $this->commands([
