@@ -6,7 +6,7 @@ namespace App\Modules\Shared\Domain\Exceptions;
 
 final class ErroDeIdempotenciaException extends ErroDeNegocio
 {
-    private function __construct(string $mensagem, private readonly int $statusHttp, private readonly string $codigoDoErro)
+    private function __construct(string $mensagem, private readonly int $statusHttp, private readonly string $codigoDoErro, private readonly ?string $notaId = null)
     {
         parent::__construct($mensagem);
     }
@@ -26,9 +26,15 @@ final class ErroDeIdempotenciaException extends ErroDeNegocio
         return new self('Esta Idempotency-Key já foi usada com outro corpo ou endereço. Use uma chave nova para uma nova operação.', 409, 'IDEMPOTENCIA_CORPO_DIFERENTE');
     }
 
-    public static function emAndamento(): self
+    /** Com `$notaId`, a nota já foi criada: consulte GET /notas/{id} em vez de repetir a emissão. */
+    public static function emAndamento(?string $notaId = null): self
     {
-        return new self('Uma requisição com esta Idempotency-Key ainda está em andamento. Aguarde e repita.', 409, 'IDEMPOTENCIA_EM_ANDAMENTO');
+        return new self('Uma requisição com esta Idempotency-Key ainda está em andamento. Aguarde e repita'.($notaId === null ? '.' : ' ou consulte a nota indicada em nota_id.'), 409, 'IDEMPOTENCIA_EM_ANDAMENTO', $notaId);
+    }
+
+    public function extras(): array
+    {
+        return $this->notaId === null ? [] : ['nota_id' => $this->notaId];
     }
 
     public function status(): int

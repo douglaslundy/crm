@@ -35,6 +35,9 @@ final class ValidadorCamposFiscais
         if ($valor === null || $valor === '') {
             return null;
         }
+        if (! is_int($valor) && preg_match('/^\d+$/', $valor) !== 1) {
+            return null; // texto não numérico não vira 0 (Nacional): fica ausente e a emissão bloqueia
+        }
         $v = (int) $valor;
 
         return $v >= 0 && $v <= 8 ? $v : null;

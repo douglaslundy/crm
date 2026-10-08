@@ -7,6 +7,8 @@ namespace App\Modules\Fiscal\Http\Controllers\V1;
 use App\Modules\Fiscal\Application\Actions\EmitirNotaPelaApi;
 use App\Modules\Fiscal\Application\Actions\GerarDanfe;
 use App\Modules\Fiscal\Application\Actions\IniciarCancelamento;
+use App\Modules\Fiscal\Application\VerificadorDeAmbienteDaChave;
+use App\Modules\Fiscal\Domain\Enums\AmbienteFiscal;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Models\Nota;
 use App\Modules\Fiscal\Http\Controllers\NotaController;
@@ -16,6 +18,7 @@ use App\Modules\Fiscal\Http\Resources\NotaResource;
 use App\Modules\Fiscal\Http\Resources\NotaStatusResource;
 use App\Modules\Identity\Domain\Enums\AmbienteDaChave;
 use App\Modules\Identity\Domain\Models\Usuario;
+use App\Modules\Shared\Domain\Models\Idempotencia;
 use App\Modules\Shared\Http\PaginadorPorCursor;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
@@ -26,7 +29,7 @@ use Illuminate\Validation\Rule;
 /** Emissão e consultas da API. XML e PDF delegam ao controller do app (mesma resposta, sem copiar a lógica). */
 final class NotasController
 {
-    public function __construct(private readonly NotaController $app) {}
+    public function __construct(private readonly NotaController $app, private readonly VerificadorDeAmbienteDaChave $ambientes) {}
 
     public function store(EmitirNotaApiRequest $request, EmitirNotaPelaApi $emitir): JsonResponse
     {
@@ -35,7 +38,14 @@ final class NotasController
         /** @var AmbienteDaChave $ambiente */
         $ambiente = $request->attributes->get('ambiente_da_chave');
 
-        $nota = $emitir->executar($autor, $ambiente, $request->dados());
+        $reservaId = $request->attributes->get('idempotencia_reserva_id');
+        $vincular = is_string($reservaId)
+            ? function (string $notaId) use ($reservaId): void {
+                Idempotencia::query()->whereKey($reservaId)->update(['nota_id' => $notaId]);
+            }
+        : null;
+
+        $nota = $emitir->executar($autor, $ambiente, $request->dados(), $vincular);
         $request->attributes->set('idempotencia_nota_id', $nota->id);
 
         return response()->json(['data' => ['id' => $nota->id, 'modelo' => $nota->modelo->value, 'status' => $nota->status->value]], 202);
@@ -84,6 +94,11 @@ final class NotasController
         /** @var Usuario $autor */
         $autor = $request->user();
         $nota = $this->visiveis()->findOrFail($id);
+        /** @var AmbienteDaChave $ambiente */
+        $ambiente = $request->attributes->get('ambiente_da_chave');
+        if (($daNota = AmbienteFiscal::tryFrom((string) $nota->ambiente)) !== null) {
+            $this->ambientes->garantir($ambiente, $daNota);
+        }
 
         return (new NotaStatusResource($acao->executar($nota->id, $request->justificativa(), $autor)))->response()->setStatusCode(202);
     }

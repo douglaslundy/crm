@@ -5,14 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Application\Actions;
 
 use App\Modules\Fiscal\Application\ResolvedorDeCadastrosInline;
-use App\Modules\Fiscal\Domain\Enums\AmbienteFiscal;
-use App\Modules\Fiscal\Domain\Exceptions\ApiAmbienteDivergenteException;
+use App\Modules\Fiscal\Application\VerificadorDeAmbienteDaChave;
 use App\Modules\Fiscal\Domain\Models\Emitente;
 use App\Modules\Fiscal\Domain\Models\Nota;
 use App\Modules\Identity\Domain\Enums\AmbienteDaChave;
 use App\Modules\Identity\Domain\Models\Usuario;
-use App\Modules\Shared\Domain\Exceptions\ErroDeNegocio;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 /**
  * Cria e emite uma nota a partir do corpo da API (itens e cliente por referência ou inline). Só compõe as Actions
@@ -25,15 +24,22 @@ final class EmitirNotaPelaApi
         private readonly CriarRascunhoDeNota $criarRascunho,
         private readonly IniciarEmissao $iniciarEmissao,
         private readonly ExcluirRascunhoDeNota $excluirRascunho,
+        private readonly VerificadorDeAmbienteDaChave $ambientes,
     ) {}
 
-    /** @param array<string, mixed> $dados corpo já validado pelo EmitirNotaApiRequest */
-    public function executar(Usuario $autor, AmbienteDaChave $ambiente, array $dados): Nota
+    /**
+     * @param  array<string, mixed>  $dados  corpo já validado pelo EmitirNotaApiRequest
+     * @param  (callable(string): void)|null  $aoCriarRascunho  chamado dentro da transação com o id do rascunho (a idempotência grava o vínculo junto com a nota)
+     */
+    public function executar(Usuario $autor, AmbienteDaChave $ambiente, array $dados, ?callable $aoCriarRascunho = null): Nota
     {
         $this->garantirAmbiente($ambiente);
 
-        $nota = DB::transaction(function () use ($autor, $dados): Nota {
+        $nota = DB::transaction(function () use ($autor, $dados, $aoCriarRascunho): Nota {
             $nota = $this->criarRascunho->executar($this->corpoDoApp($autor, $dados), $autor);
+            if ($aoCriarRascunho !== null) {
+                $aoCriarRascunho($nota->id);
+            }
             $this->iniciarEmissao->verificar($nota, $autor);
 
             return $nota;
@@ -42,8 +48,12 @@ final class EmitirNotaPelaApi
         // Depois do commit, para o job nunca rodar antes de a nota existir.
         try {
             return $this->iniciarEmissao->executar($nota->id, $autor);
-        } catch (ErroDeNegocio $e) {
-            $this->excluirRascunho->executar($nota->refresh());
+        } catch (Throwable $e) {
+            // Nada foi emitido: não deixa um rascunho solto para trás (falha ao limpar não esconde o erro original).
+            try {
+                $this->excluirRascunho->executar($nota->refresh());
+            } catch (Throwable) {
+            }
 
             throw $e;
         }
@@ -56,10 +66,7 @@ final class EmitirNotaPelaApi
             return; // o bloqueio de emitente incompleto vem da verificação da emissão, com o código do app
         }
 
-        $casa = ($ambiente === AmbienteDaChave::Test) === ($emitente->ambiente_fiscal === AmbienteFiscal::Homologacao);
-        if (! $casa) {
-            throw new ApiAmbienteDivergenteException($ambiente, $emitente->ambiente_fiscal);
-        }
+        $this->ambientes->garantir($ambiente, $emitente->ambiente_fiscal);
     }
 
     /**

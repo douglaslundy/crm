@@ -50,6 +50,9 @@ final class GarantirIdempotencia
             return $reserva;
         }
 
+        // A Action grava aqui o vínculo com a nota, na mesma transação que a cria (ver reserva órfã).
+        $request->attributes->set('idempotencia_reserva_id', $reserva);
+
         try {
             $resposta = $next($request);
         } catch (Throwable $e) {
@@ -102,7 +105,7 @@ final class GarantirIdempotencia
                 throw ErroDeIdempotenciaException::corpoDiferente();
             }
             if ($existente->status_http === null) {
-                throw ErroDeIdempotenciaException::emAndamento();
+                throw ErroDeIdempotenciaException::emAndamento($existente->nota_id);
             }
 
             return response((string) $existente->corpo, $existente->status_http, [
@@ -116,8 +119,10 @@ final class GarantirIdempotencia
 
     private function descartavel(Idempotencia $registro): bool
     {
+        // Uma reserva que já tem nota nunca é descartada: o processo pode ter morrido depois do commit da nota,
+        // e descartar a reserva emitiria a nota duas vezes.
         return $registro->expira_em->isPast()
-            || ($registro->status_http === null && $registro->created_at !== null && $registro->created_at->lt(now()->subSeconds(self::RESERVA_ORFA_EM_SEGUNDOS)));
+            || ($registro->status_http === null && $registro->nota_id === null && $registro->created_at !== null && $registro->created_at->lt(now()->subSeconds(self::RESERVA_ORFA_EM_SEGUNDOS)));
     }
 
     private function liberar(string $id): void
@@ -130,7 +135,9 @@ final class GarantirIdempotencia
     {
         $corpo = $request->isJson() ? $request->json()->all() : $request->post();
 
-        return hash('sha256', $request->path().'|'.json_encode($this->ordenar($corpo), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
+        $json = fn (mixed $valor): string => (string) json_encode($this->ordenar($valor), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        return hash('sha256', $request->path().'|'.$json($corpo).'|'.$json($request->query()));
     }
 
     private function ordenar(mixed $valor): mixed

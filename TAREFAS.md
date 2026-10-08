@@ -26,7 +26,7 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
   - [x] **F5b2 Troca de plano** (8 de 8, concluída em 2026-10-08): upgrade pago por cartão ou PIX (o plano só muda ao pagar; proporcional pelos dias restantes) e downgrade agendado para o fim do período, bloqueado se o uso passar dos limites do novo plano.
 - [ ] **F6 API pública:** `/api/v1`, chaves live/test, idempotência, webhooks de saída, OpenAPI e guia.
   - [x] **F6a Fundação** (9 de 9, concluída em 2026-10-08): chaves, autenticação `api-v1`, limite por chave, erros RFC 9457, paginação por cursor, clientes/produtos/serviços/empresa/consumo e tela de chaves.
-  - [ ] **F6b Notas pela API:** emissão com `Idempotency-Key`, `GET`, pdf, xml, cancelar, inutilizações.
+  - [x] **F6b Notas pela API** (7 de 7, concluída em 2026-10-08): emissão com `Idempotency-Key` e itens inline, consultas, pdf/xml, cancelar e inutilizar; chave `test_`⇔homologação.
   - [ ] **F6c Webhooks de saída, OpenAPI 3.1 e guia do integrador.**
 - [ ] **F7 CRM:** funis, negócios, atividades, timeline, propostas → nota, relatórios, metas.
 - [ ] **F8 Go-live:** auditoria fiscal, carga, backup e restauração, piloto em produção.
@@ -120,6 +120,11 @@ Achados menores adiados e uma decisão de produto parcada durante a revisão das
 - [ ] Menores da revisão final da F5a: (a) duas aprovações do mesmo pagamento em cobranças já pagas (pagamento em duplicidade) não geram alerta, só retornam; (b) a cobrança nova do ciclo seguinte não confere de novo se já existe uma com o mesmo id de pagamento depois do bloqueio (eventos `created` e `updated` simultâneos dão 503 e se resolvem no reenvio); (c) o gerador de boletos continua emitindo para tenant cancelado ou suspenso pela plataforma (só olha a assinatura); (d) `GET /api/app/assinatura` mostra método, plano e `paga_ate` para todos os papéis, embora a cobrança seja só de proprietário e admin; (e) boletos pendentes cancelados localmente continuam pagáveis no Mercado Pago (falta `PUT /v1/payments/{id}` com `cancelled`); (f) `AreaDaEmpresa` usa `startsWith('/assinatura')` (casaria `/assinaturas-x`); (g) a tolerância de 5 dias para compensação de boleto segura uma nova assinatura de quem nunca pagou.
 - [ ] `GeradorDeDanfeTest::test_cancelada_imprime_a_marca...` falhou uma vez numa rodada completa da suíte e passou em seguida e isolado (extração de texto do PDF): acompanhar se repete.
 - [ ] Conferência visual das telas de planos, checkout e faturas (temas e celular), e do Card Payment Brick com credenciais reais, não feitas.
+## Pendências da F6b (2026-10-08)
+- [ ] Rodar as rotas de notas e a idempotência no PostgreSQL (staging/CI); **nenhuma emissão real** foi feita pela API (homologação com certificado do usuário).
+- [ ] Menores da revisão final: replay não reenvia os cabeçalhos originais além do `Content-Type`; corrida na criação inline do mesmo SKU/código/documento por duas emissões paralelas com chaves diferentes (o retry resolve; refazer o lookup depois do lock do tenant); respostas 4xx transitórias (limite do plano, conta sem escrita) ficam gravadas por 24 h e exigem chave nova.
+- [ ] Fora do escopo: venda mista, retransmitir contingência e EPEC pela API; reemitir nota rejeitada pela API (hoje se cria outra nota); `ETag` no polling; XML dentro do JSON; `servicos.codigo` sem preenchimento dos serviços existentes; `uuid, exists` sem `bail` em cerca de 10 regras do app (500 no PostgreSQL com id mal formado).
+
 ## Pendências da F6a (2026-10-08)
 - [ ] Rodar as rotas `/api/v1` e as chaves no PostgreSQL (staging/CI): a revisão apontou diferenças com SQLite (uuid, timestamps) já tratadas, mas não exercitadas.
 - [ ] Escopos por chave e papel próprio; allowlist de IP; rotação; página pública de cada `type` de erro; limite agregado por empresa; throttle leve por IP para requisições sem chave válida; importação CSV pela API.

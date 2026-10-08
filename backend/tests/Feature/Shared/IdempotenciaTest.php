@@ -194,7 +194,7 @@ class IdempotenciaTest extends TestCase
         $registro = new Idempotencia;
         $registro->forceFill([
             'chave' => $chave, 'rota' => 'POST '.ltrim($url, '/'),
-            'hash_do_corpo' => hash('sha256', ltrim($url, '/').'|'.json_encode($corpo)),
+            'hash_do_corpo' => hash('sha256', ltrim($url, '/').'|'.json_encode($corpo).'|[]'),
             'expira_em' => now()->addDay(),
         ])->save();
 

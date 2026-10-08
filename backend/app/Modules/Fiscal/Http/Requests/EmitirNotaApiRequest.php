@@ -25,17 +25,19 @@ final class EmitirNotaApiRequest extends FormRequest
     public function rules(): array
     {
         $tenantId = $this->user()?->tenant_id;
-        $modelo = (string) ($this->input('modelo') ?? 'NFE');
+        $bruto = $this->input('modelo');
+        $modelo = is_string($bruto) ? $bruto : 'NFE';
         $servico = $modelo === 'DPS';
 
         $regras = [
-            'modelo' => ['nullable', Rule::in(['NFE', 'NFCE', 'DPS'])],
+            'modelo' => ['nullable', 'string', Rule::in(['NFE', 'NFCE', 'DPS'])],
             // NFC-e vende sem identificar o consumidor; NF-e e NFS-e sempre têm cliente (destinatário ou tomador).
             'cliente' => [Rule::requiredIf(fn (): bool => $modelo !== 'NFCE'), 'nullable', 'array'],
-            'cliente.id' => ['nullable', 'uuid', Rule::exists('clientes', 'id')->where('tenant_id', $tenantId)],
-            'cliente.cpf_cnpj' => ['nullable', 'string', function (string $atributo, mixed $valor, Closure $falhar): void {
+            'cliente.id' => ['nullable', 'bail', 'uuid', Rule::exists('clientes', 'id')->where('tenant_id', $tenantId)],
+            'cliente.cpf_cnpj' => ['nullable', 'bail', 'string', function (string $atributo, mixed $valor, Closure $falhar): void {
                 $digitos = (string) preg_replace('/\D/', '', (string) $valor);
-                $tipo = (string) $this->input('cliente.tipo');
+                $tipoBruto = $this->input('cliente.tipo');
+                $tipo = is_string($tipoBruto) ? $tipoBruto : '';
                 $valido = match (true) {
                     $tipo === 'PJ' => Cnpj::tentar($digitos) !== null,
                     $tipo === 'PF' => Cpf::tentar($digitos) !== null,
@@ -47,8 +49,9 @@ final class EmitirNotaApiRequest extends FormRequest
             }],
             'consumidor_final' => ['nullable', 'boolean'],
             'itens' => ['required', 'array', 'min:1', 'max:990'],
-            'itens.*.produto_id' => [$servico ? 'prohibited' : 'nullable', 'uuid', Rule::exists('produtos', 'id')->where('tenant_id', $tenantId)],
-            'itens.*.servico_id' => [$servico ? 'nullable' : 'prohibited', 'uuid', Rule::exists('servicos', 'id')->where('tenant_id', $tenantId)],
+            'itens.*' => ['array'],
+            'itens.*.produto_id' => [$servico ? 'prohibited' : 'nullable', 'bail', 'uuid', Rule::exists('produtos', 'id')->where('tenant_id', $tenantId)],
+            'itens.*.servico_id' => [$servico ? 'nullable' : 'prohibited', 'bail', 'uuid', Rule::exists('servicos', 'id')->where('tenant_id', $tenantId)],
             'itens.*.produto' => [$servico ? 'prohibited' : 'nullable', 'array'],
             'itens.*.servico' => [$servico ? 'nullable' : 'prohibited', 'array'],
         ] + SalvarNotaRequest::regrasComuns($servico);
@@ -71,16 +74,23 @@ final class EmitirNotaApiRequest extends FormRequest
     {
         return [function (Validator $validador): void {
             foreach ((array) $this->input('itens', []) as $i => $item) {
-                $informados = array_filter(['produto_id', 'produto', 'servico_id', 'servico'], fn (string $campo): bool => is_array($item) && ($item[$campo] ?? null) !== null);
+                if (! is_array($item)) {
+                    $validador->errors()->add("itens.{$i}", 'Cada item deve ser um objeto.');
+
+                    continue;
+                }
+                // Bloco inline vazio (`{}`) não conta como informado: falta o identificador (SKU ou código).
+                $informados = array_filter(['produto_id', 'produto', 'servico_id', 'servico'], fn (string $campo): bool => ($item[$campo] ?? null) !== null && ($item[$campo] ?? null) !== []);
                 if (count($informados) !== 1) {
                     $validador->errors()->add("itens.{$i}", 'Informe exatamente um entre produto_id, produto, servico_id e servico.');
                 }
             }
             $cliente = $this->input('cliente');
-            if (is_array($cliente) && ($cliente['id'] ?? null) !== null && ($cliente['cpf_cnpj'] ?? null) !== null) {
-                $validador->errors()->add('cliente', 'Informe o id de um cliente existente ou os dados do cliente, não os dois.');
-            }
-            if (is_array($cliente) && ($cliente['id'] ?? null) === null && ($cliente['cpf_cnpj'] ?? null) === null) {
+            if (is_array($cliente) && ($cliente['id'] ?? null) !== null) {
+                if (array_diff(array_keys($cliente), ['id']) !== []) {
+                    $validador->errors()->add('cliente', 'Informe só o id de um cliente existente ou só os dados do cliente, não os dois.');
+                }
+            } elseif (is_array($cliente) && ($cliente['cpf_cnpj'] ?? null) === null) {
                 $validador->errors()->add('cliente.cpf_cnpj', 'Informe o cpf_cnpj do cliente (ou o id de um cliente existente).');
             }
         }];

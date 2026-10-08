@@ -49,7 +49,7 @@ final class ResolvedorDeCadastrosInline
 
         /** @var array{sku:string,nome:string,unidade:string,preco_centavos:int,gtin:?string,ncm:?string,cest:?string,origem:int|string|null,tributacao_icms:?string} $novo */
         $novo = [
-            'sku' => $sku, 'gtin' => null, 'ncm' => $this->textoOuNulo($dados['ncm'] ?? null), 'cest' => $this->textoOuNulo($dados['cest'] ?? null),
+            'sku' => $sku, 'ncm' => $this->textoOuNulo($dados['ncm'] ?? null), 'cest' => $this->textoOuNulo($dados['cest'] ?? null),
             'origem' => $dados['origem'] ?? null, 'tributacao_icms' => $this->textoOuNulo($dados['tributacao_icms'] ?? null),
         ] + $enviado;
         $novo += ['gtin' => null];

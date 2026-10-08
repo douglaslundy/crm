@@ -20,7 +20,7 @@ final class CriarProdutoRequest extends FormRequest
             'gtin' => ['nullable', 'string', 'max:14'],
             'ncm' => ['nullable', 'string'],
             'cest' => ['nullable', 'string'],
-            'origem' => ['nullable'],
+            'origem' => ['nullable', 'regex:/^[0-8]$/'],
             'tributacao_icms' => ['nullable', Rule::in(['NORMAL', 'ST'])],
         ];
     }
