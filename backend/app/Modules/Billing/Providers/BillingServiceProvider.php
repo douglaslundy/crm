@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Billing\Providers;
 
 use App\Modules\Billing\Console\AplicarInadimplenciaCommand;
+use App\Modules\Billing\Console\AplicarTrocasCommand;
 use App\Modules\Billing\Console\FecharExcedenteCommand;
 use App\Modules\Billing\Console\GerarBoletosDoCicloCommand;
 use App\Modules\Billing\Domain\Contracts\GatewayDeCobranca;
@@ -27,7 +28,7 @@ final class BillingServiceProvider extends ServiceProvider
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {
-            $this->commands([GerarBoletosDoCicloCommand::class, AplicarInadimplenciaCommand::class, FecharExcedenteCommand::class]);
+            $this->commands([GerarBoletosDoCicloCommand::class, AplicarInadimplenciaCommand::class, FecharExcedenteCommand::class, AplicarTrocasCommand::class]);
         }
 
         Route::middleware('api')->prefix('api/app')->group(__DIR__.'/../Http/routes-app.php');

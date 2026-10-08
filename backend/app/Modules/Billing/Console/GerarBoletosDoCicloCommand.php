@@ -15,6 +15,7 @@ use App\Modules\Billing\Domain\Models\Assinatura;
 use App\Modules\Billing\Domain\Models\Cobranca;
 use App\Modules\Identity\Domain\Enums\Papel;
 use App\Modules\Identity\Domain\Models\Usuario;
+use App\Modules\Platform\Domain\Models\Plano;
 use App\Modules\Tenancy\Domain\Models\Tenant;
 use App\Modules\Tenancy\Domain\TenantContext;
 use Carbon\CarbonImmutable;
@@ -85,20 +86,23 @@ final class GerarBoletosDoCicloCommand extends Command
             return false;   // boleto já emitido
         }
 
+        // Downgrade agendado: o próximo período já é cobrado no preço do plano novo.
+        $plano = ($assinatura->plano_proximo_id === null ? null : Plano::query()->find($assinatura->plano_proximo_id)) ?? $assinatura->plano;
+
         try {
             $cobranca = $pendente ?? new Cobranca;
             $vencePadrao = $this->vencimento($assinatura, $hoje);
             if ($pendente === null) {
                 $cobranca->forceFill([
                     'assinatura_id' => $assinatura->id, 'tipo' => TipoDeCobranca::Assinatura,
-                    'valor_centavos' => $assinatura->ciclo->precoDo($assinatura->plano),
+                    'valor_centavos' => $assinatura->ciclo->precoDo($plano),
                     'vence_em' => $vencePadrao->toDateString(), 'status' => StatusDaCobranca::Pendente, 'metodo' => MetodoDePagamento::Boleto,
                 ])->save();
             } elseif ($pendente->vence_em->lessThan($hoje)) {
                 $pendente->forceFill(['vence_em' => $vencePadrao->toDateString()])->save();   // retentativa de um boleto que não saiu a tempo
             }
 
-            $descricao = 'Assinatura '.$assinatura->plano->nome.' ('.($assinatura->ciclo === CicloDeCobranca::Anual ? 'anual' : 'mensal').')';
+            $descricao = 'Assinatura '.$plano->nome.' ('.($assinatura->ciclo === CicloDeCobranca::Anual ? 'anual' : 'mensal').')';
             $resultado = $gateway->criarBoleto(new DadosDoBoleto(
                 $cobranca->id, $cobranca->valor_centavos, $descricao, $pagador->email, $tenant->nomeDeExibicao(), $tenant->cnpj,
                 CarbonImmutable::parse($cobranca->vence_em->toDateString()), $cobranca->id,
