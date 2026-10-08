@@ -9,6 +9,7 @@ use App\Modules\Platform\Http\Middleware\ExigirUsuarioDaEmpresa;
 use App\Modules\Platform\Http\Middleware\SomentePlataforma;
 use App\Modules\Platform\Http\Middleware\VerificarSituacaoDoTenant;
 use App\Modules\Shared\Domain\Exceptions\ErroDeNegocio;
+use App\Modules\Shared\Http\TratadorDeErrosDaApi;
 use App\Modules\Tenancy\Http\Middleware\DefinirTenantDoUsuario;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -75,6 +76,10 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontReport(ErroDeNegocio::class);
+
+        // O /api/v1 fala RFC 9457 (problem+json); registrado primeiro para valer antes dos formatos do app.
+        $exceptions->render(fn (Throwable $e, Request $request) => $request->is('api/v1/*') ? app(TratadorDeErrosDaApi::class)->tratar($e, $request) : null);
+
         $exceptions->render(fn (ErroDeNegocio $e) => response()->json(
             ['message' => $e->getMessage(), 'codigo' => $e->codigo()] + $e->extras(),
             $e->status(),
