@@ -477,6 +477,172 @@ paths:
         '409': {$ref: '#/components/responses/RegraDeNegocio'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /webhooks:
+    get:
+      operationId: listarWebhooks
+      tags: [Webhooks]
+      summary: Listar webhooks
+      description: Até 5 webhooks por empresa; a lista não é paginada.
+      responses:
+        '200':
+          description: Os webhooks cadastrados.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ListaDeWebhooks'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+    post:
+      operationId: criarWebhook
+      tags: [Webhooks]
+      summary: Criar webhook
+      description: |
+        Cadastra uma URL para receber os eventos de nota. A resposta traz o `segredo` (`whsec_…`) uma única vez.
+        Esta operação **não** aceita `Idempotency-Key`, para o segredo não ficar guardado na tabela de idempotência.
+        Falhas: `WEBHOOK_URL_INVALIDA` (422), `WEBHOOK_LIMITE_ATINGIDO` (422, máximo de 5), `MODULO_NAO_CONTRATADO`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WebhookEntrada'}
+            example: {url: "https://seu-erp.exemplo.com.br/webhooks/fiscal", ambiente: HOMOLOGACAO, eventos: [nota.autorizada, nota.rejeitada], descricao: ERP}
+      responses:
+        '201':
+          description: Criado, com o segredo.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeWebhookComSegredo'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/RegraDeNegocio'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /webhooks/{id}:
+    get:
+      operationId: obterWebhook
+      tags: [Webhooks]
+      summary: Obter webhook
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: O webhook, sem o segredo.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeWebhook'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+    put:
+      operationId: atualizarWebhook
+      tags: [Webhooks]
+      summary: Atualizar webhook
+      description: "Atualização parcial. Para reativar um webhook desativado, envie `ativo: true`."
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/WebhookAtualizacao'}
+            example: {ativo: true}
+      responses:
+        '200':
+          description: Atualizado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeWebhook'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+    delete:
+      operationId: excluirWebhook
+      tags: [Webhooks]
+      summary: Excluir webhook
+      description: Remove o webhook e o seu histórico de entregas.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '204':
+          description: Excluído.
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /webhooks/{id}/testar:
+    post:
+      operationId: testarWebhook
+      tags: [Webhooks]
+      summary: Enviar um evento de teste
+      description: Envia `webhook.teste` agora. O teste não é retentado e não conta para a desativação automática. Webhook inativo responde `WEBHOOK_INATIVO` (409).
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          description: Entrega criada e enviada; veja `tentativas_log`.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeEntrega'}
+        '400': {$ref: '#/components/responses/Idempotencia'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '409': {$ref: '#/components/responses/RegraDeNegocio'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /webhooks/{id}/entregas:
+    get:
+      operationId: listarEntregasDoWebhook
+      tags: [Webhooks]
+      summary: Listar as entregas de um webhook
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/Limite'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Página de entregas, da mais recente para a mais antiga.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ListaDeEntregas'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /webhooks/entregas/{id}:
+    get:
+      operationId: obterEntregaDeWebhook
+      tags: [Webhooks]
+      summary: Obter uma entrega
+      description: Inclui o `payload` enviado e o log de tentativas.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: A entrega.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeEntrega'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /webhooks/entregas/{id}/reenviar:
+    post:
+      operationId: reenviarEntregaDeWebhook
+      tags: [Webhooks]
+      summary: Reenviar uma entrega
+      description: Abre uma nova rodada de retentativas (7 tentativas). Uma entrega ainda `PENDENTE` não muda. O `evento_id` e o corpo continuam os mesmos.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      responses:
+        '202':
+          description: Reenvio aceito.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeEntrega'}
+        '400': {$ref: '#/components/responses/Idempotencia'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '409': {$ref: '#/components/responses/RegraDeNegocio'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
   /empresa:
     get:
       operationId: obterEmpresa
@@ -505,6 +671,135 @@ paths:
               schema: {$ref: '#/components/schemas/RespostaDeConsumo'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
+webhooks:
+  notaAutorizada:
+    post:
+      operationId: receberNotaAutorizada
+      tags: [Webhooks]
+      summary: "nota.autorizada"
+      description: |
+        A nota foi autorizada. Também é enviado quando um cancelamento é recusado ou não confirmado e a nota volta a `AUTORIZADA` (veja `cancelamento_motivo` no recurso).
+
+        Verifique `X-Signature` antes de confiar no corpo (veja o guia do integrador). Responda com qualquer status 2xx em até 10 segundos;
+        qualquer outra resposta (inclusive redirecionamento) conta como falha e é retentada.
+      parameters:
+        - {name: X-Signature, in: header, required: true, description: "t=<unix>,v1=<hmac_sha256 hex de \"<t>.<corpo>\" com o segredo>.", schema: {type: string}}
+        - {name: X-Webhook-Id, in: header, required: true, description: "Identificador estável do evento; use para deduplicar.", schema: {type: string}}
+        - {name: X-Webhook-Event, in: header, required: true, description: "nota.autorizada", schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EventoDeNota'}
+      responses:
+        '200':
+          description: Recebido.
+  notaRejeitada:
+    post:
+      operationId: receberNotaRejeitada
+      tags: [Webhooks]
+      summary: "nota.rejeitada"
+      description: |
+        O órgão autorizador rejeitou a nota. `cstat` e `motivo` dizem o porquê.
+
+        Verifique `X-Signature` antes de confiar no corpo (veja o guia do integrador). Responda com qualquer status 2xx em até 10 segundos;
+        qualquer outra resposta (inclusive redirecionamento) conta como falha e é retentada.
+      parameters:
+        - {name: X-Signature, in: header, required: true, description: "t=<unix>,v1=<hmac_sha256 hex de \"<t>.<corpo>\" com o segredo>.", schema: {type: string}}
+        - {name: X-Webhook-Id, in: header, required: true, description: "Identificador estável do evento; use para deduplicar.", schema: {type: string}}
+        - {name: X-Webhook-Event, in: header, required: true, description: "nota.rejeitada", schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EventoDeNota'}
+      responses:
+        '200':
+          description: Recebido.
+  notaCancelada:
+    post:
+      operationId: receberNotaCancelada
+      tags: [Webhooks]
+      summary: "nota.cancelada"
+      description: |
+        O cancelamento foi homologado.
+
+        Verifique `X-Signature` antes de confiar no corpo (veja o guia do integrador). Responda com qualquer status 2xx em até 10 segundos;
+        qualquer outra resposta (inclusive redirecionamento) conta como falha e é retentada.
+      parameters:
+        - {name: X-Signature, in: header, required: true, description: "t=<unix>,v1=<hmac_sha256 hex de \"<t>.<corpo>\" com o segredo>.", schema: {type: string}}
+        - {name: X-Webhook-Id, in: header, required: true, description: "Identificador estável do evento; use para deduplicar.", schema: {type: string}}
+        - {name: X-Webhook-Event, in: header, required: true, description: "nota.cancelada", schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EventoDeNota'}
+      responses:
+        '200':
+          description: Recebido.
+  notaErro:
+    post:
+      operationId: receberNotaErro
+      tags: [Webhooks]
+      summary: "nota.erro"
+      description: |
+        A emissão falhou antes de uma resposta definitiva; veja `mensagem_erro`.
+
+        Verifique `X-Signature` antes de confiar no corpo (veja o guia do integrador). Responda com qualquer status 2xx em até 10 segundos;
+        qualquer outra resposta (inclusive redirecionamento) conta como falha e é retentada.
+      parameters:
+        - {name: X-Signature, in: header, required: true, description: "t=<unix>,v1=<hmac_sha256 hex de \"<t>.<corpo>\" com o segredo>.", schema: {type: string}}
+        - {name: X-Webhook-Id, in: header, required: true, description: "Identificador estável do evento; use para deduplicar.", schema: {type: string}}
+        - {name: X-Webhook-Event, in: header, required: true, description: "nota.erro", schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EventoDeNota'}
+      responses:
+        '200':
+          description: Recebido.
+  notaContingencia:
+    post:
+      operationId: receberNotaContingencia
+      tags: [Webhooks]
+      summary: "nota.contingencia"
+      description: |
+        A nota entrou em contingência (NFC-e offline ou EPEC) e será transmitida depois.
+
+        Verifique `X-Signature` antes de confiar no corpo (veja o guia do integrador). Responda com qualquer status 2xx em até 10 segundos;
+        qualquer outra resposta (inclusive redirecionamento) conta como falha e é retentada.
+      parameters:
+        - {name: X-Signature, in: header, required: true, description: "t=<unix>,v1=<hmac_sha256 hex de \"<t>.<corpo>\" com o segredo>.", schema: {type: string}}
+        - {name: X-Webhook-Id, in: header, required: true, description: "Identificador estável do evento; use para deduplicar.", schema: {type: string}}
+        - {name: X-Webhook-Event, in: header, required: true, description: "nota.contingencia", schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EventoDeNota'}
+      responses:
+        '200':
+          description: Recebido.
+  webhookTeste:
+    post:
+      operationId: receberWebhookTeste
+      tags: [Webhooks]
+      summary: webhook.teste
+      description: Evento de teste, enviado pelo botão de teste da tela ou por `POST /webhooks/{id}/testar`. Não é retentado.
+      parameters:
+        - {name: X-Signature, in: header, required: true, schema: {type: string}}
+        - {name: X-Webhook-Id, in: header, required: true, schema: {type: string}}
+        - {name: X-Webhook-Event, in: header, required: true, schema: {type: string}}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EventoDeTeste'}
+      responses:
+        '200':
+          description: Recebido.
 components:
   securitySchemes:
     bearerAuth:
@@ -1100,6 +1395,166 @@ components:
       required: [data, links, meta]
       properties:
         data: {type: array, items: {$ref: '#/components/schemas/Inutilizacao'}}
+        links: {$ref: '#/components/schemas/LinksDePagina'}
+        meta: {$ref: '#/components/schemas/MetaDePagina'}
+    EventoDeWebhook:
+      type: string
+      enum: [nota.autorizada, nota.rejeitada, nota.cancelada, nota.erro, nota.contingencia]
+    Webhook:
+      type: object
+      additionalProperties: false
+      required: [id, url, descricao, eventos, ambiente, ativo, desativado_em, motivo_desativacao, segredo_final, criado_em]
+      properties:
+        id: {type: string, format: uuid}
+        url: {type: string}
+        descricao: {type: ["string", "null"]}
+        eventos:
+          type: ["array", "null"]
+          items: {$ref: '#/components/schemas/EventoDeWebhook'}
+          description: Eventos assinados; nulo significa todos.
+        ambiente: {type: string, enum: [HOMOLOGACAO, PRODUCAO], description: "Só recebe eventos de notas deste ambiente."}
+        ativo: {type: boolean}
+        desativado_em: {type: ["string", "null"], format: date-time}
+        motivo_desativacao: {type: ["string", "null"], description: "Preenchido quando o webhook é desativado por falhas seguidas (10 entregas sem sucesso)."}
+        segredo_final: {type: string, description: "Últimos 4 caracteres do segredo, para identificá-lo."}
+        criado_em: {type: ["string", "null"], format: date-time}
+    WebhookComSegredo:
+      type: object
+      additionalProperties: false
+      required: [id, url, descricao, eventos, ambiente, ativo, desativado_em, motivo_desativacao, segredo_final, criado_em, segredo]
+      description: Resposta da criação. O `segredo` (`whsec_…`) aparece só aqui; guarde-o, ele não pode ser consultado depois.
+      properties:
+        id: {type: string, format: uuid}
+        url: {type: string}
+        descricao: {type: ["string", "null"]}
+        eventos:
+          type: ["array", "null"]
+          items: {$ref: '#/components/schemas/EventoDeWebhook'}
+        ambiente: {type: string, enum: [HOMOLOGACAO, PRODUCAO]}
+        ativo: {type: boolean}
+        desativado_em: {type: ["string", "null"], format: date-time}
+        motivo_desativacao: {type: ["string", "null"]}
+        segredo_final: {type: string}
+        criado_em: {type: ["string", "null"], format: date-time}
+        segredo: {type: string}
+    WebhookEntrada:
+      type: object
+      required: [url, ambiente]
+      properties:
+        url: {type: string, description: "URL https pública. Endereços internos, credenciais na URL e hosts que resolvem para IP privado são recusados (`WEBHOOK_URL_INVALIDA`)."}
+        descricao: {type: ["string", "null"], maxLength: 80}
+        eventos:
+          type: ["array", "null"]
+          items: {$ref: '#/components/schemas/EventoDeWebhook'}
+          description: Omitido ou nulo = todos os eventos de nota.
+        ambiente: {type: string, enum: [HOMOLOGACAO, PRODUCAO]}
+        ativo: {type: boolean, description: "Reativar um webhook desativado por falhas seguidas zera o contador."}
+    WebhookAtualizacao:
+      type: object
+      description: Todos os campos são opcionais; só os enviados mudam. O segredo não muda.
+      properties:
+        url: {type: string}
+        descricao: {type: ["string", "null"], maxLength: 80}
+        eventos:
+          type: ["array", "null"]
+          items: {$ref: '#/components/schemas/EventoDeWebhook'}
+        ambiente: {type: string, enum: [HOMOLOGACAO, PRODUCAO]}
+        ativo: {type: boolean}
+    TentativaDeEntrega:
+      type: object
+      additionalProperties: false
+      required: [numero, status_http, duracao_ms, erro, resposta, em]
+      properties:
+        numero: {type: integer}
+        status_http: {type: ["integer", "null"]}
+        duracao_ms: {type: integer}
+        erro: {type: ["string", "null"]}
+        resposta: {type: ["string", "null"], description: "Início da resposta do seu servidor (até 1 KB)."}
+        em: {type: string, format: date-time}
+    Entrega:
+      type: object
+      additionalProperties: false
+      required: [id, webhook_id, nota_id, evento, evento_id, estado, tentativas, proxima_tentativa_em, entregue_em, criada_em]
+      properties:
+        id: {type: string, format: uuid}
+        webhook_id: {type: string, format: uuid}
+        nota_id: {type: ["string", "null"]}
+        evento: {type: string, description: "Um dos eventos de nota ou `webhook.teste`."}
+        evento_id: {type: string, description: "Identificador estável do evento; igual ao cabeçalho `X-Webhook-Id`. Use para deduplicar."}
+        estado: {type: string, enum: [PENDENTE, ENTREGUE, FALHOU]}
+        tentativas: {type: integer}
+        proxima_tentativa_em: {type: ["string", "null"], format: date-time}
+        entregue_em: {type: ["string", "null"], format: date-time}
+        criada_em: {type: string, format: date-time}
+        tentativas_log:
+          type: array
+          description: Presente ao testar e ao reenviar.
+          items: {$ref: '#/components/schemas/TentativaDeEntrega'}
+        payload:
+          type: object
+          description: Corpo enviado ao seu servidor (veja `EventoDeNota` e `EventoDeTeste`). Presente ao consultar uma entrega, testar e reenviar.
+    EventoDeNota:
+      type: object
+      additionalProperties: false
+      description: Corpo enviado por POST ao seu servidor nos eventos de nota.
+      required: [id, tipo, criado_em, ambiente, data]
+      properties:
+        id: {type: string, description: "Igual a `X-Webhook-Id`; estável entre retentativas."}
+        tipo: {$ref: '#/components/schemas/EventoDeWebhook'}
+        criado_em: {type: string, format: date-time}
+        ambiente: {type: ["string", "null"], enum: [HOMOLOGACAO, PRODUCAO, null]}
+        data:
+          type: object
+          additionalProperties: false
+          required: [nota]
+          properties:
+            nota: {$ref: '#/components/schemas/Nota'}
+    EventoDeTeste:
+      type: object
+      additionalProperties: false
+      description: Corpo do evento `webhook.teste`, enviado pelo botão de teste ou por `POST /webhooks/{id}/testar`.
+      required: [id, tipo, criado_em, ambiente, data]
+      properties:
+        id: {type: string}
+        tipo: {type: string, enum: [webhook.teste]}
+        criado_em: {type: string, format: date-time}
+        ambiente: {type: string, enum: [HOMOLOGACAO, PRODUCAO]}
+        data:
+          type: object
+          additionalProperties: false
+          required: [mensagem]
+          properties:
+            mensagem: {type: string}
+    RespostaDeWebhook:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/Webhook'}
+    RespostaDeWebhookComSegredo:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/WebhookComSegredo'}
+    ListaDeWebhooks:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {type: array, items: {$ref: '#/components/schemas/Webhook'}}
+    RespostaDeEntrega:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/Entrega'}
+    ListaDeEntregas:
+      type: object
+      additionalProperties: false
+      required: [data, links, meta]
+      properties:
+        data: {type: array, items: {$ref: '#/components/schemas/Entrega'}}
         links: {$ref: '#/components/schemas/LinksDePagina'}
         meta: {$ref: '#/components/schemas/MetaDePagina'}
   responses:
