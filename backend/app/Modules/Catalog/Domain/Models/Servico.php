@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * @property string $id
+ * @property ?string $codigo
  * @property string $nome
  * @property int $preco_centavos
  * @property ?string $codigo_lc116
@@ -29,7 +30,7 @@ class Servico extends Model
 
     use HasUuids;
 
-    protected $fillable = ['nome', 'preco_centavos', 'codigo_lc116', 'c_trib_nac', 'codigo_municipal', 'aliquota_iss', 'nbs'];
+    protected $fillable = ['codigo', 'nome', 'preco_centavos', 'codigo_lc116', 'c_trib_nac', 'codigo_municipal', 'aliquota_iss', 'nbs'];
 
     /** @return array<string, string> */
     protected function casts(): array

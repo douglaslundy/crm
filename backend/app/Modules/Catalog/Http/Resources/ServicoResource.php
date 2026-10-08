@@ -16,6 +16,7 @@ final class ServicoResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'codigo' => $this->codigo,
             'nome' => $this->nome,
             'preco_centavos' => $this->preco_centavos,
             'codigo_lc116' => $this->codigo_lc116,

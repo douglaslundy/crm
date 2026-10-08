@@ -15,7 +15,7 @@ final class CriarServico
 {
     public function __construct(private readonly EntitlementService $entitlements) {}
 
-    /** @param array{nome:string,preco_centavos:int,codigo_lc116:?string,c_trib_nac:?string,codigo_municipal:?string,aliquota_iss:?string,nbs:?string} $dados */
+    /** @param array{codigo:?string,nome:string,preco_centavos:int,codigo_lc116:?string,c_trib_nac:?string,codigo_municipal:?string,aliquota_iss:?string,nbs:?string} $dados */
     public function executar(Usuario $autor, array $dados): Servico
     {
         return DB::transaction(function () use ($autor, $dados): Servico {
