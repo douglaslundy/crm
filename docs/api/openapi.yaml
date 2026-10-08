@@ -21,7 +21,266 @@ tags:
     description: Avisos de saída assinados.
   - name: Conta
     description: Dados da empresa e consumo do plano.
-paths: {}
+paths:
+  /clientes:
+    get:
+      operationId: listarClientes
+      tags: [Cadastros]
+      summary: Listar clientes
+      parameters:
+        - $ref: '#/components/parameters/Limite'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Busca'
+        - $ref: '#/components/parameters/AtualizadoDesde'
+      responses:
+        '200':
+          description: Página de resultados, ordenada por `(updated_at, id)` crescente.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ListaDeClientes'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+    post:
+      operationId: criarCliente
+      tags: [Cadastros]
+      summary: Criar cliente
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ClienteEntrada'}
+            example: {tipo: PJ, nome: Exemplo Comércio Ltda, cpf_cnpj: "00.000.000/0001-00", email: contato@exemplo.com.br, uf: SP}
+      responses:
+        '201':
+          description: Criado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeCliente'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /clientes/{id}:
+    get:
+      operationId: obterCliente
+      tags: [Cadastros]
+      summary: Obter cliente
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: O registro.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeCliente'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+    put:
+      operationId: atualizarCliente
+      tags: [Cadastros]
+      summary: Atualizar cliente
+      description: Substitui os dados do registro; envie o corpo completo. Não há exclusão pela API (DELETE responde 405).
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ClienteEntrada'}
+            example: {tipo: PJ, nome: Exemplo Comércio Ltda, cpf_cnpj: "00.000.000/0001-00", email: contato@exemplo.com.br, uf: SP}
+      responses:
+        '200':
+          description: Atualizado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeCliente'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /produtos:
+    get:
+      operationId: listarProdutos
+      tags: [Cadastros]
+      summary: Listar produtos
+      parameters:
+        - $ref: '#/components/parameters/Limite'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Busca'
+        - $ref: '#/components/parameters/AtualizadoDesde'
+      responses:
+        '200':
+          description: Página de resultados, ordenada por `(updated_at, id)` crescente.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ListaDeProdutos'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+    post:
+      operationId: criarProduto
+      tags: [Cadastros]
+      summary: Criar produto
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ProdutoEntrada'}
+            example: {sku: PARAF-001, nome: Parafuso sextavado, unidade: UN, preco_centavos: 500, ncm: "73181500", origem: 0}
+      responses:
+        '201':
+          description: Criado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeProduto'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /produtos/{id}:
+    get:
+      operationId: obterProduto
+      tags: [Cadastros]
+      summary: Obter produto
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: O registro.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeProduto'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+    put:
+      operationId: atualizarProduto
+      tags: [Cadastros]
+      summary: Atualizar produto
+      description: Substitui os dados do registro; envie o corpo completo. Não há exclusão pela API (DELETE responde 405).
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ProdutoEntrada'}
+            example: {sku: PARAF-001, nome: Parafuso sextavado, unidade: UN, preco_centavos: 500, ncm: "73181500", origem: 0}
+      responses:
+        '200':
+          description: Atualizado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeProduto'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /servicos:
+    get:
+      operationId: listarServicos
+      tags: [Cadastros]
+      summary: Listar servicos
+      parameters:
+        - $ref: '#/components/parameters/Limite'
+        - $ref: '#/components/parameters/Cursor'
+        - $ref: '#/components/parameters/Busca'
+        - $ref: '#/components/parameters/AtualizadoDesde'
+      responses:
+        '200':
+          description: Página de resultados, ordenada por `(updated_at, id)` crescente.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ListaDeServicos'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+    post:
+      operationId: criarServico
+      tags: [Cadastros]
+      summary: Criar serviço
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ServicoEntrada'}
+            example: {nome: Consultoria, preco_centavos: 10000, codigo_lc116: "17.01", aliquota_iss: 2.5}
+      responses:
+        '201':
+          description: Criado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeServico'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /servicos/{id}:
+    get:
+      operationId: obterServico
+      tags: [Cadastros]
+      summary: Obter serviço
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: O registro.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeServico'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+    put:
+      operationId: atualizarServico
+      tags: [Cadastros]
+      summary: Atualizar serviço
+      description: Substitui os dados do registro; envie o corpo completo. Não há exclusão pela API (DELETE responde 405).
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/ServicoEntrada'}
+            example: {nome: Consultoria, preco_centavos: 10000, codigo_lc116: "17.01", aliquota_iss: 2.5}
+      responses:
+        '200':
+          description: Atualizado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeServico'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /empresa:
+    get:
+      operationId: obterEmpresa
+      tags: [Conta]
+      summary: Dados da empresa
+      description: Dados cadastrais e fiscais da empresa dona da chave, sem segredos (certificado e CSC nunca são devolvidos).
+      responses:
+        '200':
+          description: A empresa.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeEmpresa'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /consumo:
+    get:
+      operationId: obterConsumo
+      tags: [Conta]
+      summary: Consumo do plano
+      description: Uso e limite de cada recurso do plano.
+      responses:
+        '200':
+          description: Uso por recurso.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeConsumo'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
 components:
   securitySchemes:
     bearerAuth:
@@ -139,6 +398,207 @@ components:
       properties:
         limite:
           type: integer
+    Contato:
+      type: object
+      additionalProperties: false
+      required: [id, nome, cargo, email, telefone]
+      properties:
+        id: {type: string, format: uuid}
+        nome: {type: string}
+        cargo: {type: ["string", "null"]}
+        email: {type: ["string", "null"]}
+        telefone: {type: ["string", "null"]}
+    Cliente:
+      type: object
+      additionalProperties: false
+      required: [id, tipo, nome, cpf_cnpj, inscricao_estadual, ie_isento, email, telefone, logradouro, numero, bairro, cidade, uf, cep, codigo_ibge, tags, origem, estagio]
+      properties:
+        id: {type: string, format: uuid}
+        tipo: {type: string, enum: [PF, PJ]}
+        nome: {type: string}
+        cpf_cnpj: {type: ["string", "null"], description: Somente dígitos.}
+        inscricao_estadual: {type: ["string", "null"]}
+        ie_isento: {type: boolean}
+        email: {type: ["string", "null"]}
+        telefone: {type: ["string", "null"]}
+        logradouro: {type: ["string", "null"]}
+        numero: {type: ["string", "null"]}
+        bairro: {type: ["string", "null"]}
+        cidade: {type: ["string", "null"]}
+        uf: {type: ["string", "null"]}
+        cep: {type: ["string", "null"]}
+        codigo_ibge: {type: ["string", "null"]}
+        tags: {type: array, items: {type: string}}
+        origem: {type: ["string", "null"]}
+        estagio: {type: string, enum: [LEAD, CLIENTE]}
+        contatos:
+          type: array
+          description: Presente apenas ao consultar um cliente pelo id.
+          items: {$ref: '#/components/schemas/Contato'}
+    ClienteEntrada:
+      type: object
+      required: [tipo, nome]
+      properties:
+        tipo: {type: string, enum: [PF, PJ]}
+        nome: {type: string, maxLength: 150}
+        cpf_cnpj: {type: ["string", "null"], description: CPF (PF) ou CNPJ (PJ) válido; único por empresa. Pontuação é aceita.}
+        inscricao_estadual: {type: ["string", "null"], maxLength: 20}
+        ie_isento: {type: boolean}
+        email: {type: ["string", "null"], format: email, maxLength: 150}
+        telefone: {type: ["string", "null"], maxLength: 20}
+        logradouro: {type: ["string", "null"], maxLength: 150}
+        numero: {type: ["string", "null"], maxLength: 20}
+        bairro: {type: ["string", "null"], maxLength: 100}
+        cidade: {type: ["string", "null"], maxLength: 100}
+        uf: {type: ["string", "null"], minLength: 2, maxLength: 2}
+        cep: {type: ["string", "null"]}
+        codigo_ibge: {type: ["string", "null"]}
+        tags: {type: array, items: {type: string, maxLength: 30}}
+        origem: {type: ["string", "null"], maxLength: 60}
+        estagio: {type: ["string", "null"], enum: [LEAD, CLIENTE, null]}
+    Produto:
+      type: object
+      additionalProperties: false
+      required: [id, sku, nome, unidade, preco_centavos, gtin, ncm, cest, origem, tributacao_icms, fiscal_fonte, fiscal_revisado_em, pendente_fiscal]
+      properties:
+        id: {type: string, format: uuid}
+        sku: {type: string}
+        nome: {type: string}
+        unidade: {type: string}
+        preco_centavos: {type: integer, description: Preço em centavos.}
+        gtin: {type: ["string", "null"]}
+        ncm: {type: ["string", "null"]}
+        cest: {type: ["string", "null"]}
+        origem: {type: ["string", "integer", "null"], description: "Origem da mercadoria (0 a 8). Zero é um valor válido (nacional)."}
+        tributacao_icms: {type: ["string", "null"], enum: [NORMAL, ST, null]}
+        fiscal_fonte: {type: string}
+        fiscal_revisado_em: {type: ["string", "null"], format: date-time}
+        pendente_fiscal: {type: boolean, description: Verdadeiro enquanto faltarem dados fiscais; a emissão é bloqueada.}
+    ProdutoEntrada:
+      type: object
+      required: [sku, nome, unidade, preco_centavos]
+      properties:
+        sku: {type: string, maxLength: 60, description: Único por empresa.}
+        nome: {type: string, maxLength: 150}
+        unidade: {type: string, maxLength: 10}
+        preco_centavos: {type: integer, minimum: 0}
+        gtin: {type: ["string", "null"], maxLength: 14}
+        ncm: {type: ["string", "null"]}
+        cest: {type: ["string", "null"]}
+        origem: {type: ["string", "integer", "null"], description: "Dígito de 0 a 8."}
+        tributacao_icms: {type: ["string", "null"], enum: [NORMAL, ST, null]}
+    Servico:
+      type: object
+      additionalProperties: false
+      required: [id, codigo, nome, preco_centavos, codigo_lc116, c_trib_nac, codigo_municipal, aliquota_iss, nbs, pendente_fiscal]
+      properties:
+        id: {type: string, format: uuid}
+        codigo: {type: ["string", "null"]}
+        nome: {type: string}
+        preco_centavos: {type: integer}
+        codigo_lc116: {type: ["string", "null"], description: "Formato 00.00."}
+        c_trib_nac: {type: ["string", "null"], description: Seis dígitos.}
+        codigo_municipal: {type: ["string", "null"], description: Três dígitos.}
+        aliquota_iss: {type: ["number", "string", "null"], description: Percentual de 0 a 100.}
+        nbs: {type: ["string", "null"]}
+        pendente_fiscal: {type: boolean}
+    ServicoEntrada:
+      type: object
+      required: [nome, preco_centavos]
+      properties:
+        codigo: {type: ["string", "null"], maxLength: 60, description: Único por empresa.}
+        nome: {type: string, maxLength: 150}
+        preco_centavos: {type: integer, minimum: 0}
+        codigo_lc116: {type: ["string", "null"], pattern: '^\d{2}\.\d{2}$'}
+        c_trib_nac: {type: ["string", "null"], pattern: '^\d{6}$'}
+        codigo_municipal: {type: ["string", "null"], pattern: '^\d{3}$'}
+        aliquota_iss: {type: ["number", "null"], minimum: 0, maximum: 100}
+        nbs: {type: ["string", "null"], maxLength: 9}
+    Empresa:
+      type: object
+      additionalProperties: false
+      required: [razao_social, nome_fantasia, cnpj, logradouro, numero, bairro, cidade, uf, cep, codigo_ibge, regime_tributario, inscricao_estadual, inscricao_municipal, cnae, ambiente_fiscal, certificado_status, certificado_validade, ambiente_da_chave]
+      properties:
+        razao_social: {type: ["string", "null"]}
+        nome_fantasia: {type: ["string", "null"]}
+        cnpj: {type: ["string", "null"]}
+        logradouro: {type: ["string", "null"]}
+        numero: {type: ["string", "null"]}
+        bairro: {type: ["string", "null"]}
+        cidade: {type: ["string", "null"]}
+        uf: {type: ["string", "null"]}
+        cep: {type: ["string", "null"]}
+        codigo_ibge: {type: ["string", "null"]}
+        regime_tributario: {type: ["string", "null"]}
+        inscricao_estadual: {type: ["string", "null"]}
+        inscricao_municipal: {type: ["string", "null"]}
+        cnae: {type: ["string", "null"]}
+        ambiente_fiscal: {type: ["string", "null"], description: Ambiente de emissão configurado na empresa.}
+        certificado_status: {type: ["string", "null"]}
+        certificado_validade: {type: ["string", "null"], format: date}
+        ambiente_da_chave: {type: string, enum: [live, test], description: Ambiente da chave usada na requisição.}
+    ConsumoItem:
+      type: object
+      additionalProperties: false
+      required: [recurso, uso, limite]
+      properties:
+        recurso: {type: string}
+        uso: {type: integer}
+        limite: {type: integer, description: "-1 quando ilimitado."}
+    RespostaDeEmpresa:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/Empresa'}
+    RespostaDeConsumo:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {type: array, items: {$ref: '#/components/schemas/ConsumoItem'}}
+    RespostaDeCliente:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/Cliente'}
+    ListaDeClientes:
+      type: object
+      additionalProperties: false
+      required: [data, links, meta]
+      properties:
+        data: {type: array, items: {$ref: '#/components/schemas/Cliente'}}
+        links: {$ref: '#/components/schemas/LinksDePagina'}
+        meta: {$ref: '#/components/schemas/MetaDePagina'}
+    RespostaDeProduto:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/Produto'}
+    ListaDeProdutos:
+      type: object
+      additionalProperties: false
+      required: [data, links, meta]
+      properties:
+        data: {type: array, items: {$ref: '#/components/schemas/Produto'}}
+        links: {$ref: '#/components/schemas/LinksDePagina'}
+        meta: {$ref: '#/components/schemas/MetaDePagina'}
+    RespostaDeServico:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/Servico'}
+    ListaDeServicos:
+      type: object
+      additionalProperties: false
+      required: [data, links, meta]
+      properties:
+        data: {type: array, items: {$ref: '#/components/schemas/Servico'}}
+        links: {$ref: '#/components/schemas/LinksDePagina'}
+        meta: {$ref: '#/components/schemas/MetaDePagina'}
   responses:
     NaoAutenticado:
       description: Chave ausente, inválida ou revogada (`API_CHAVE_AUSENTE`, `API_CHAVE_INVALIDA`).
