@@ -1,6 +1,6 @@
-# API pública (rascunho das F6a e F6b)
+# API pública (rascunho das F6a, F6b e F6c1)
 
-Guia curto do que a API oferece hoje. O guia completo e a especificação OpenAPI 3.1 chegam na F6c.
+Guia curto do que a API oferece hoje. O guia completo e a especificação OpenAPI 3.1 chegam na F6c2.
 
 Base: `https://<seu-dominio>/api/v1`. Corpo e resposta em JSON.
 
@@ -131,6 +131,109 @@ Rascunhos do aplicativo não aparecem pela API. Não há `PUT` nem `DELETE` de n
 
 `API_AMBIENTE_DIVERGENTE`, `CADASTRO_DIVERGENTE` (422); `IDEMPOTENCY_KEY_AUSENTE`, `IDEMPOTENCY_KEY_INVALIDA` (400); `IDEMPOTENCIA_CORPO_DIFERENTE`, `IDEMPOTENCIA_EM_ANDAMENTO` (409). Bloqueios fiscais e de plano mantêm os códigos do aplicativo (`FISCAL_*`, `LIMITE_DO_PLANO`, `MODULO_NAO_CONTRATADO`, `ASSINATURA_SEM_ESCRITA`).
 
+## Webhooks
+
+O sistema avisa o seu ERP quando uma nota muda de situação, sem você precisar consultar. Cada webhook é configurado por empresa na tela **Configurações → Webhooks** ou pela API (`/api/v1/webhooks`). Até **5** por empresa.
+
+### Eventos
+
+| Evento | Quando |
+| --- | --- |
+| `nota.autorizada` | a nota foi autorizada. Também é enviado quando um **cancelamento é recusado** e a nota volta a autorizada: veja `cancelamento_motivo` no recurso |
+| `nota.rejeitada` | a SEFAZ/prefeitura rejeitou a nota |
+| `nota.cancelada` | o cancelamento foi confirmado |
+| `nota.erro` | erro na emissão (a nota pode ser corrigida e reemitida) |
+| `nota.contingencia` | a nota entrou em contingência |
+| `webhook.teste` | enviado pelo botão/endpoint de teste |
+
+Cada webhook tem um **ambiente** (`HOMOLOGACAO` ou `PRODUCAO`): só notas desse ambiente geram avisos, então use endpoints diferentes para testar e para produzir. `eventos` vazio assina os cinco eventos de nota.
+
+### Corpo
+
+```json
+{
+  "id": "0199b1c2-7d3e-7a10-9f55-3f1f6a2b9c10",
+  "tipo": "nota.autorizada",
+  "criado_em": "2026-10-08T10:15:00-03:00",
+  "ambiente": "HOMOLOGACAO",
+  "data": { "nota": { "id": "…", "status": "AUTORIZADA", "chave": "…", "itens": [], "pagamentos": [], "eventos": [] } }
+}
+```
+
+`data.nota` é o mesmo recurso de `GET /notas/{id}`. O XML **não** vai no aviso: baixe-o por `GET /notas/{id}/xml`.
+
+### Cabeçalhos
+
+| Cabeçalho | Valor |
+| --- | --- |
+| `X-Webhook-Id` | igual ao `id` do corpo; **não muda nas retentativas** (use para ignorar repetições) |
+| `X-Webhook-Event` | o `tipo` |
+| `X-Signature` | `t=<unix>,v1=<hex>` (veja abaixo) |
+| `User-Agent` | `PlataformaFiscal-Webhook/1` |
+
+### Verificar a assinatura
+
+O `v1` é o HMAC-SHA256, em hexadecimal, de `"<t>.<corpo exato recebido>"` usando o **segredo** do webhook (`whsec_…`, mostrado uma única vez ao criar). Confira com o **corpo bruto**, antes de decodificar o JSON. Recuse se `t` tiver mais de **5 minutos** de diferença (replay) e compare em **tempo constante**.
+
+```php
+function assinaturaValida(string $segredo, string $cabecalho, string $corpoBruto, int $tolerancia = 300): bool
+{
+    if (! preg_match('/^t=(\d+),v1=([0-9a-f]{64})$/', $cabecalho, $m)) {
+        return false;
+    }
+    if (abs(time() - (int) $m[1]) > $tolerancia) {
+        return false;
+    }
+
+    return hash_equals(hash_hmac('sha256', $m[1].'.'.$corpoBruto, $segredo), $m[2]);
+}
+```
+
+```js
+import { createHmac, timingSafeEqual } from 'node:crypto';
+
+export function assinaturaValida(segredo, cabecalho, corpoBruto, tolerancia = 300) {
+  const m = /^t=(\d+),v1=([0-9a-f]{64})$/.exec(cabecalho ?? '');
+  if (!m || Math.abs(Date.now() / 1000 - Number(m[1])) > tolerancia) return false;
+  const esperado = createHmac('sha256', segredo).update(`${m[1]}.${corpoBruto}`).digest();
+  return timingSafeEqual(esperado, Buffer.from(m[2], 'hex'));
+}
+```
+
+```bash
+# Para conferir à mão (T e CORPO vêm da requisição recebida):
+printf '%s' "${T}.${CORPO}" | openssl dgst -sha256 -hmac "$SEGREDO"
+```
+
+### Entrega e retentativas
+
+- Responda com qualquer **2xx** em até **10 segundos**. Redirecionamentos **não** são seguidos (um `3xx` conta como falha).
+- Em falha (não-2xx, tempo esgotado ou erro de conexão) tentamos de novo depois de **1 min, 5 min, 30 min, 2 h, 6 h e 12 h**; a 7ª falha encerra a entrega (`FALHOU`, cerca de 20 h no total).
+- A entrega é **pelo menos uma vez** e **sem ordem garantida**: o mesmo aviso pode chegar repetido ou fora de ordem. Deduplique por `X-Webhook-Id` e, se precisar do estado atual, consulte `GET /notas/{id}`.
+- **10 entregas seguidas** que chegam a `FALHOU` desativam o webhook (o motivo aparece no recurso). Reative-o depois de corrigir o destino.
+- O histórico de entregas e de tentativas (status, tempo, erro e os primeiros 1024 bytes da resposta) fica **30 dias**. Você pode **reenviar** uma entrega: ela sai com o mesmo `id` e o mesmo corpo, numa nova rodada de até 7 tentativas.
+
+### Segurança da URL
+
+A URL precisa ser **`https`**, sem usuário e senha, e apontar para um endereço público: IPs privados, de loopback, de link-local, de metadados de nuvem e nomes que resolvem para eles são recusados, ao cadastrar e a cada envio. Os avisos saem de IPs do servidor da plataforma; se o seu firewall exige lista de liberação, peça ao suporte os endereços de saída.
+
+### Endpoints
+
+| Rota | O que faz |
+| --- | --- |
+| `GET /webhooks` · `POST /webhooks` | lista · cria (`url`, `ambiente`, `eventos?`, `descricao?`); a resposta traz `segredo` **uma única vez** |
+| `GET /webhooks/{id}` · `PUT /webhooks/{id}` · `DELETE /webhooks/{id}` | detalhe · altera `url`, `descricao`, `eventos`, `ambiente`, `ativo` (reativar zera as falhas) · exclui junto com o histórico |
+| `GET /webhooks/{id}/entregas` | entregas por cursor; filtro `estado` (`PENDENTE`, `ENTREGUE`, `FALHOU`) |
+| `GET /webhooks/entregas/{id}` | uma entrega com o `payload` enviado e o log de tentativas |
+| `POST /webhooks/{id}/testar` | envia um `webhook.teste` (`202`) |
+| `POST /webhooks/entregas/{id}/reenviar` | reenvia uma entrega já concluída (`202`) |
+
+Só chaves de **proprietário ou administrador** acessam esses endpoints, e o plano precisa incluir o módulo API. `testar` e `reenviar` aceitam `Idempotency-Key`; a criação não (a resposta leva o segredo e não é guardada). O segredo não pode ser lido de novo nem rotacionado: para trocá-lo, crie outro webhook e exclua o antigo.
+
+### Erros novos
+
+`WEBHOOK_URL_INVALIDA` (422, com `errors[]` apontando `url`), `WEBHOOK_LIMITE_ATINGIDO` (422), `WEBHOOK_INATIVO` (409).
+
 ## Exemplo
 
 ```bash
@@ -141,4 +244,4 @@ curl -s "https://<seu-dominio>/api/v1/clientes?limite=2&q=maria" \
 
 ## Pendências
 
-Webhooks de saída, OpenAPI e guia completo (F6c); venda mista, retransmissão e EPEC pela API; escopos por chave e papel próprio; allowlist de IP; rotação de chaves; página pública de cada `type` de erro; importação CSV pela API.
+OpenAPI e guia completo (F6c2); rotação do segredo do webhook, webhooks de outros recursos (cliente, produto, cobrança), ordenação garantida e lista de IPs de saída; venda mista, retransmissão e EPEC pela API; escopos por chave e papel próprio; allowlist de IP; rotação de chaves; página pública de cada `type` de erro; importação CSV pela API.
