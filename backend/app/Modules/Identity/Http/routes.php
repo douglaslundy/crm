@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Identity\Http\Controllers\AceitarConviteController;
+use App\Modules\Identity\Http\Controllers\ChavesDeApiController;
 use App\Modules\Identity\Http\Controllers\DesativarUsuarioController;
 use App\Modules\Identity\Http\Controllers\EsqueciSenhaController;
 use App\Modules\Identity\Http\Controllers\LoginController;
@@ -25,6 +26,12 @@ Route::prefix('auth')->group(function (): void {
         Route::post('logout', LogoutController::class);
         Route::get('me', MeController::class);
     });
+});
+
+Route::middleware('empresa')->prefix('chaves-api')->name('app.chaves-api.')->group(function (): void {
+    Route::get('/', [ChavesDeApiController::class, 'index'])->name('index');
+    Route::post('/', [ChavesDeApiController::class, 'store'])->name('store');
+    Route::delete('{id}', [ChavesDeApiController::class, 'destroy'])->whereUuid('id')->name('destroy');
 });
 
 Route::middleware('empresa')->prefix('usuarios')->group(function (): void {
