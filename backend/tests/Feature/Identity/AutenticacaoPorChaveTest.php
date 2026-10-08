@@ -112,7 +112,7 @@ class AutenticacaoPorChaveTest extends TestCase
         }
     }
 
-    public function test_inadimplente_e_suspensa_leem_mas_nao_escrevem(): void
+    public function test_inadimplente_e_suspensa_leem_e_suspensa_nao_escreve(): void
     {
         foreach ([SituacaoAssinatura::Inadimplente, SituacaoAssinatura::Suspensa] as $situacao) {
             $this->tenant->forceFill(['situacao' => $situacao])->save();

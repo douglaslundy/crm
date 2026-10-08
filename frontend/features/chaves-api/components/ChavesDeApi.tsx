@@ -56,6 +56,7 @@ function PainelDeChaves() {
       setErro(null);
       setCopiada(false);
       setCriada(data);
+      criar.reset(); // a resposta (com a chave) não fica no cache de mutações
       form.reset(VAZIO);
       void queryClient.invalidateQueries({ queryKey: QUERY_KEY_CHAVES_API });
     },

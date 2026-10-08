@@ -11,11 +11,11 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('api-v1')->group(function (): void {
     Route::get('produtos', [V1ProdutosController::class, 'index']);
     Route::post('produtos', [ProdutosController::class, 'store']);
-    Route::get('produtos/{id}', [ProdutosController::class, 'show']);
-    Route::put('produtos/{id}', [ProdutosController::class, 'update']);
+    Route::get('produtos/{id}', [ProdutosController::class, 'show'])->whereUuid('id');
+    Route::put('produtos/{id}', [ProdutosController::class, 'update'])->whereUuid('id');
 
     Route::get('servicos', [V1ServicosController::class, 'index']);
     Route::post('servicos', [ServicosController::class, 'store']);
-    Route::get('servicos/{id}', [ServicosController::class, 'show']);
-    Route::put('servicos/{id}', [ServicosController::class, 'update']);
+    Route::get('servicos/{id}', [ServicosController::class, 'show'])->whereUuid('id');
+    Route::put('servicos/{id}', [ServicosController::class, 'update'])->whereUuid('id');
 });

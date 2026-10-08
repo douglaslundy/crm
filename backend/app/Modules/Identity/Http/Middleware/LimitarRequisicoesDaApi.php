@@ -42,7 +42,11 @@ final class LimitarRequisicoesDaApi
             throw new LimiteDaApiExcedidoException($limite, $segundos, now()->getTimestamp() + $segundos);
         }
 
-        $this->limiter->hit($id, self::JANELA_EM_SEGUNDOS);
+        // hit() incrementa de forma atômica: requisições paralelas não passam juntas do limite.
+        if ($this->limiter->hit($id, self::JANELA_EM_SEGUNDOS) > $limite) {
+            $segundos = max(1, $this->limiter->availableIn($id));
+            throw new LimiteDaApiExcedidoException($limite, $segundos, now()->getTimestamp() + $segundos);
+        }
 
         $response = $next($request);
         $response->headers->add([

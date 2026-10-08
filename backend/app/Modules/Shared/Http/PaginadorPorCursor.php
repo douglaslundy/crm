@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Validator;
 
 /**
  * Paginação por cursor do /api/v1, estável por (updated_at, id): inserções e alterações durante a leitura
- * não fazem o integrador pular nem repetir itens. O cursor é opaco para quem consome.
+ * não fazem o integrador pular itens (um registro alterado durante a leitura reaparece no fim). O cursor é opaco para quem consome.
  */
 final class PaginadorPorCursor
 {
@@ -40,7 +40,11 @@ final class PaginadorPorCursor
             'limite' => ['sometimes', 'integer', 'between:1,'.self::LIMITE_MAXIMO],
             'cursor' => ['sometimes', 'string', 'max:300'],
             'q' => ['sometimes', 'string', 'max:100'],
-            'atualizado_desde' => ['sometimes', 'string', 'regex:'.self::ISO_8601],
+            'atualizado_desde' => ['sometimes', 'string', 'regex:'.self::ISO_8601, function (string $atributo, mixed $valor, \Closure $falhar): void {
+                if ($this->lerData((string) $valor) === null) {
+                    $falhar('Use uma data ISO-8601 existente, por exemplo 2026-10-08T12:00:00Z.');
+                }
+            }],
         ], [
             'limite.between' => 'O limite deve estar entre 1 e '.self::LIMITE_MAXIMO.'.',
             'atualizado_desde.regex' => 'Use uma data ISO-8601, por exemplo 2026-10-08T12:00:00Z.',
@@ -52,7 +56,7 @@ final class PaginadorPorCursor
         $query->orderBy("{$tabela}.updated_at")->orderBy("{$tabela}.id");
 
         if (isset($dados['atualizado_desde'])) {
-            $query->where("{$tabela}.updated_at", '>=', CarbonImmutable::parse($dados['atualizado_desde'])->utc()->format(self::FORMATO_DO_BANCO));
+            $query->where("{$tabela}.updated_at", '>=', $this->lerData($dados['atualizado_desde'])?->utc()->format(self::FORMATO_DO_BANCO));
         }
 
         if (isset($dados['q']) && $dados['q'] !== '' && $colunasDeBusca !== []) {
@@ -87,6 +91,20 @@ final class PaginadorPorCursor
         ];
     }
 
+    /** Data ISO-8601 que realmente existe (2026-02-30 e 2026-13-45 não passam). */
+    private function lerData(string $texto): ?CarbonImmutable
+    {
+        if (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $texto, $p) !== 1 || ! checkdate((int) $p[2], (int) $p[3], (int) $p[1])) {
+            return null;
+        }
+
+        try {
+            return CarbonImmutable::parse($texto);
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
     private function codificar(string $momento, string $id): string
     {
         return base64_encode((string) json_encode(['u' => $momento, 'i' => $id]));
@@ -100,6 +118,8 @@ final class PaginadorPorCursor
 
         if (! is_array($dados) || ! is_string($dados['u'] ?? null) || ! is_string($dados['i'] ?? null)
             || preg_match('/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/', $dados['u']) !== 1
+            || \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $dados['u']) === false
+            || \DateTimeImmutable::createFromFormat('Y-m-d H:i:s', $dados['u'])->format('Y-m-d H:i:s') !== $dados['u']
             || preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $dados['i']) !== 1) {
             throw new CursorInvalidoException;
         }

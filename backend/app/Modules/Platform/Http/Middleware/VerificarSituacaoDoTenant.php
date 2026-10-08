@@ -18,8 +18,8 @@ final class VerificarSituacaoDoTenant
     /** Rotas que uma conta PENDENTE pode ler. O /me fica fora deste grupo. */
     public const LIBERADAS_EM_PENDENTE = ['app.assinatura'];
 
-    /** Quem está pendente, inadimplente ou suspenso precisa poder pagar: estas rotas passam em qualquer situação. */
-    public const LIBERADAS_PARA_PAGAR = ['app.assinatura.checkout', 'app.assinatura.cobrancas', 'app.assinatura.cobrancas.pagar', 'app.assinatura.cancelar-troca', 'app.assinatura.cancelar'];
+    /** Quem está pendente, inadimplente ou suspenso precisa poder pagar (e revogar chave de API, que só tira acesso): estas rotas passam em qualquer situação. */
+    public const LIBERADAS_PARA_PAGAR = ['app.assinatura.checkout', 'app.assinatura.cobrancas', 'app.assinatura.cobrancas.pagar', 'app.assinatura.cancelar-troca', 'app.assinatura.cancelar', 'app.chaves-api.destroy'];
 
     public function handle(Request $request, Closure $next): Response
     {

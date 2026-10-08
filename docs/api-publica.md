@@ -14,13 +14,14 @@ Authorization: Bearer live_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 - `live_…`: ambiente de produção. `test_…`: ambiente de teste (as notas, na F6b, vão para homologação).
 - A chave **age como o usuário que a criou**, com o papel e a auditoria dele. Se esse usuário for desativado ou perder o papel de proprietário/administrador, a chave deixa de valer (401).
+- A chave `test_` hoje lê e grava os mesmos clientes, produtos e serviços da `live_` (não é um sandbox de cadastros); a diferença aparece na emissão de notas (F6b).
 - Revogue uma chave comprometida na mesma tela. Cada empresa pode ter até 20 chaves ativas.
-- A API exige o módulo **API** no plano (403 `API_NAO_CONTRATADA` sem ele). Conta pendente ou cancelada não usa a API; conta inadimplente ou suspensa só lê.
+- A API exige o módulo **API** no plano (403 `API_NAO_CONTRATADA` sem ele). Conta pendente ou cancelada não usa a API; conta suspensa só lê; a inadimplente ainda escreve, como no aplicativo (precisa poder regularizar). Revogar uma chave é permitido em qualquer situação.
 - A sessão do aplicativo não vale no `/api/v1`, e a chave não vale no `/api/app`.
 
 ## Limite de requisições
 
-O plano define as requisições por minuto, **por chave**, em janela de 1 minuto. Toda resposta traz:
+O plano define as requisições por minuto, **por chave**, em janela de 1 minuto. Toda resposta que passa pela autenticação traz (401 e 403 anteriores ao limite não trazem):
 
 | Cabeçalho | Significado |
 |---|---|
