@@ -1571,7 +1571,7 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
     Validacao:
-      description: Dados inválidos (`VALIDACAO`, com `errors[]`) ou cursor inválido (`CURSOR_INVALIDO`).
+      description: "Dados inválidos (`VALIDACAO`, com `errors[]`), cursor inválido (`CURSOR_INVALIDO`) ou regra não atendida (`API_AMBIENTE_DIVERGENTE`, `CADASTRO_DIVERGENTE`, `FISCAL_*`, `WEBHOOK_URL_INVALIDA`, `WEBHOOK_LIMITE_ATINGIDO`)."
       content:
         application/problem+json:
           schema:
@@ -1586,7 +1586,7 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
     RegraDeNegocio:
-      description: Regra de negócio não atendida; o `codigo` diz qual (por exemplo `CANCELAMENTO_NAO_PERMITIDO`, `LIMITE_DO_PLANO`, `MODULO_NAO_CONTRATADO`, `API_AMBIENTE_DIVERGENTE`).
+      description: "Regra de negócio não atendida; o `codigo` diz qual. Plano e módulo (`API_NAO_CONTRATADA`, `MODULO_NAO_CONTRATADO`, `LIMITE_DO_PLANO`, `ASSINATURA_*`) respondem 403; conflitos de estado (`CANCELAMENTO_NAO_PERMITIDO`, `NOTA_SEM_PDF`, `WEBHOOK_INATIVO`…) respondem 409."
       content:
         application/problem+json:
           schema:

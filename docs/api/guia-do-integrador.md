@@ -1,8 +1,114 @@
-# API pública (rascunho das F6a, F6b e F6c1)
+# Guia do integrador da API pública
 
-Guia curto do que a API oferece hoje. O guia completo e a especificação OpenAPI 3.1 chegam na F6c2.
+Este guia leva você da primeira chave até a primeira nota em homologação e mostra como receber os avisos por webhook.
+A referência completa de cada endpoint, com campos e exemplos, está na especificação OpenAPI 3.1:
+[`docs/api/openapi.yaml`](openapi.yaml), que também é exibida na página `/docs/api` do aplicativo.
 
 Base: `https://<seu-dominio>/api/v1`. Corpo e resposta em JSON.
+
+## Primeiros passos (do zero à primeira nota em homologação)
+
+1. **Crie uma chave `test_`** em **Configurações → Chaves de API**. Guarde o texto inteiro: ele aparece uma única vez.
+2. **Confira a empresa**: `GET /empresa` deve mostrar `ambiente_fiscal: HOMOLOGACAO`, certificado válido e `ambiente_da_chave: test`.
+3. **Emita** com `POST /notas` e um `Idempotency-Key` novo (use um UUID por nota).
+4. **Acompanhe** com `GET /notas/{id}/status` até sair de `PROCESSANDO` ou, melhor, receba o webhook `nota.autorizada`.
+5. **Baixe** o PDF e o XML em `GET /notas/{id}/pdf` e `/xml`.
+
+```bash
+export BASE="https://<seu-dominio>/api/v1"
+export CHAVE_DE_API="test_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+
+# 2. A empresa e o ambiente
+curl -s "$BASE/empresa" -H "Authorization: Bearer $CHAVE_DE_API"
+
+# 3. Emitir (NF-e com cliente e produto inline)
+curl -s -X POST "$BASE/notas" \
+  -H "Authorization: Bearer $CHAVE_DE_API" \
+  -H "Idempotency-Key: $(uuidgen)" \
+  -H "Content-Type: application/json" \
+  -d '{"modelo":"NFE","cliente":{"tipo":"PF","nome":"Maria Souza","cpf_cnpj":"529.982.247-25","logradouro":"Rua A","numero":"10","bairro":"Centro","cidade":"São Paulo","uf":"SP","cep":"01001000","codigo_ibge":"3550308"},"itens":[{"produto":{"sku":"PAR-8","nome":"Parafuso M8","unidade":"UN","preco_centavos":500,"ncm":"73181500","origem":0,"tributacao_icms":"NORMAL"},"quantidade":"2"}],"pagamentos":[{"tpag":"01","valor_centavos":1000}],"desconto_centavos":0}'
+
+# 4. Status (troque NOTA_ID pelo id devolvido)
+curl -s "$BASE/notas/NOTA_ID/status" -H "Authorization: Bearer $CHAVE_DE_API"
+```
+
+Em PHP (sem bibliotecas, só a extensão cURL):
+
+```php
+$base = 'https://<seu-dominio>/api/v1';
+$chave = getenv('CHAVE_DE_API');
+
+function chamar(string $metodo, string $url, string $chave, ?array $corpo = null, ?string $idempotencia = null): array
+{
+    $cabecalhos = ['Authorization: Bearer '.$chave, 'Accept: application/json', 'Content-Type: application/json'];
+    if ($idempotencia !== null) {
+        $cabecalhos[] = 'Idempotency-Key: '.$idempotencia;
+    }
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_CUSTOMREQUEST => $metodo,
+        CURLOPT_HTTPHEADER => $cabecalhos,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_POSTFIELDS => $corpo === null ? null : json_encode($corpo, JSON_UNESCAPED_UNICODE),
+    ]);
+    $resposta = curl_exec($ch);
+    $status = (int) curl_getinfo($ch, CURLINFO_RESPONSE_CODE);
+    curl_close($ch);
+
+    return [$status, json_decode((string) $resposta, true)];
+}
+
+[$status, $emissao] = chamar('POST', $base.'/notas', $chave, [
+    'modelo' => 'NFE',
+    'cliente' => ['id' => '<uuid do cliente>'],
+    'itens' => [['produto_id' => '<uuid do produto>', 'quantidade' => '1']],
+    'pagamentos' => [['tpag' => '01', 'valor_centavos' => 500]],
+    'desconto_centavos' => 0,
+], bin2hex(random_bytes(16)));
+
+// 202: a nota nasce PROCESSANDO. Qualquer 4xx traz "codigo" e, na validação, "errors".
+$notaId = $emissao['data']['id'] ?? null;
+```
+
+Em JavaScript (Node 18+ ou navegador de servidor, com `fetch`):
+
+```js
+const base = 'https://<seu-dominio>/api/v1';
+const chave = process.env.CHAVE_DE_API;
+
+async function chamar(metodo, caminho, corpo, idempotencia) {
+  const resposta = await fetch(`${base}${caminho}`, {
+    method: metodo,
+    headers: {
+      Authorization: `Bearer ${chave}`,
+      Accept: 'application/json',
+      'Content-Type': 'application/json',
+      ...(idempotencia ? { 'Idempotency-Key': idempotencia } : {}),
+    },
+    body: corpo ? JSON.stringify(corpo) : undefined,
+  });
+  return { status: resposta.status, corpo: await resposta.json() };
+}
+
+const emissao = await chamar('POST', '/notas', {
+  modelo: 'NFE',
+  cliente: { id: '<uuid do cliente>' },
+  itens: [{ produto_id: '<uuid do produto>', quantidade: '1' }],
+  pagamentos: [{ tpag: '01', valor_centavos: 500 }],
+  desconto_centavos: 0,
+}, crypto.randomUUID());
+
+// 202: a nota nasce PROCESSANDO. Consulte o status até o fim do processamento.
+const notaId = emissao.corpo.data?.id;
+let status = 'PROCESSANDO';
+while (status === 'PROCESSANDO' && notaId) {
+  await new Promise((r) => setTimeout(r, 2000));
+  status = (await chamar('GET', `/notas/${notaId}/status`)).corpo.data.status;
+}
+```
+
+Para ir à produção, troque a chave por uma `live_…` e configure a empresa em **produção** (Configurações → Fiscal): as notas só saem se o ambiente da chave e o da empresa coincidirem.
 
 ## Autenticação
 
@@ -242,6 +348,8 @@ curl -s "https://<seu-dominio>/api/v1/clientes?limite=2&q=maria" \
   -H "Accept: application/json"
 ```
 
-## Pendências
+## Limites conhecidos
 
-OpenAPI e guia completo (F6c2); rotação do segredo do webhook, webhooks de outros recursos (cliente, produto, cobrança), ordenação garantida e lista de IPs de saída; venda mista, retransmissão e EPEC pela API; escopos por chave e papel próprio; allowlist de IP; rotação de chaves; página pública de cada `type` de erro; importação CSV pela API.
+Ainda não existem: rotação do segredo do webhook, webhooks de outros recursos (cliente, produto, cobrança), ordenação garantida entre eventos, lista de IPs de saída do envio, venda mista, retransmissão e EPEC pela API, escopos por chave, allowlist de IP, rotação de chaves e importação em lote.
+
+A referência de cada endpoint está no [OpenAPI](openapi.yaml); a página `/docs/api` do aplicativo mostra a mesma especificação.
