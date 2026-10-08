@@ -129,4 +129,45 @@ describe('Pagamento do excedente', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Não foi possível falar com o Mercado Pago.');
   });
+
+  it('cartão em análise mostra o aviso e a lista acompanha até a confirmação', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    let enviar: ((token: string) => Promise<void>) | undefined;
+    vi.mocked(montarCartao).mockImplementation(async (opcoes) => {
+      enviar = opcoes.aoEnviar;
+      return () => undefined;
+    });
+    const analise: Cobranca = { ...EXCEDENTE, metodo: 'CARTAO' };
+    vi.mocked(cobrancaApi.faturas)
+      .mockResolvedValueOnce({ data: [EXCEDENTE] })
+      .mockResolvedValueOnce({ data: [analise] })
+      .mockResolvedValue({ data: [{ ...analise, status: 'PAGA', pago_em: '2026-11-02T10:00:00-03:00' }] });
+    vi.mocked(cobrancaApi.pagar).mockResolvedValue({ data: analise });
+    renderizar();
+
+    await user.click(await screen.findByRole('button', { name: 'Pagar' }));
+    await user.click(screen.getByRole('radio', { name: 'Cartão' }));
+    await waitFor(() => expect(enviar).toBeDefined());
+    await enviar?.('tok_1');
+
+    expect(await screen.findByText(/Pagamento em análise/)).toBeInTheDocument();
+    await vi.advanceTimersByTimeAsync(3500);
+    expect(await screen.findByText('Pagamento confirmado. Obrigado!')).toBeInTheDocument();
+  });
+
+  it('PIX que expira com a tela aberta volta a oferecer Gerar PIX', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    const expira = new Date(Date.now() + 30_000).toISOString();
+    vi.mocked(cobrancaApi.faturas).mockResolvedValue({ data: [{ ...COM_PIX, pix_expira_em: expira }] });
+    renderizar();
+
+    await user.click(await screen.findByRole('button', { name: 'Pagar' }));
+    expect(screen.getByRole('img', { name: 'QR code do PIX' })).toBeInTheDocument();
+    await vi.advanceTimersByTimeAsync(31_000);
+
+    expect(await screen.findByRole('button', { name: 'Gerar PIX' })).toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: 'QR code do PIX' })).not.toBeInTheDocument();
+  });
 });

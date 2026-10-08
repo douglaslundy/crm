@@ -82,9 +82,13 @@ final class PagarCobranca
             return;   // o PIX gerado ainda vale: devolve o mesmo
         }
 
+        if ($this->cartaoEmAnalise($cobranca)) {
+            throw $this->emAndamento('Há um pagamento por cartão em análise para esta cobrança. Aguarde a confirmação antes de gerar um PIX.');
+        }
+
         $expiraEm = CarbonImmutable::now()->addMinutes((int) config('billing.pix_expira_minutos'));
-        // Primeira tentativa usa o id da cobrança; um PIX novo (o anterior expirou) precisa de chave nova.
-        $idempotencia = $cobranca->gateway_pagamento_id === null ? $cobranca->id : (string) Str::uuid();
+        // Primeira tentativa usa uma chave derivada do id da cobrança; um PIX novo (o anterior expirou) precisa de chave nova.
+        $idempotencia = $cobranca->gateway_pagamento_id === null ? 'pix:'.$cobranca->id : (string) Str::uuid();
         $resultado = $this->gateway->criarPix(new DadosDoPix(
             $cobranca->id, $cobranca->valor_centavos, $this->descricao($cobranca), $autor->email, $tenant->nomeDeExibicao(), $tenant->cnpj, $expiraEm, $idempotencia,
         ));
@@ -98,8 +102,15 @@ final class PagarCobranca
     /** @return ?string o id do pagamento aprovado, para conciliar depois do commit */
     private function cartao(Cobranca $cobranca, Usuario $autor, Tenant $tenant, string $token): ?string
     {
+        if ($cobranca->metodo === MetodoDePagamento::Pix && $cobranca->pix_expira_em?->isFuture() === true) {
+            throw $this->emAndamento('H� um PIX v�lido para esta cobran�a. Pague por ele ou aguarde a expira��o para pagar por cart�o.');
+        }
+
+        // A chave vem do token (uso �nico): repetir o pedido por timeout � seguro e uma nova tentativa com outro cart�o n�o
+        // recebe de volta a recusa guardada da anterior.
         $resultado = $this->gateway->criarPagamentoDeCartao(new DadosDoPagamentoDeCartao(
-            $cobranca->id, $cobranca->valor_centavos, $this->descricao($cobranca), $autor->email, $tenant->nomeDeExibicao(), $tenant->cnpj, $token, $cobranca->id,
+            $cobranca->id, $cobranca->valor_centavos, $this->descricao($cobranca), $autor->email, $tenant->nomeDeExibicao(), $tenant->cnpj, $token,
+            hash('sha256', 'cartao:'.$cobranca->id.':'.$token),
         ));
         if (! in_array($resultado->status, [StatusDoPagamento::Aprovado, StatusDoPagamento::Pendente], true)) {
             throw new BillingException('BILLING_CARTAO_RECUSADO', 'O cartão não foi aprovado. Confira os dados ou use outro cartão.');
@@ -108,6 +119,18 @@ final class PagarCobranca
         $cobranca->forceFill(['metodo' => MetodoDePagamento::Cartao, 'gateway_pagamento_id' => $resultado->id])->save();
 
         return $this->aprovado($resultado) ? $resultado->id : null;
+    }
+
+    /** Cart�o pendente: o pagamento ainda pode ser aprovado, ent�o um PIX em paralelo geraria cobran�a em dobro. */
+    private function cartaoEmAnalise(Cobranca $cobranca): bool
+    {
+        return $cobranca->metodo === MetodoDePagamento::Cartao && $cobranca->gateway_pagamento_id !== null
+            && $cobranca->updated_at?->gt(now()->subMinutes((int) config('billing.pix_expira_minutos'))) === true;
+    }
+
+    private function emAndamento(string $mensagem): BillingException
+    {
+        return new BillingException('BILLING_PAGAMENTO_EM_ANDAMENTO', $mensagem, 409);
     }
 
     private function aprovado(ResultadoDePagamento $resultado): bool

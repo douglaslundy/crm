@@ -22,6 +22,7 @@ use App\Modules\Tenancy\Domain\TenantContext;
 use Carbon\Carbon;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Tests\Fixtures\CenarioDeCobranca;
 use Tests\TestCase;
 
@@ -108,7 +109,7 @@ class FecharExcedenteTest extends TestCase
     public function test_o_fim_do_mes_e_no_fuso_do_negocio(): void
     {
         $this->notas(2, '2026-10-15 12:00:00');
-        $this->notas(1, '2026-11-01 02:59:59');  // 31/10 23:59:59 em Sao Paulo: ainda é outubro
+        $this->notas(1, '2026-11-01 02:59:59');  // 31/10 23:59:59 em Sao Paulo: ainda Ã© outubro
         $this->notas(1, '2026-11-01 03:00:00');  // 01/11 00:00:00 em Sao Paulo: novembro
 
         $this->assertSame(1, $this->fechar());
@@ -121,7 +122,7 @@ class FecharExcedenteTest extends TestCase
         $this->notas(2, '2026-10-15 12:00:00');
         $this->notas(3, '2026-10-16 12:00:00', 'HOMOLOGACAO');
 
-        $this->assertSame(0, $this->fechar(), 'outubro tem 2 documentos de produção e o limite é 2');
+        $this->assertSame(0, $this->fechar(), 'outubro tem 2 documentos de produÃ§Ã£o e o limite Ã© 2');
     }
 
     public function test_dentro_do_limite_ou_ilimitado_nao_gera(): void
@@ -192,5 +193,16 @@ class FecharExcedenteTest extends TestCase
         $this->fechar();
 
         $this->assertSame($antes, $contexto->id());
+    }
+
+    public function test_registra_em_log_o_excedente_de_quem_nao_tem_assinatura_ativa(): void
+    {
+        $this->notas(5, '2026-10-15 15:00:00');
+        $this->assinatura->forceFill(['situacao' => StatusDaAssinatura::Cancelada])->save();
+        Log::spy();
+
+        $this->assertSame(0, $this->fechar());
+
+        Log::shouldHaveReceived('info')->withArgs(fn (string $mensagem, array $contexto): bool => str_contains($mensagem, 'sem assinatura ativa') && $contexto['tenant_id'] === $this->tenant->id && $contexto['documentos_excedentes'] === 3)->once();
     }
 }

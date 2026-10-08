@@ -1,10 +1,10 @@
 # Progresso do Projeto
 
 ## Última atualização
-2026-10-07
+2026-10-08
 
 ## Tarefa em andamento
-**F5b1 (pagamento avulso e excedente) com spec e plano prontos e commitados; a EXECUÇÃO AINDA NÃO COMEÇOU (aguardando o "sim" do usuário; execução escolhida: Native, na master). F3, F4 (a e b) e F5a concluídas.** Retomar pela tarefa 1 do plano.
+**Nenhuma tarefa em andamento. F3, F4 (a e b), F5a e F5b1 concluídas.** Próxima: F5b2 (troca de plano), começando por brainstorming.
 
 Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é decisão da SEFAZ (sem número fixo no código); cancelada continua contando na cota `DOCUMENTOS_MES`; `consultarPorChave` usa o ambiente da **nota** (corrige consulta no ambiente errado depois de "Ir para produção"); o XML do cancelamento é o `nfeProc` com `retEvento` (`Complements::cancelRegister`); aceitos 135/136/155; inutilização síncrona com guardas locais (faixa já alocada, sem nota autorizada/em processamento/cancelada na faixa), resultado sempre gravado.
 
@@ -36,6 +36,13 @@ Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é dec
 - **Verificado:** build, migrations de todas as fases no PostgreSQL 16 (primeira vez fora do SQLite), login com sessão pela API, CORS, URL da API embutida no front, worker e agendador de pé, API ~35 ms. **Não verificado:** as telas no navegador.
 - **Reimplantar:** `git -c core.autocrlf=false archive --format=tar.gz -o crm.tar.gz HEAD`, enviar para `~/crm-plataforma/`, extrair em `src/` (NÃO apagar `src/deploy/.env`: tem a senha do banco) e rodar `bash src/deploy/deploy.sh`. Detalhes em `deploy/README.md`.
 - **Diferenças para produção real:** HTTP sem domínio, `INSTALL_DEV=1` (Faker para o seeder), `SESSION_SECURE_COOKIE=false`. Antes de expor à internet: HTTPS, domínio, trocar a senha do usuário SSH e as contas de demonstração.
+
+## Fechamento da F5b1 (2026-10-08)
+- **Feito:** gateway com `criarPagamentoDeCartao` (avulso, 1x) e `criarPix`; `MetodoDePagamento::Pix`, `TipoDeCobranca::Excedente` (não estende período), `cobrancas.metodo` nulo e campos do PIX e do excedente; `ContadorDeUsoMensal` e `Plano::permiteExcederDocumentos()` (`COBRAR` com preço libera `DOCUMENTOS_MES`); `FecharExcedenteDoMes` e `billing:fechar-excedente` (dia 1, 00:40, `--mes=AAAA-MM`); `PagarCobranca` e `POST /api/app/assinatura/cobrancas/{cobranca}/pagar`; conciliação de cobrança que não estende período (reativa conta em dia); telas: botão Pagar, `PainelDePagamento` (PIX com QR e copia e cola, cartão), lista que se atualiza sozinha.
+- **Verificado:** backend 915 testes e frontend 332, Pint/PHPStan/tsc/build limpos (lint só com o warning antigo). **NÃO verificado:** PIX e cartão avulso no Mercado Pago real (roteiro em `docs/cobranca.md`).
+- **Decisões:** o mês do fechamento é o do fuso do negócio (o banco guarda em UTC, e o Eloquent não converte: `ContadorDeDocumentosMes` converte); checkout não aceita PIX; pagar a mensalidade ativa a conta mas não perdoa o excedente vencido (a rodada de inadimplência a leva de volta); chave de idempotência do cartão derivada do token (nova tentativa não recebe a recusa antiga) e a do PIX com prefixo `pix:`; cartão não é aceito com PIX válido e PIX não é gerado com cartão em análise (30 min) (`BILLING_PAGAMENTO_EM_ANDAMENTO`).
+- **Revisão final** (revisor independente): 2 Critical e 4 Important, todos corrigidos com teste que falhou antes: (C1) a renovação do cartão era conciliada contra o excedente em aberto (agora a busca por assinatura só olha mensalidade); (C2) idempotência do cartão e do PIX colidiam; (I3) pagamento em duplicidade de cobrança já paga agora gera aviso em log e as combinações PIX/cartão são recusadas; (I4) cartão em análise aparece na tela e é acompanhado; (I5) QR expirado com a tela aberta volta a oferecer Gerar PIX; (I6) excedente de empresa sem assinatura ativa vai para o log.
+- **Pendências:** em `TAREFAS.md` ("Pendências da F5b1").
 
 ## Fechamento da F5a (2026-10-07)
 - **Feito:** módulo `Billing` (tabelas `assinaturas`, `cobrancas` e `webhooks_recebidos`; índice único parcial de uma assinatura não cancelada por tenant); `CicloDeCobranca`, `PeriodoPago`; `GatewayDeCobranca` + `GatewayDeCobrancaFake` + `MercadoPagoGateway`; Actions `IniciarAssinatura` (cartão por `preapproval`, boleto, regularização, cancelamento no gateway de assinaturas trocadas e órfãs), `CancelarAssinatura`, `ConciliarPagamento`, `ReceberWebhook`, `ListarCobrancas`; `VerificadorDeAssinaturaDoWebhook` (HMAC, falha fechada); comandos `billing:gerar-boletos` (00:20) e `billing:aplicar-inadimplencia` (00:30); transições `ATIVA↔INADIMPLENTE`; middleware libera checkout, faturas e cancelar em qualquer situação; API e telas (planos, checkout com Card Payment Brick, faturas, regularização, faixa de situação com link, conta pendente enxerga `/assinatura/*`).
@@ -168,4 +175,4 @@ O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artis
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-Executar a F5b1 (plano pronto, Task 1 em diante). Depois: brainstorming da F5b2 (troca de plano). Antes ou em paralelo, o usuário pode: fazer o push (muitos commits locais além de `db2bc7d`), reimplantar o staging (desatualizado), rodar os roteiros de homologação real (NF-e, NFC-e, contingência, EPEC, NFS-e) e o de sandbox do Mercado Pago (`docs/cobranca.md`), e conferir as telas no navegador.
+Brainstorming da F5b2 (troca de plano: upgrade pago por cartão ou PIX com o plano mudando só ao pagar; downgrade agendado para o fim do período e bloqueado se o uso passar dos limites). Contexto: `TAREFAS.md` (F5b2), spec mestre (seção 12), specs da F5a e da F5b1, `docs/cobranca.md`, `Platform/Application/Actions/TrocarPlanoDaEmpresa.php`, `Platform/Application/EntitlementService.php` (`excessos`), `Billing/Application/Actions/{IniciarAssinatura,PagarCobranca,ConciliarPagamento}.php`, `Billing/Console/GerarBoletosDoCicloCommand.php`, `frontend/features/cobranca/components/{Assinar,PainelDePagamento}.tsx`. Antes ou em paralelo, o usuário pode: fazer o push (nada enviado desde `db2bc7d`), reimplantar o staging, rodar o sandbox do Mercado Pago e os roteiros de homologação real.

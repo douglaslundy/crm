@@ -31,6 +31,22 @@ Backend (`backend/.env`): `MERCADOPAGO_ACCESS_TOKEN`, `MERCADOPAGO_WEBHOOK_SECRE
 7. Cancelar a assinatura e conferir o cancelamento do `preapproval` no painel.
 8. Reenviar o mesmo webhook pelo painel e conferir que nada muda (idempotência).
 
+## Documento excedente e pagamento avulso (F5b1)
+
+Spec: `docs/superpowers/specs/2026-10-08-f5b1-excedente-pagamento-avulso-design.md`.
+
+- **Política:** plano `COBRAR` com `preco_documento_excedente_centavos` maior que zero deixa emitir acima do limite de `DOCUMENTOS_MES`; sem preço, ou `BLOQUEAR`, bloqueia como antes. Outros recursos nunca excedem.
+- **Fechamento:** `billing:fechar-excedente` (dia 1, 00:40, America/Sao_Paulo; `--mes=AAAA-MM`, padrão = mês anterior) cria, para cada assinatura `ATIVA` de plano `COBRAR` com preço, UMA cobrança `EXCEDENTE` do mês (`excesso x preço`, vence em 10 dias, sem forma de pagamento). Rodar de novo não duplica (índice único parcial). O mês é o do fuso do negócio.
+- **Pagamento:** em **Assinatura > Faturas**, **Pagar** abre o painel de PIX (QR code e copia e cola, válido por 30 minutos; enquanto vale, o mesmo PIX é devolvido) ou cartão (1x, Card Payment Brick). O valor é sempre o da cobrança. Cartão aprovado concilia na hora; PIX confirma pelo webhook e a tela atualiza sozinha.
+- **Inadimplência:** excedente vencido segue as mesmas carências da mensalidade (1 e 10 dias). Pagar o excedente só quita o excedente (não estende o período) e reativa a conta se a assinatura está em dia e nada mais está vencido. Pagar a mensalidade não perdoa o excedente vencido: a conta ativa, e a rodada de inadimplência do dia seguinte a leva de volta se ele continuar vencido.
+
+### Roteiro de sandbox do excedente e do pagamento avulso (usuário, com credenciais de teste)
+
+1. **PIX:** num tenant de teste com plano `COBRAR` e preço, rodar `php artisan billing:fechar-excedente --mes=AAAA-MM`, abrir Faturas, **Pagar > Gerar PIX**. Conferir `point_of_interaction.transaction_data.qr_code` e `qr_code_base64` (o adaptador os lê desses nomes), a expiração (`date_of_expiration`) e se a imagem do QR é PNG.
+2. Pagar o PIX no sandbox e conferir o webhook de `payment`, a cobrança `PAGA` e a tela atualizando sozinha. Gerar um PIX, esperar expirar e gerar outro (chave de idempotência nova).
+3. **Cartão avulso:** pagar com cartão de teste aprovado e com cartão recusado (`BILLING_CARTAO_RECUSADO`, nada gravado). Conferir o status `in_process` (fica pendente até o webhook).
+4. Conta suspensa só por excedente: pagar e conferir que volta a `ATIVA`.
+
 ## Fora da F5a
 
-Troca de plano e excedente de documentos (F5b), estorno, NFS-e da própria plataforma, e-mails de aviso de cobrança.
+Troca de plano (F5b2), estorno, NFS-e da própria plataforma, e-mails de aviso de cobrança.

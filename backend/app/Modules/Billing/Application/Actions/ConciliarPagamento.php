@@ -20,6 +20,7 @@ use App\Modules\Tenancy\Domain\Models\Tenant;
 use App\Modules\Tenancy\Domain\TenantContext;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -56,6 +57,11 @@ final class ConciliarPagamento
         if ($cobranca !== null) {
             $cobranca = Cobranca::query()->whereKey($cobranca->id)->lockForUpdate()->firstOrFail();
             if ($cobranca->status === StatusDaCobranca::Paga) {
+                if ($cobranca->gateway_pagamento_id !== $pagamento->id) {
+                    // Segundo pagamento aprovado de uma cobrança já paga: o cliente pagou em dobro e alguém precisa estornar.
+                    Log::warning('Pagamento em duplicidade de cobrança já paga.', ['tenant_id' => $cobranca->tenant_id, 'cobranca_id' => $cobranca->id, 'pago_com' => $cobranca->gateway_pagamento_id, 'duplicado' => $pagamento->id]);
+                }
+
                 return $cobranca;   // já conciliada
             }
             $assinatura = Assinatura::query()->whereKey($cobranca->assinatura_id)->lockForUpdate()->firstOrFail();
@@ -174,7 +180,7 @@ final class ConciliarPagamento
             return null;
         }
         $aberta = Cobranca::withoutTenantScope()->where('assinatura_id', $assinatura->id)
-            ->whereIn('status', [StatusDaCobranca::Pendente->value, StatusDaCobranca::Vencida->value])->orderBy('vence_em')->first();
+            ->where('tipo', TipoDeCobranca::Assinatura->value)->whereIn('status', [StatusDaCobranca::Pendente->value, StatusDaCobranca::Vencida->value])->orderBy('vence_em')->first();
 
         return [
             'cobranca' => $aberta, 'assinatura' => $aberta === null ? $assinatura : null,

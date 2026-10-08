@@ -55,10 +55,10 @@ trait CenarioDeCobranca
     }
 
     /**
-     * Cobrança de excedente (R$ 3,00 = 3 documentos x R$ 1,00) pendente, sem método, vencendo hoje, numa assinatura
+     * CobranÃ§a de excedente (R$ 3,00 = 3 documentos x R$ 1,00) pendente, sem mÃ©todo, vencendo hoje, numa assinatura
      * ATIVA paga por mais 10 dias (a menos que se passe a assinatura).
      *
-     * @param  array<string, mixed>  $campos  sobrescreve campos da cobrança
+     * @param  array<string, mixed>  $campos  sobrescreve campos da cobranÃ§a
      */
     protected function excedentePendente(array $campos = [], ?Assinatura $assinatura = null): Cobranca
     {

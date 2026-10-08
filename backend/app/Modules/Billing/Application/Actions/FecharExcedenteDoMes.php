@@ -43,30 +43,48 @@ final class FecharExcedenteDoMes
         $criadas = 0;
 
         try {
+            $comAssinatura = [];
             foreach (Assinatura::withoutTenantScope()->where('situacao', StatusDaAssinatura::Ativa->value)->lazyById(100) as $assinatura) {
+                $comAssinatura[$assinatura->tenant_id] = true;
                 $this->contexto->set($assinatura->tenant_id);
                 $tenant = Tenant::query()->find($assinatura->tenant_id);
-                $plano = $tenant?->plano;
-                if ($tenant === null || $plano === null || ! $plano->permiteExcederDocumentos()) {
+                $excesso = $tenant === null ? 0 : $this->excessoDo($tenant, $contador, $mes);
+                if ($tenant?->plano === null || $excesso <= 0) {
                     continue;
                 }
 
-                $limite = $plano->limiteDe(Recurso::DocumentosMes);
-                if ($limite === Plano::ILIMITADO) {
-                    continue;
-                }
-                $excesso = $contador->contarNoMes($tenant, $mes) - $limite;
-                if ($excesso <= 0) {
-                    continue;
-                }
+                $criadas += $this->criar($assinatura, $tenant->plano, $mes, $excesso, $hoje);
+            }
 
-                $criadas += $this->criar($assinatura, $plano, $mes, $excesso, $hoje);
+            // Sem assinatura ativa não há a quem cobrar (teste, cancelada, pendente): o excesso fica só no log.
+            foreach (Tenant::query()->whereNotNull('plano_id')->lazyById(100) as $tenant) {
+                $excesso = isset($comAssinatura[$tenant->id]) ? 0 : $this->excessoDo($tenant, $contador, $mes);
+                if ($excesso > 0) {
+                    Log::info('Documentos acima do limite de empresa sem assinatura ativa: nada foi cobrado.', [
+                        'tenant_id' => $tenant->id, 'mes' => $mes->format('Y-m'), 'documentos_excedentes' => $excesso,
+                    ]);
+                }
             }
         } finally {
             $this->contexto->set($anterior);
         }
 
         return $criadas;
+    }
+
+    /** Documentos acima do limite no mês; 0 quando o plano não cobra excedente ou não tem limite. */
+    private function excessoDo(Tenant $tenant, ContadorDeUsoMensal $contador, CarbonImmutable $mes): int
+    {
+        $plano = $tenant->plano;
+        if ($plano === null || ! $plano->permiteExcederDocumentos()) {
+            return 0;
+        }
+        $limite = $plano->limiteDe(Recurso::DocumentosMes);
+        if ($limite === Plano::ILIMITADO) {
+            return 0;
+        }
+
+        return max(0, $contador->contarNoMes($tenant, $mes) - $limite);
     }
 
     private function criar(Assinatura $assinatura, Plano $plano, CarbonImmutable $mes, int $excesso, CarbonImmutable $hoje): int

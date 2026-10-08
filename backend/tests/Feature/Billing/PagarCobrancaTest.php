@@ -74,7 +74,7 @@ class PagarCobrancaTest extends TestCase
         [$pedido] = $this->pedidosDePix();
         $this->assertSame(300, $pedido->valorCentavos);
         $this->assertSame($c->id, $pedido->cobrancaId);
-        $this->assertSame($c->id, $pedido->idempotencia);
+        $this->assertSame('pix:'.$c->id, $pedido->idempotencia);
         $this->assertSame($this->admin->email, $pedido->emailDoPagador);
         $this->assertSame('11444777000161', $pedido->documento);
         $this->assertSame(now()->addMinutes(30)->timestamp, $pedido->expiraEm->timestamp);
@@ -103,8 +103,8 @@ class PagarCobrancaTest extends TestCase
 
         $pedidos = $this->pedidosDePix();
         $this->assertCount(2, $pedidos);
-        $this->assertSame($c->id, $pedidos[0]->idempotencia);
-        $this->assertNotSame($c->id, $pedidos[1]->idempotencia);
+        $this->assertSame('pix:'.$c->id, $pedidos[0]->idempotencia);
+        $this->assertNotSame('pix:'.$c->id, $pedidos[1]->idempotencia);
         $this->assertNotSame($primeiro->gateway_pagamento_id, $segundo->gateway_pagamento_id);
         $this->assertGreaterThan($primeiro->pix_expira_em?->timestamp, $segundo->pix_expira_em?->timestamp);
     }
@@ -123,7 +123,7 @@ class PagarCobrancaTest extends TestCase
         $this->assertSame('car-1', $r->gateway_pagamento_id);
         $chamada = collect($this->gateway->chamadas)->first(fn (array $x): bool => $x[0] === 'criarPagamentoDeCartao');
         $this->assertInstanceOf(DadosDoPagamentoDeCartao::class, $chamada[1][0]);
-        $this->assertSame(['tok-1', 300, $c->id], [$chamada[1][0]->tokenDoCartao, $chamada[1][0]->valorCentavos, $chamada[1][0]->idempotencia]);
+        $this->assertSame(['tok-1', 300, hash('sha256', 'cartao:'.$c->id.':tok-1')], [$chamada[1][0]->tokenDoCartao, $chamada[1][0]->valorCentavos, $chamada[1][0]->idempotencia]);
     }
 
     public function test_cartao_recusado_nao_grava_nada(): void
@@ -196,5 +196,30 @@ class PagarCobrancaTest extends TestCase
 
         $this->expectException(ModelNotFoundException::class);
         $this->pagar($alheia);
+    }
+
+    public function test_nova_tentativa_de_cartao_usa_chave_de_idempotencia_nova(): void
+    {
+        $c = $this->excedentePendente();
+        $this->gateway->enfileirarCartao(new ResultadoDePagamento('car-1', StatusDoPagamento::Recusado, $c->id, 300));
+        $this->codigoDoErro(fn () => $this->pagar($c, MetodoDePagamento::Cartao, 'tok-1'));
+
+        $this->pagar($c, MetodoDePagamento::Cartao, 'tok-2');
+
+        $chaves = array_map(fn (array $x): string => $x[1][0]->idempotencia, array_values(array_filter($this->gateway->chamadas, fn (array $x): bool => $x[0] === 'criarPagamentoDeCartao')));
+        $this->assertCount(2, $chaves);
+        $this->assertNotSame($chaves[0], $chaves[1]);
+    }
+
+    public function test_cartao_nao_e_aceito_enquanto_ha_pix_valido_nem_pix_com_cartao_em_analise(): void
+    {
+        $c = $this->excedentePendente();
+        $this->pagar($c);
+        $this->assertSame('BILLING_PAGAMENTO_EM_ANDAMENTO', $this->codigoDoErro(fn () => $this->pagar($c, MetodoDePagamento::Cartao, 'tok-1')));
+
+        $d = $this->excedentePendente(['mes_referencia' => '2026-08-01'], $c->assinatura);
+        $this->gateway->enfileirarCartao(new ResultadoDePagamento('car-9', StatusDoPagamento::Pendente, $d->id, 300));
+        $this->pagar($d, MetodoDePagamento::Cartao, 'tok-2');
+        $this->assertSame('BILLING_PAGAMENTO_EM_ANDAMENTO', $this->codigoDoErro(fn () => $this->pagar($d)));
     }
 }

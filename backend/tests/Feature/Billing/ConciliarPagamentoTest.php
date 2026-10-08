@@ -14,6 +14,7 @@ use App\Modules\Billing\Domain\Models\Cobranca;
 use App\Modules\Tenancy\Domain\Enums\SituacaoAssinatura;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Log;
 use Tests\Fixtures\CenarioDeCobranca;
 use Tests\TestCase;
 
@@ -271,8 +272,36 @@ class ConciliarPagamentoTest extends TestCase
         app(ConciliarPagamento::class)->executar('pg-1');
 
         $this->assertSame(StatusDaCobranca::Paga, $mensalidade->refresh()->status);
-        $this->assertSame(StatusDaCobranca::Vencida, $excedente->refresh()->status, 'pagar a mensalidade não perdoa o excedente');
-        // Ruling: a mensalidade ativa a conta mesmo com excedente vencido; a inadimplência do dia seguinte a leva de volta.
+        $this->assertSame(StatusDaCobranca::Vencida, $excedente->refresh()->status, 'pagar a mensalidade nÃ£o perdoa o excedente');
+        // Ruling: a mensalidade ativa a conta mesmo com excedente vencido; a inadimplÃªncia do dia seguinte a leva de volta.
         $this->assertSame(SituacaoAssinatura::Ativa, $this->tenant->refresh()->situacao);
+    }
+
+    public function test_renovacao_do_cartao_nao_e_conciliada_contra_o_excedente_em_aberto(): void
+    {
+        $c = $this->cobrancaPendente();
+        $this->aprovado($c);
+        app(ConciliarPagamento::class)->executar('pg-1');
+        $excedente = $this->excedentePendente([], $c->assinatura);
+        $this->gateway->enfileirarPagamento(new ResultadoDePagamento('pg-2', StatusDoPagamento::Aprovado, $c->id, 10000, assinaturaGatewayId: 'pre-1'));
+
+        app(ConciliarPagamento::class)->executar('pg-2');
+
+        $this->assertSame(StatusDaCobranca::Pendente, $excedente->refresh()->status);
+        $this->assertSame($this->hoje()->addMonthsNoOverflow(2)->toDateString(), $c->assinatura->refresh()->paga_ate?->toDateString());
+    }
+
+    public function test_segundo_pagamento_aprovado_da_mesma_cobranca_gera_aviso(): void
+    {
+        $c = $this->excedentePendente();
+        $this->aprovado($c, 'pg-1', 300);
+        app(ConciliarPagamento::class)->executar('pg-1');
+        $this->aprovado($c, 'pg-2', 300);
+        Log::spy();
+
+        app(ConciliarPagamento::class)->executar('pg-2');
+
+        Log::shouldHaveReceived('warning')->once();
+        $this->assertSame('pg-1', $c->refresh()->gateway_pagamento_id);
     }
 }

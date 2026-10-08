@@ -1,7 +1,7 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Banner } from '@/components/ui/banner';
 import { Button } from '@/components/ui/button';
 import { QUERY_KEY_ASSINATURA } from '@/features/assinatura/hooks/useAssinatura';
@@ -24,8 +24,18 @@ export function PainelDePagamento({ cobranca }: { cobranca: Cobranca }) {
   const [resultado, setResultado] = useState<Cobranca | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [copiado, setCopiado] = useState(false);
-  const [agora] = useState(() => Date.now());
+  const [agora, setAgora] = useState(() => Date.now());
   const envioUnico = useEnvioUnico();
+  const expiraEm = (resultado ?? cobranca).pix_expira_em;
+
+  // O QR code deixa de valer com a tela aberta: relê o relógio quando o PIX expira.
+  useEffect(() => {
+    if (expiraEm === null) return;
+    const falta = new Date(expiraEm).getTime() - Date.now();
+    if (falta <= 0) return;
+    const id = setTimeout(() => setAgora(Date.now()), Math.min(falta, 2_000_000_000) + 50);
+    return () => clearTimeout(id);
+  }, [expiraEm]);
 
   const pagar = useMutation({
     mutationFn: (token: string | null) => cobrancaApi.pagar(cobranca.id, { metodo: forma, token_do_cartao: token }),
@@ -43,6 +53,7 @@ export function PainelDePagamento({ cobranca }: { cobranca: Cobranca }) {
   const atual = resultado ?? cobranca;
   const pixValido =
     atual.metodo === 'PIX' && atual.pix_qr_code !== null && (atual.pix_expira_em === null || new Date(atual.pix_expira_em).getTime() > agora);
+  const cartaoEmAnalise = atual.metodo === 'CARTAO' && (atual.status === 'PENDENTE' || atual.status === 'VENCIDA');
   const copiar = async (codigo: string) => {
     await navigator.clipboard.writeText(codigo);
     setCopiado(true);
@@ -56,7 +67,7 @@ export function PainelDePagamento({ cobranca }: { cobranca: Cobranca }) {
         <div className="flex gap-4">
           {(['PIX', 'CARTAO'] as const).map((f) => (
             <label key={f} className="flex items-center gap-2">
-              <input type="radio" name={`forma-${cobranca.id}`} checked={forma === f} onChange={() => setForma(f)} />
+              <input type="radio" name={`forma-${cobranca.id}`} checked={forma === f} onChange={() => { setForma(f); setErro(null); }} />
               {ROTULO_METODO[f]}
             </label>
           ))}
@@ -64,7 +75,7 @@ export function PainelDePagamento({ cobranca }: { cobranca: Cobranca }) {
       </fieldset>
 
       {erro ? <Banner tom="perigo">{erro}</Banner> : null}
-
+      {cartaoEmAnalise ? <Banner tom="info">Pagamento em análise. Esta tela atualiza sozinha quando for confirmado.</Banner> : null}
       {forma === 'CARTAO' ? (
         <PagamentoComCartao
           valorCentavos={cobranca.valor_centavos}

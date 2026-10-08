@@ -23,6 +23,8 @@ const INTERVALO_DO_PIX_MS = 3000;
 const emAberto = (f: Cobranca) => f.status === 'PENDENTE' || f.status === 'VENCIDA';
 const aguardandoPix = (f: Cobranca) => f.metodo === 'PIX' && emAberto(f) && f.pix_expira_em !== null && new Date(f.pix_expira_em).getTime() > Date.now();
 
+const cartaoEmAnalise = (f: Cobranca) => f.metodo === 'CARTAO' && emAberto(f);
+
 /** 'AAAA-MM-DD' → 'outubro de 2026'. */
 function mesPorExtenso(iso: string): string {
   return new Date(`${iso.slice(0, 10)}T12:00:00`).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
@@ -63,7 +65,7 @@ export function ListaDeFaturas() {
     queryFn: async () => (await cobrancaApi.faturas()).data,
     enabled: permitido,
     // Com PIX gerado a página acompanha o pagamento sozinha, sem o cliente recarregar.
-    refetchInterval: (query) => (query.state.data?.some(aguardandoPix) ? INTERVALO_DO_PIX_MS : false),
+    refetchInterval: (query) => (query.state.data?.some((f) => aguardandoPix(f) || (f.id === pagando && cartaoEmAnalise(f))) ? INTERVALO_DO_PIX_MS : false),
   });
 
   // Uma cobrança que estava em aberto e agora está paga mudou a situação da conta (por exemplo, saiu da suspensão).
