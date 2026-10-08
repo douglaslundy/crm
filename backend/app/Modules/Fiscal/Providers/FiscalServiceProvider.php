@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Providers;
 
 use App\Modules\Fiscal\Application\ContadorDeDocumentosMes;
+use App\Modules\Fiscal\Application\Webhooks\ResolvedorDeDns;
+use App\Modules\Fiscal\Application\Webhooks\ResolvedorDeDnsDoSistema;
 use App\Modules\Fiscal\Console\ReconciliarNotasCommand;
 use App\Modules\Fiscal\Console\RetransmitirContingenciaCommand;
 use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfe;
@@ -28,6 +30,7 @@ final class FiscalServiceProvider extends ServiceProvider
         $this->app->bind(EmissorDeNfse::class, NfseNacionalEmissor::class);
         $this->app->bind(GeradorDeDanfe::class, SpedDaGeradorDeDanfe::class);
         $this->app->bind(GeradorDeDanfse::class, DompdfGeradorDeDanfse::class);
+        $this->app->bind(ResolvedorDeDns::class, ResolvedorDeDnsDoSistema::class);
     }
 
     public function boot(): void
