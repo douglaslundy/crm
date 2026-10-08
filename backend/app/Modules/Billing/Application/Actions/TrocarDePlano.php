@@ -50,6 +50,10 @@ final class TrocarDePlano
                 throw new BillingException('BILLING_TROCA_INDISPONIVEL', 'Só quem tem assinatura ativa e em dia troca de plano. Regularize o pagamento primeiro.');
             }
 
+            if ($assinatura->temBoletoEmitidoEmAberto()) {
+                throw new BillingException('BILLING_TROCA_BOLETO_EMITIDO', 'O boleto da próxima renovação já foi emitido. Pague-o (ou espere o vencimento) antes de trocar de plano.', 409);
+            }
+
             $novo = Plano::query()->where('ativo', true)->where('visivel', true)->find($planoId);
             if ($novo === null) {
                 throw new BillingException('BILLING_PLANO_INDISPONIVEL', 'Este plano não está disponível para assinatura.');
@@ -91,7 +95,7 @@ final class TrocarDePlano
         $cobranca->forceFill([
             'assinatura_id' => $assinatura->id, 'tipo' => TipoDeCobranca::Upgrade, 'valor_centavos' => $valor,
             'vence_em' => $hoje->addDay()->toDateString(), 'status' => StatusDaCobranca::Pendente, 'metodo' => null,
-            'plano_destino_id' => $novo->id,
+            'plano_destino_id' => $novo->id, 'plano_origem_id' => $assinatura->plano_id, 'paga_ate_origem' => $assinatura->paga_ate?->toDateString(),
         ])->save();
 
         return new ResultadoDaTroca(TipoDeTroca::Upgrade, $assinatura, $cobranca->refresh());

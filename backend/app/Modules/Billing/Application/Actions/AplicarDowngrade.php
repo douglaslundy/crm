@@ -38,7 +38,7 @@ final class AplicarDowngrade
             $tenant = $assinatura === null ? null : Tenant::query()->lockForUpdate()->find($assinatura->tenant_id);
             if (
                 $assinatura === null || $tenant === null || $assinatura->plano_proximo_id === null || $assinatura->plano_proximo_em === null
-                || $assinatura->situacao !== StatusDaAssinatura::Ativa || $tenant->situacao !== SituacaoAssinatura::Ativa
+                || $assinatura->situacao !== StatusDaAssinatura::Ativa || $tenant->situacao === SituacaoAssinatura::Cancelada
                 || $assinatura->plano_proximo_em->toDateString() > $hoje->toDateString()
             ) {
                 return false;

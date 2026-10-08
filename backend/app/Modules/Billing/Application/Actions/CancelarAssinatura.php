@@ -31,7 +31,7 @@ final class CancelarAssinatura
                 $this->gateway->cancelarAssinatura($assinatura->gateway_assinatura_id);
             }
             $assinatura->cobrancas()->where('status', StatusDaCobranca::Pendente->value)->update(['status' => StatusDaCobranca::Cancelada->value]);
-            $assinatura->forceFill(['situacao' => StatusDaAssinatura::Cancelada, 'cancelada_em' => now()])->save();
+            $assinatura->forceFill(['situacao' => StatusDaAssinatura::Cancelada, 'cancelada_em' => now(), 'plano_proximo_id' => null, 'plano_proximo_em' => null])->save();
 
             return $assinatura;
         });

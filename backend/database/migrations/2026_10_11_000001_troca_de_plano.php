@@ -20,6 +20,9 @@ return new class extends Migration
             });
             Schema::table('cobrancas', function (Blueprint $table): void {
                 $table->foreignUuid('plano_destino_id')->nullable()->constrained('planos');
+                // Estado da assinatura quando o upgrade foi pedido: pagamento depois de renovação ou de outra troca é obsoleto.
+                $table->foreignUuid('plano_origem_id')->nullable()->constrained('planos');
+                $table->date('paga_ate_origem')->nullable();
             });
         });
 
@@ -33,6 +36,8 @@ return new class extends Migration
         $this->semIndicesParciais(function (): void {
             Schema::table('cobrancas', function (Blueprint $table): void {
                 $table->dropConstrainedForeignId('plano_destino_id');
+                $table->dropConstrainedForeignId('plano_origem_id');
+                $table->dropColumn('paga_ate_origem');
             });
             Schema::table('assinaturas', function (Blueprint $table): void {
                 $table->dropConstrainedForeignId('plano_proximo_id');

@@ -83,13 +83,15 @@ final class ConciliarPagamento
                 return $cobranca;   // já conciliada
             }
             $assinatura = Assinatura::query()->whereKey($cobranca->assinatura_id)->lockForUpdate()->firstOrFail();
+            $estavaCancelada = $cobranca->status === StatusDaCobranca::Cancelada;
         } else {
+            $estavaCancelada = false;
             // Ciclo seguinte da assinatura de cartão: o gateway cobrou sem uma cobrança nossa pendente.
             $assinatura = Assinatura::query()->whereKey($assinatura?->id)->lockForUpdate()->firstOrFail();
             $cobranca = new Cobranca;
             $cobranca->forceFill([
                 'assinatura_id' => $assinatura->id, 'tipo' => TipoDeCobranca::Assinatura,
-                'valor_centavos' => $this->valorDaRenovacao($assinatura), 'vence_em' => today((string) config('app.fuso_negocio')),
+                'valor_centavos' => $this->valorDaRenovacao($assinatura, $pagamento->valorCentavos), 'vence_em' => today((string) config('app.fuso_negocio')),
                 'status' => StatusDaCobranca::Pendente, 'metodo' => $assinatura->metodo,
             ]);
         }
@@ -104,7 +106,7 @@ final class ConciliarPagamento
             // Excedente (e, depois, upgrade): só quita a cobrança; não mexe no período pago da assinatura.
             $cobranca->forceFill($baixa)->save();
             if ($cobranca->tipo === TipoDeCobranca::Upgrade) {
-                $valor = $this->aplicarUpgrade($cobranca, $assinatura);
+                $valor = $this->aplicarUpgrade($cobranca, $assinatura, $estavaCancelada);
                 if ($valor !== null) {
                     $depoisDoCommit['valor_no_gateway'] = $valor;
                 }
@@ -139,8 +141,20 @@ final class ConciliarPagamento
      * pagamento fica quitado sem trocar o plano e o aviso pede estorno manual.
      */
     /** @return ?array{assinatura: string, valor: int} */
-    private function aplicarUpgrade(Cobranca $cobranca, Assinatura $assinatura): ?array
+    private function aplicarUpgrade(Cobranca $cobranca, Assinatura $assinatura, bool $cancelada): ?array
     {
+        // Pagamento obsoleto: o upgrade foi cancelado, a assinatura acabou, outra troca ou a renovação mudou o ponto de partida.
+        $obsoleto = $cancelada || $assinatura->situacao !== StatusDaAssinatura::Ativa
+            || ($cobranca->plano_origem_id !== null && $cobranca->plano_origem_id !== $assinatura->plano_id)
+            || ($cobranca->paga_ate_origem !== null && $cobranca->paga_ate_origem->toDateString() !== $assinatura->paga_ate?->toDateString());
+        if ($obsoleto) {
+            Log::warning('Upgrade pago, mas obsoleto (cancelado ou a assinatura mudou depois do pedido): plano não trocado, estorno manual necessário.', [
+                'tenant_id' => $cobranca->tenant_id, 'cobranca_id' => $cobranca->id, 'cancelada' => $cancelada,
+            ]);
+
+            return null;
+        }
+
         $destino = $cobranca->plano_destino_id === null ? null : Plano::query()->find($cobranca->plano_destino_id);
         try {
             $preco = $destino?->ativo === true ? $assinatura->ciclo->precoDo($destino) : null;
@@ -194,7 +208,30 @@ final class ConciliarPagamento
      * O cartão renova pelo valor que o cliente aceitou na última cobrança paga; só sem histórico vale o preço do plano.
      * Assim uma mudança de preço do plano não faz toda renovação falhar na conferência do valor.
      */
-    private function valorDaRenovacao(Assinatura $assinatura): int
+    private function valorDaRenovacao(Assinatura $assinatura, int $pago): int
+    {
+        $esperado = $this->valorEsperadoNaRenovacao($assinatura);
+
+        // O gateway pode estar um passo atrás (ou à frente) de nós depois de uma troca de plano: aceita, além do esperado, os
+        // valores que o cliente já contratou (última mensalidade paga, preço do plano atual e do agendado).
+        $aceitos = [$esperado];
+        $ultima = Cobranca::query()->where('assinatura_id', $assinatura->id)->where('tipo', TipoDeCobranca::Assinatura->value)
+            ->where('status', StatusDaCobranca::Paga->value)->latest('pago_em')->value('valor_centavos');
+        if (is_int($ultima)) {
+            $aceitos[] = $ultima;
+        }
+        foreach ([$assinatura->plano, $assinatura->plano_proximo_id === null ? null : Plano::query()->find($assinatura->plano_proximo_id)] as $plano) {
+            try {
+                $aceitos[] = $plano === null ? $esperado : $assinatura->ciclo->precoDo($plano);
+            } catch (BillingException) {
+                continue;
+            }
+        }
+
+        return in_array($pago, $aceitos, true) ? $pago : $esperado;
+    }
+
+    private function valorEsperadoNaRenovacao(Assinatura $assinatura): int
     {
         if ($assinatura->valor_ciclo_centavos !== null) {
             return $assinatura->valor_ciclo_centavos;

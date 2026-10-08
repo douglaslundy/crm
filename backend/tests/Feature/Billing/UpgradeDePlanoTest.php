@@ -57,7 +57,7 @@ class UpgradeDePlanoTest extends TestCase
         $c = new Cobranca;
         $c->forceFill([
             'assinatura_id' => $this->assinatura->id, 'tipo' => TipoDeCobranca::Upgrade, 'valor_centavos' => 3000, 'vence_em' => $vence,
-            'status' => StatusDaCobranca::Pendente, 'metodo' => null, 'plano_destino_id' => ($destino ?? $this->caro)->id,
+            'status' => StatusDaCobranca::Pendente, 'metodo' => null, 'plano_destino_id' => ($destino ?? $this->caro)->id, 'plano_origem_id' => $this->plano->id, 'paga_ate_origem' => '2026-10-30',
         ])->save();
 
         return $c->refresh();

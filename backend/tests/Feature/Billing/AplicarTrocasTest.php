@@ -113,14 +113,14 @@ class AplicarTrocasTest extends TestCase
         Log::shouldHaveReceived('warning')->once();
     }
 
-    public function test_ignora_assinatura_cancelada_e_conta_que_nao_esta_ativa(): void
+    public function test_ignora_assinatura_cancelada_e_empresa_cancelada(): void
     {
         $this->assinatura->forceFill(['situacao' => StatusDaAssinatura::Cancelada])->save();
         $this->rodar();
         $this->assertSame($this->plano->id, $this->tenant->refresh()->plano_id);
 
         $this->assinatura->forceFill(['situacao' => StatusDaAssinatura::Ativa])->save();
-        $this->tenant->forceFill(['situacao' => SituacaoAssinatura::Suspensa])->save();
+        $this->tenant->forceFill(['situacao' => SituacaoAssinatura::Cancelada])->save();
         $this->rodar();
         $this->assertSame($this->plano->id, $this->tenant->refresh()->plano_id);
     }

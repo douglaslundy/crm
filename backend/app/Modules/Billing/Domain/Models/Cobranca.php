@@ -34,6 +34,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property ?int $documentos_excedentes
  * @property ?int $valor_unitario_centavos
  * @property ?string $plano_destino_id
+ * @property ?string $plano_origem_id
+ * @property ?CarbonInterface $paga_ate_origem
  * @property ?CarbonInterface $pago_em
  * @property ?CarbonInterface $periodo_inicio
  * @property ?CarbonInterface $periodo_fim
@@ -67,6 +69,7 @@ class Cobranca extends Model
             'periodo_fim' => 'date',
             'pix_expira_em' => 'datetime',
             'mes_referencia' => 'date',
+            'paga_ate_origem' => 'date',
             'documentos_excedentes' => 'integer',
             'valor_unitario_centavos' => 'integer',
         ];

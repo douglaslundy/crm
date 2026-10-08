@@ -7,6 +7,8 @@ namespace App\Modules\Billing\Domain\Models;
 use App\Modules\Billing\Domain\Enums\CicloDeCobranca;
 use App\Modules\Billing\Domain\Enums\MetodoDePagamento;
 use App\Modules\Billing\Domain\Enums\StatusDaAssinatura;
+use App\Modules\Billing\Domain\Enums\StatusDaCobranca;
+use App\Modules\Billing\Domain\Enums\TipoDeCobranca;
 use App\Modules\Platform\Domain\Models\Plano;
 use App\Modules\Tenancy\Domain\Concerns\BelongsToTenant;
 use Carbon\CarbonInterface;
@@ -58,6 +60,13 @@ class Assinatura extends Model
             'valor_ciclo_centavos' => 'integer',
             'plano_proximo_em' => 'date',
         ];
+    }
+
+    /** Boleto da renovação já emitido e em aberto: trocar o preço agora deixaria o boleto com o valor errado. */
+    public function temBoletoEmitidoEmAberto(): bool
+    {
+        return $this->metodo === MetodoDePagamento::Boleto
+            && $this->cobrancas()->where('tipo', TipoDeCobranca::Assinatura->value)->where('status', StatusDaCobranca::Pendente->value)->whereNotNull('gateway_pagamento_id')->exists();
     }
 
     /** Preço contratado do ciclo atual; assinatura antiga, sem o valor gravado, vale o preço do plano no ciclo. */

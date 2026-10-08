@@ -51,7 +51,9 @@ export function TrocaDePlano({ planos, assinatura }: { planos: Plano[]; assinatu
     enabled: upgrade !== null,
     refetchInterval: (query) => (query.state.data?.find((f) => f.id === upgrade?.id)?.status === 'PENDENTE' ? INTERVALO_MS : false),
   });
-  const viva = faturas.data?.find((f) => f.id === upgrade?.id) ?? upgrade;
+  const encontrada = faturas.data?.find((f) => f.id === upgrade?.id) ?? upgrade;
+  // Upgrade cancelado (por exemplo, vencido) não se paga mais: volta a lista de planos.
+  const viva = encontrada !== null && encontrada.status !== 'CANCELADA' ? encontrada : null;
 
   // Upgrade pago pelo PIX: o plano da empresa mudou, então a assinatura é relida.
   useEffect(() => {
@@ -103,7 +105,7 @@ export function TrocaDePlano({ planos, assinatura }: { planos: Plano[]; assinatu
 
         {viva !== null ? (
           <div className="space-y-2">
-            <p className="font-medium">Troca de plano: diferença de {formatarCentavos(viva.valor_centavos)} a pagar agora</p>
+            <p className="font-medium">Troca de plano: diferença de {formatarCentavos(viva.valor_centavos)}{viva.status === 'PAGA' ? '' : ' a pagar agora'}</p>
             <PainelDePagamento cobranca={viva} />
           </div>
         ) : atual.plano_proximo_id !== null ? (

@@ -29,6 +29,10 @@ final class CancelarDowngrade
                 throw new BillingException('BILLING_SEM_DOWNGRADE', 'Não há troca de plano agendada.', 404);
             }
 
+            if ($assinatura->temBoletoEmitidoEmAberto()) {
+                throw new BillingException('BILLING_TROCA_BOLETO_EMITIDO', 'O boleto da próxima renovação já foi emitido. Pague-o (ou espere o vencimento) antes de trocar de plano.', 409);
+            }
+
             if ($assinatura->metodo === MetodoDePagamento::Cartao && $assinatura->gateway_assinatura_id !== null) {
                 try {
                     $this->gateway->atualizarAssinatura($assinatura->gateway_assinatura_id, $assinatura->valorDoCiclo());
