@@ -16,6 +16,7 @@ use App\Modules\Billing\Domain\Gateway\ResultadoDePagamento;
 use App\Modules\Billing\Domain\Gateway\StatusDoPagamento;
 use App\Modules\Billing\Domain\Models\Cobranca;
 use App\Modules\Identity\Domain\Models\Usuario;
+use App\Modules\Platform\Domain\Models\Plano;
 use App\Modules\Tenancy\Domain\Models\Tenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
@@ -44,7 +45,7 @@ final class PagarCobranca
         $aprovado = null;
         $cobranca = DB::transaction(function () use ($autor, $cobrancaId, $metodo, $tokenDoCartao, &$aprovado): Cobranca {
             $cobranca = Cobranca::query()->whereKey($cobrancaId)->lockForUpdate()->firstOrFail();
-            if ($cobranca->tipo !== TipoDeCobranca::Excedente || ! in_array($cobranca->status, [StatusDaCobranca::Pendente, StatusDaCobranca::Vencida], true)) {
+            if (! in_array($cobranca->tipo, [TipoDeCobranca::Excedente, TipoDeCobranca::Upgrade], true) || ! in_array($cobranca->status, [StatusDaCobranca::Pendente, StatusDaCobranca::Vencida], true)) {
                 throw new BillingException('BILLING_COBRANCA_NAO_PAGAVEL', 'Esta cobrança não está disponível para pagamento.');
             }
             $tenant = Tenant::query()->findOrFail($autor->tenant_id);
@@ -140,6 +141,11 @@ final class PagarCobranca
 
     private function descricao(Cobranca $cobranca): string
     {
+        if ($cobranca->tipo === TipoDeCobranca::Upgrade) {
+            $destino = $cobranca->plano_destino_id === null ? null : Plano::query()->find($cobranca->plano_destino_id);
+
+            return 'Troca para o plano '.($destino->nome ?? 'novo');
+        }
         $mes = $cobranca->mes_referencia?->format('m/Y');
 
         return $mes === null ? 'Documentos acima do limite do plano' : 'Documentos acima do limite do plano em '.$mes;

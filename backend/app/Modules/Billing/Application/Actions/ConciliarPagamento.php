@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Billing\Application\Actions;
 
 use App\Modules\Billing\Domain\Contracts\GatewayDeCobranca;
+use App\Modules\Billing\Domain\Enums\MetodoDePagamento;
 use App\Modules\Billing\Domain\Enums\StatusDaAssinatura;
 use App\Modules\Billing\Domain\Enums\StatusDaCobranca;
 use App\Modules\Billing\Domain\Enums\TipoDeCobranca;
@@ -15,13 +16,16 @@ use App\Modules\Billing\Domain\Models\Assinatura;
 use App\Modules\Billing\Domain\Models\Cobranca;
 use App\Modules\Billing\Domain\PeriodoPago;
 use App\Modules\Platform\Application\Actions\MudarSituacaoDaEmpresa;
+use App\Modules\Platform\Domain\Models\Plano;
 use App\Modules\Tenancy\Domain\Enums\SituacaoAssinatura;
 use App\Modules\Tenancy\Domain\Models\Tenant;
 use App\Modules\Tenancy\Domain\TenantContext;
+use ArrayObject;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Throwable;
 
 /**
  * Confere um pagamento no gateway e, se aprovado, dá a cobrança por paga, estende o período e ativa o tenant.
@@ -49,10 +53,24 @@ final class ConciliarPagamento
             return $cobranca;   // pendente, recusado ou vencido: o `AplicarInadimplencia` cuida do vencimento
         }
 
-        return $this->comTenant($tenantId, fn (): Cobranca => DB::transaction(fn (): Cobranca => $this->aplicar($pagamento, $cobranca, $assinatura)));
+        /** @var ArrayObject<string, array{assinatura: string, valor: int}> $depoisDoCommit */
+        $depoisDoCommit = new ArrayObject;
+        $conciliada = $this->comTenant($tenantId, fn (): Cobranca => DB::transaction(fn (): Cobranca => $this->aplicar($pagamento, $cobranca, $assinatura, $depoisDoCommit)));
+
+        // Depois do commit: o pagamento já vale, e uma falha aqui não pode desfazê-lo (fica no log).
+        if (isset($depoisDoCommit['valor_no_gateway'])) {
+            try {
+                $this->gateway->atualizarAssinatura($depoisDoCommit['valor_no_gateway']['assinatura'], $depoisDoCommit['valor_no_gateway']['valor']);
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        return $conciliada;
     }
 
-    private function aplicar(ResultadoDePagamento $pagamento, ?Cobranca $cobranca, ?Assinatura $assinatura): Cobranca
+    /** @param  ArrayObject<string, array{assinatura: string, valor: int}>  $depoisDoCommit  efeitos no gateway, para depois do commit */
+    private function aplicar(ResultadoDePagamento $pagamento, ?Cobranca $cobranca, ?Assinatura $assinatura, ArrayObject $depoisDoCommit): Cobranca
     {
         if ($cobranca !== null) {
             $cobranca = Cobranca::query()->whereKey($cobranca->id)->lockForUpdate()->firstOrFail();
@@ -85,6 +103,12 @@ final class ConciliarPagamento
         if (! $cobranca->tipo->estendePeriodo()) {
             // Excedente (e, depois, upgrade): só quita a cobrança; não mexe no período pago da assinatura.
             $cobranca->forceFill($baixa)->save();
+            if ($cobranca->tipo === TipoDeCobranca::Upgrade) {
+                $valor = $this->aplicarUpgrade($cobranca, $assinatura);
+                if ($valor !== null) {
+                    $depoisDoCommit['valor_no_gateway'] = $valor;
+                }
+            }
             $this->reativarSeEmDia($assinatura);
 
             return $cobranca;
@@ -107,6 +131,44 @@ final class ConciliarPagamento
         }
 
         return $cobranca;
+    }
+
+    /**
+     * O plano muda quando o upgrade é pago: tenant e assinatura vão ao plano destino, o valor do ciclo vira o preço novo e
+     * um downgrade agendado deixa de valer. O período pago não muda. Se o destino não existe mais ou perdeu o preço, o
+     * pagamento fica quitado sem trocar o plano e o aviso pede estorno manual.
+     */
+    /** @return ?array{assinatura: string, valor: int} */
+    private function aplicarUpgrade(Cobranca $cobranca, Assinatura $assinatura): ?array
+    {
+        $destino = $cobranca->plano_destino_id === null ? null : Plano::query()->find($cobranca->plano_destino_id);
+        try {
+            $preco = $destino?->ativo === true ? $assinatura->ciclo->precoDo($destino) : null;
+        } catch (BillingException) {
+            $preco = null;
+        }
+        if ($destino === null || $preco === null) {
+            Log::warning('Upgrade pago, mas o plano destino não está mais disponível: plano não trocado, estorno manual necessário.', [
+                'tenant_id' => $cobranca->tenant_id, 'cobranca_id' => $cobranca->id, 'plano_destino_id' => $cobranca->plano_destino_id,
+            ]);
+
+            return null;
+        }
+
+        $tenant = Tenant::query()->lockForUpdate()->findOrFail($assinatura->tenant_id);
+        $anterior = $tenant->plano_id;
+        $tenant->forceFill(['plano_id' => $destino->id])->save();
+        $assinatura->forceFill([
+            'plano_id' => $destino->id, 'valor_ciclo_centavos' => $preco, 'plano_proximo_id' => null, 'plano_proximo_em' => null,
+        ])->save();
+        activity('assinatura')->performedOn($tenant)->event('plano_trocado')
+            ->withProperties(['de' => $anterior, 'para' => $destino->id, 'cobranca_id' => $cobranca->id])->log('Plano da empresa trocado (upgrade pago)');
+
+        if ($assinatura->metodo === MetodoDePagamento::Cartao && $assinatura->gateway_assinatura_id !== null) {
+            return ['assinatura' => $assinatura->gateway_assinatura_id, 'valor' => $preco];
+        }
+
+        return null;
     }
 
     /**

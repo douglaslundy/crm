@@ -6,6 +6,7 @@ namespace App\Modules\Billing\Console;
 
 use App\Modules\Billing\Domain\Enums\StatusDaAssinatura;
 use App\Modules\Billing\Domain\Enums\StatusDaCobranca;
+use App\Modules\Billing\Domain\Enums\TipoDeCobranca;
 use App\Modules\Billing\Domain\Models\Assinatura;
 use App\Modules\Billing\Domain\Models\Cobranca;
 use App\Modules\Platform\Application\Actions\MudarSituacaoDaEmpresa;
@@ -32,7 +33,15 @@ final class AplicarInadimplenciaCommand extends Command
     {
         $hoje = CarbonImmutable::today((string) config('app.fuso_negocio'))->startOfDay();
 
+        // Upgrade não pago não é dívida: a troca simplesmente não acontece e a cobrança é cancelada.
         Cobranca::withoutTenantScope()
+            ->where('tipo', TipoDeCobranca::Upgrade->value)
+            ->where('status', StatusDaCobranca::Pendente->value)
+            ->whereDate('vence_em', '<', $hoje->toDateString())
+            ->update(['status' => StatusDaCobranca::Cancelada->value]);
+
+        Cobranca::withoutTenantScope()
+            ->where('tipo', '!=', TipoDeCobranca::Upgrade->value)
             ->where('status', StatusDaCobranca::Pendente->value)
             ->whereDate('vence_em', '<', $hoje->toDateString())
             ->update(['status' => StatusDaCobranca::Vencida->value]);
