@@ -112,6 +112,11 @@ final class GatewayDeCobrancaFake implements GatewayDeCobranca
         $this->registrar('cancelarAssinatura', [$id]);
     }
 
+    public function atualizarAssinatura(string $id, int $valorCentavos): void
+    {
+        $this->registrar('atualizarAssinatura', [$id, $valorCentavos]);
+    }
+
     /** @param list<mixed> $argumentos */
     private function registrar(string $metodo, array $argumentos): void
     {

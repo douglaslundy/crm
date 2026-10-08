@@ -25,7 +25,8 @@ use Illuminate\Support\Facades\Log;
  * respostas vem da documentação e está coberto só por testes com `Http::fake()`. A conferir no sandbox (roteiro em
  * `docs/cobranca.md`): `transaction_details.digitable_line` e `external_resource_url` do boleto, `metadata.preapproval_id`
  * nos pagamentos do `preapproval` e se o `preapproval` aceita boleto. Do PIX e do cartão avulso, a conferir:
- * `point_of_interaction.transaction_data.qr_code` e `qr_code_base64`, o `date_of_expiration` devolvido e o webhook do PIX.
+ * `point_of_interaction.transaction_data.qr_code` e `qr_code_base64`, o `date_of_expiration` devolvido e o webhook do PIX. Da troca de plano, a conferir: se `PUT /preapproval` com o
+ * novo `auto_recurring.transaction_amount` vale já na próxima cobrança.
  */
 final class MercadoPagoGateway implements GatewayDeCobranca
 {
@@ -111,6 +112,13 @@ final class MercadoPagoGateway implements GatewayDeCobranca
     public function cancelarAssinatura(string $id): void
     {
         $this->enviar('PUT', '/preapproval/'.rawurlencode($id), ['status' => 'cancelled']);
+    }
+
+    public function atualizarAssinatura(string $id, int $valorCentavos): void
+    {
+        $this->enviar('PUT', '/preapproval/'.rawurlencode($id), [
+            'auto_recurring' => ['transaction_amount' => $this->reais($valorCentavos), 'currency_id' => 'BRL'],
+        ]);
     }
 
     /** @return array<string, mixed> */

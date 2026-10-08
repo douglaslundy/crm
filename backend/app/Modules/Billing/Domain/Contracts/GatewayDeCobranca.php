@@ -28,4 +28,7 @@ interface GatewayDeCobranca
     public function buscarPagamento(string $id): ResultadoDePagamento;
 
     public function cancelarAssinatura(string $id): void;
+
+    /** Muda o valor das próximas cobranças de uma assinatura de cartão (troca de plano). */
+    public function atualizarAssinatura(string $id, int $valorCentavos): void;
 }

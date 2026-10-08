@@ -244,6 +244,38 @@ class MercadoPagoGatewayTest extends TestCase
         Http::assertSent(fn (Request $req): bool => $req->method() === 'PUT' && $req->url() === 'https://mp.test/preapproval/pre-1' && $req->data() === ['status' => 'cancelled']);
     }
 
+    public function test_atualizar_assinatura_envia_o_novo_valor_da_recorrencia(): void
+    {
+        Http::fake(['mp.test/preapproval/pre-7' => Http::response(['id' => 'pre-7', 'status' => 'authorized'], 200)]);
+
+        $this->gateway()->atualizarAssinatura('pre-7', 15050);
+
+        Http::assertSent(function (Request $req): bool {
+            return $req->url() === 'https://mp.test/preapproval/pre-7'
+                && $req->method() === 'PUT'
+                && $req->hasHeader('Authorization', 'Bearer TEST-token')
+                && $req->data()['auto_recurring'] === ['transaction_amount' => 150.5, 'currency_id' => 'BRL'];
+        });
+    }
+
+    public function test_atualizar_assinatura_com_erro_ou_sem_token_lanca_billing_exception(): void
+    {
+        Http::fake(['mp.test/*' => Http::response(['message' => 'segredo'], 500)]);
+        try {
+            $this->gateway()->atualizarAssinatura('pre-7', 100);
+            $this->fail('deveria falhar');
+        } catch (BillingException $e) {
+            $this->assertSame('BILLING_GATEWAY_FALHOU', $e->codigo());
+        }
+
+        try {
+            $this->gateway(null)->atualizarAssinatura('pre-7', 100);
+            $this->fail('deveria falhar');
+        } catch (BillingException $e) {
+            $this->assertSame('BILLING_GATEWAY_NAO_CONFIGURADO', $e->codigo());
+        }
+    }
+
     public function test_resposta_de_erro_vira_billing_exception_sem_vazar_o_corpo(): void
     {
         Http::fake(['mp.test/*' => Http::response(['message' => 'segredo interno do MP', 'cause' => [['description' => 'detalhe']]], 500)]);
