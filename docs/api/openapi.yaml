@@ -8,8 +8,8 @@ info:
     Autenticação por chave `Authorization: Bearer <chave>`. Chaves `live_` operam em produção; chaves `test_` operam em homologação.
     O passo a passo, com exemplos em cURL, PHP e JavaScript, está no guia do integrador (`docs/api/guia-do-integrador.md`).
 servers:
-  - url: https://api.exemplo.com.br
-    description: Exemplo; use o endereço informado na tela de chaves de API.
+  - url: https://<seu-dominio>/api/v1
+    description: Troque pelo domínio informado para a sua conta; todos os caminhos abaixo são relativos a este endereço.
 security:
   - bearerAuth: []
 tags:
@@ -39,6 +39,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/ListaDeClientes'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
     post:
@@ -50,7 +51,7 @@ paths:
         content:
           application/json:
             schema: {$ref: '#/components/schemas/ClienteEntrada'}
-            example: {tipo: PJ, nome: Exemplo Comércio Ltda, cpf_cnpj: "00.000.000/0001-00", email: contato@exemplo.com.br, uf: SP}
+            example: {tipo: PJ, nome: Exemplo Comércio Ltda, cpf_cnpj: "11.222.333/0001-81", email: contato@exemplo.com.br, uf: SP}
       responses:
         '201':
           description: Criado.
@@ -58,6 +59,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeCliente'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
   /clientes/{id}:
@@ -74,6 +76,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeCliente'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
     put:
@@ -88,7 +91,7 @@ paths:
         content:
           application/json:
             schema: {$ref: '#/components/schemas/ClienteEntrada'}
-            example: {tipo: PJ, nome: Exemplo Comércio Ltda, cpf_cnpj: "00.000.000/0001-00", email: contato@exemplo.com.br, uf: SP}
+            example: {tipo: PJ, nome: Exemplo Comércio Ltda, cpf_cnpj: "11.222.333/0001-81", email: contato@exemplo.com.br, uf: SP}
       responses:
         '200':
           description: Atualizado.
@@ -96,6 +99,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeCliente'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
@@ -116,6 +120,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/ListaDeProdutos'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
     post:
@@ -135,6 +140,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeProduto'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
   /produtos/{id}:
@@ -151,6 +157,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeProduto'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
     put:
@@ -173,6 +180,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeProduto'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
@@ -193,6 +201,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/ListaDeServicos'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
     post:
@@ -212,6 +221,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeServico'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
   /servicos/{id}:
@@ -228,6 +238,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeServico'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
     put:
@@ -250,6 +261,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeServico'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
@@ -273,6 +285,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/ListaDeNotas'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
     post:
@@ -308,7 +321,7 @@ paths:
                 summary: NFS-e com serviço inline
                 value:
                   modelo: DPS
-                  cliente: {tipo: PJ, nome: Exemplo Comércio Ltda, cpf_cnpj: "00.000.000/0001-00"}
+                  cliente: {tipo: PJ, nome: Exemplo Comércio Ltda, cpf_cnpj: "11.222.333/0001-81"}
                   desconto_centavos: 0
                   itens:
                     - servico: {codigo: CONSULT-1, nome: Consultoria, preco_centavos: 20000, codigo_lc116: "17.01", c_trib_nac: "170101", aliquota_iss: "5"}
@@ -340,6 +353,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeNota'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
   /notas/{id}/status:
@@ -357,6 +371,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeNotaStatus'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
   /notas/{id}/pdf:
@@ -373,6 +388,7 @@ paths:
             application/pdf:
               schema: {type: string, format: binary}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '409': {$ref: '#/components/responses/RegraDeNegocio'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
@@ -390,6 +406,7 @@ paths:
             application/xml:
               schema: {type: string}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '409': {$ref: '#/components/responses/RegraDeNegocio'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
@@ -407,6 +424,7 @@ paths:
             application/xml:
               schema: {type: string}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '409': {$ref: '#/components/responses/RegraDeNegocio'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
@@ -433,6 +451,7 @@ paths:
               schema: {$ref: '#/components/schemas/RespostaDeNotaStatus'}
         '400': {$ref: '#/components/responses/Idempotencia'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '409': {$ref: '#/components/responses/RegraDeNegocio'}
         '422': {$ref: '#/components/responses/Validacao'}
@@ -452,6 +471,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/ListaDeInutilizacoes'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
     post:
@@ -474,6 +494,7 @@ paths:
               schema: {$ref: '#/components/schemas/RespostaDeInutilizacao'}
         '400': {$ref: '#/components/responses/Idempotencia'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '409': {$ref: '#/components/responses/RegraDeNegocio'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
@@ -490,6 +511,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/ListaDeWebhooks'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
     post:
       operationId: criarWebhook
@@ -529,6 +551,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeWebhook'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
     put:
@@ -551,6 +574,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeWebhook'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
@@ -565,6 +589,7 @@ paths:
         '204':
           description: Excluído.
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
   /webhooks/{id}/testar:
@@ -584,6 +609,7 @@ paths:
               schema: {$ref: '#/components/schemas/RespostaDeEntrega'}
         '400': {$ref: '#/components/responses/Idempotencia'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '409': {$ref: '#/components/responses/RegraDeNegocio'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
@@ -603,6 +629,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/ListaDeEntregas'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
@@ -621,6 +648,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeEntrega'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
   /webhooks/entregas/{id}/reenviar:
@@ -640,6 +668,7 @@ paths:
               schema: {$ref: '#/components/schemas/RespostaDeEntrega'}
         '400': {$ref: '#/components/responses/Idempotencia'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '409': {$ref: '#/components/responses/RegraDeNegocio'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
@@ -656,6 +685,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeEmpresa'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
   /consumo:
     get:
@@ -670,6 +700,7 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/RespostaDeConsumo'}
         '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/SemAcesso'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
 webhooks:
   notaAutorizada:
@@ -873,13 +904,15 @@ components:
   schemas:
     CampoInvalido:
       type: object
-      additionalProperties: false
-      required: [campo, mensagem]
+      description: Item de `errors[]`. Na validação traz `campo` e `mensagem`; em `CADASTRO_DIVERGENTE` traz `campo`, `enviado` (valor da requisição) e `cadastro` (valor já cadastrado).
+      required: [campo]
       properties:
         campo:
           type: string
         mensagem:
           type: string
+        enviado: {}
+        cadastro: {}
     Problem:
       type: object
       description: Erro no formato RFC 9457. Erros de regra de negócio podem trazer campos extras (por exemplo `recurso` e `limite`).
@@ -1409,9 +1442,9 @@ components:
         url: {type: string}
         descricao: {type: ["string", "null"]}
         eventos:
-          type: ["array", "null"]
+          type: array
           items: {$ref: '#/components/schemas/EventoDeWebhook'}
-          description: Eventos assinados; nulo significa todos.
+          description: Eventos assinados. Lista vazia significa todos os eventos de nota.
         ambiente: {type: string, enum: [HOMOLOGACAO, PRODUCAO], description: "Só recebe eventos de notas deste ambiente."}
         ativo: {type: boolean}
         desativado_em: {type: ["string", "null"], format: date-time}
@@ -1428,7 +1461,7 @@ components:
         url: {type: string}
         descricao: {type: ["string", "null"]}
         eventos:
-          type: ["array", "null"]
+          type: array
           items: {$ref: '#/components/schemas/EventoDeWebhook'}
         ambiente: {type: string, enum: [HOMOLOGACAO, PRODUCAO]}
         ativo: {type: boolean}
@@ -1446,7 +1479,7 @@ components:
         eventos:
           type: ["array", "null"]
           items: {$ref: '#/components/schemas/EventoDeWebhook'}
-          description: Omitido ou nulo = todos os eventos de nota.
+          description: Omitido, nulo ou vazio = todos os eventos de nota.
         ambiente: {type: string, enum: [HOMOLOGACAO, PRODUCAO]}
         ativo: {type: boolean, description: "Reativar um webhook desativado por falhas seguidas zera o contador."}
     WebhookAtualizacao:
@@ -1564,6 +1597,12 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+    SemAcesso:
+      description: "Sem acesso: módulo API fora do plano (`API_NAO_CONTRATADA`), assinatura pendente ou cancelada (`ASSINATURA_PENDENTE`, `ASSINATURA_CANCELADA`), conta suspensa ou sem permissão de escrita (`ASSINATURA_SEM_ESCRITA`), módulo do documento não contratado (`MODULO_NAO_CONTRATADO`) ou sem permissão (`ACESSO_NEGADO`)."
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
     NaoEncontrado:
       description: O recurso não existe ou pertence a outra empresa (`RECURSO_NAO_ENCONTRADO`).
       content:
@@ -1571,7 +1610,7 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
     Validacao:
-      description: "Dados inválidos (`VALIDACAO`, com `errors[]`), cursor inválido (`CURSOR_INVALIDO`) ou regra não atendida (`API_AMBIENTE_DIVERGENTE`, `CADASTRO_DIVERGENTE`, `FISCAL_*`, `WEBHOOK_URL_INVALIDA`, `WEBHOOK_LIMITE_ATINGIDO`)."
+      description: "Dados inválidos (`VALIDACAO`, com `errors[]`), cursor inválido (`CURSOR_INVALIDO`) ou regra não atendida (`LIMITE_DO_PLANO`, `API_AMBIENTE_DIVERGENTE`, `CADASTRO_DIVERGENTE`, `FISCAL_*`, `WEBHOOK_URL_INVALIDA`, `WEBHOOK_LIMITE_ATINGIDO`)."
       content:
         application/problem+json:
           schema:
@@ -1586,7 +1625,7 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
     RegraDeNegocio:
-      description: "Regra de negócio não atendida; o `codigo` diz qual. Plano e módulo (`API_NAO_CONTRATADA`, `MODULO_NAO_CONTRATADO`, `LIMITE_DO_PLANO`, `ASSINATURA_*`) respondem 403; conflitos de estado (`CANCELAMENTO_NAO_PERMITIDO`, `NOTA_SEM_PDF`, `WEBHOOK_INATIVO`…) respondem 409."
+      description: "Regra de negócio não atendida; o `codigo` diz qual. Conflitos de estado (`CANCELAMENTO_NAO_PERMITIDO`, `NOTA_SEM_PDF`, `WEBHOOK_INATIVO`…) respondem 409."
       content:
         application/problem+json:
           schema:

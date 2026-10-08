@@ -95,4 +95,12 @@ class ContratoWebhooksV1Test extends TestCase
         $conflito = $this->comoApi()->withHeaders(['Idempotency-Key' => 'teste-2'])->postJson("/api/v1/webhooks/{$inativo->id}/testar")->assertStatus(409);
         $this->assertContrato('Problem', $conflito->json());
     }
+
+    public function test_webhook_sem_eventos_devolve_lista_vazia_e_respeita_o_contrato(): void
+    {
+        $criado = $this->comoApi()->postJson('/api/v1/webhooks', ['url' => 'https://exemplo.test/hook', 'ambiente' => 'HOMOLOGACAO'])->assertCreated();
+
+        $this->assertSame([], $criado->json('data.eventos'));
+        $this->assertContrato('RespostaDeWebhookComSegredo', $criado->json());
+    }
 }

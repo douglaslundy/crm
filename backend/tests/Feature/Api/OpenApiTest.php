@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api;
 
+use App\Modules\Shared\Domain\Cnpj;
+use App\Modules\Shared\Domain\Cpf;
 use Illuminate\Support\Facades\Route;
 use Tests\Fixtures\ContratoOpenApi;
 use Tests\TestCase;
@@ -80,5 +82,36 @@ class OpenApiTest extends TestCase
                 $no = $no[$parte];
             }
         }
+    }
+
+    public function test_documentos_de_exemplo_usam_cpf_cnpj_validos(): void
+    {
+        $raiz = dirname(base_path()).'/docs/api/';
+        foreach (['openapi.yaml', 'guia-do-integrador.md'] as $arquivo) {
+            preg_match_all('/cpf_cnpj"?: "([^"]+)"/', (string) file_get_contents($raiz.$arquivo), $m);
+            foreach ($m[1] as $documento) {
+                $valido = Cnpj::tentar($documento) !== null || Cpf::tentar($documento) !== null;
+                $this->assertTrue($valido, "{$arquivo}: exemplo com CPF/CNPJ inválido ({$documento}); o servidor o recusaria");
+            }
+        }
+    }
+
+    public function test_servidor_documentado_inclui_o_prefixo_da_v1(): void
+    {
+        $this->assertStringEndsWith('/api/v1', (string) ContratoOpenApi::carregar()['servers'][0]['url']);
+    }
+
+    public function test_toda_operacao_declara_a_resposta_403_de_plano_e_assinatura(): void
+    {
+        foreach (ContratoOpenApi::operacoes() as $chave => $o) {
+            $this->assertArrayHasKey('403', $o['op']['responses'], "{$chave} sem resposta 403");
+        }
+    }
+
+    public function test_schemas_de_resposta_de_webhook_nao_aceitam_eventos_nulos(): void
+    {
+        $schemas = ContratoOpenApi::carregar()['components']['schemas'];
+        $this->assertSame('array', $schemas['Webhook']['properties']['eventos']['type']);
+        $this->assertSame('array', $schemas['WebhookComSegredo']['properties']['eventos']['type']);
     }
 }

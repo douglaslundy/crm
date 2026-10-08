@@ -78,4 +78,19 @@ class ContratoV1Test extends TestCase
         $this->assertContrato('Problem', $this->comoApi()->getJson('/api/v1/clientes/00000000-0000-4000-8000-000000000000')->assertNotFound()->json());
         $this->assertContrato('Problem', $this->comoApi('test_invalida')->getJson('/api/v1/clientes')->assertUnauthorized()->json());
     }
+
+    public function test_limite_do_plano_e_422_e_esta_documentado_assim(): void
+    {
+        $this->tenant->plano?->limites()->where('recurso', Recurso::Clientes->value)->update(['limite' => 1]);
+        $this->tenant->plano?->unsetRelation('limites');
+        $this->comoApi()->postJson('/api/v1/clientes', ['tipo' => 'PF', 'nome' => 'Primeiro', 'cpf_cnpj' => '529.982.247-25'])->assertCreated();
+
+        $recusado = $this->comoApi()->postJson('/api/v1/clientes', ['tipo' => 'PF', 'nome' => 'Segundo', 'cpf_cnpj' => '111.444.777-35'])->assertStatus(422);
+        $this->assertSame('LIMITE_DO_PLANO', $recusado->json('codigo'));
+        $this->assertContrato('Problem', $recusado->json());
+
+        $doc = ContratoOpenApi::carregar()['components']['responses'];
+        $this->assertStringContainsString('LIMITE_DO_PLANO', $doc['Validacao']['description']);
+        $this->assertStringNotContainsString('LIMITE_DO_PLANO', $doc['RegraDeNegocio']['description']);
+    }
 }

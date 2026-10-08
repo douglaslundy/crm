@@ -57,4 +57,17 @@ class ContratoEmissaoV1Test extends TestCase
 
         $this->assertContrato('Problem', $this->comoApi()->withHeaders(['Idempotency-Key' => 'contrato-1'])->postJson('/api/v1/notas', ['cliente' => null] + $corpo)->assertStatus(409)->json());
     }
+
+    public function test_cadastro_divergente_respeita_o_contrato(): void
+    {
+        $corpo = [
+            'modelo' => 'NFE', 'cliente' => ['id' => $this->cliente->id], 'desconto_centavos' => 0,
+            'itens' => [['produto' => ['sku' => $this->produto->sku, 'preco_centavos' => 99999], 'quantidade' => '1']],
+            'pagamentos' => [['tpag' => '01', 'valor_centavos' => 1000]],
+        ];
+
+        $resposta = $this->comoApi()->withHeaders(['Idempotency-Key' => 'contrato-div'])->postJson('/api/v1/notas', $corpo)->assertStatus(422);
+        $this->assertSame('CADASTRO_DIVERGENTE', $resposta->json('codigo'));
+        $this->assertContrato('Problem', $resposta->json());
+    }
 }
