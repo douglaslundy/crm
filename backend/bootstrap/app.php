@@ -9,6 +9,7 @@ use App\Modules\Platform\Http\Middleware\ExigirUsuarioDaEmpresa;
 use App\Modules\Platform\Http\Middleware\SomentePlataforma;
 use App\Modules\Platform\Http\Middleware\VerificarSituacaoDoTenant;
 use App\Modules\Shared\Domain\Exceptions\ErroDeNegocio;
+use App\Modules\Shared\Http\Middleware\GarantirIdempotencia;
 use App\Modules\Shared\Http\TratadorDeErrosDaApi;
 use App\Modules\Tenancy\Http\Middleware\DefinirTenantDoUsuario;
 use Illuminate\Foundation\Application;
@@ -67,6 +68,7 @@ return Application::configure(basePath: dirname(__DIR__))
             LimitarRequisicoesDaApi::class,
             VerificarSituacaoDoTenant::class,
         ]);
+        $middleware->alias(['idempotencia' => GarantirIdempotencia::class]);
         $middleware->group('plataforma', [
             'auth:sanctum',
             GarantirUsuarioAtivo::class,

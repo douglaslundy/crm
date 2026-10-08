@@ -6,6 +6,7 @@ namespace App\Modules\Platform\Providers;
 
 use App\Modules\Platform\Application\RegistroDeContadores;
 use App\Modules\Platform\Console\ExpirarTestesCommand;
+use App\Modules\Shared\Console\LimparIdempotenciasCommand;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -19,7 +20,7 @@ final class PlatformServiceProvider extends ServiceProvider
     public function boot(): void
     {
         if ($this->app->runningInConsole()) {
-            $this->commands([ExpirarTestesCommand::class]);
+            $this->commands([ExpirarTestesCommand::class, LimparIdempotenciasCommand::class]);
         }
 
         Route::middleware('api')->prefix('api/app')->group(__DIR__.'/../Http/routes-app.php');

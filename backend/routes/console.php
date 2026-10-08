@@ -30,3 +30,6 @@ Schedule::command('billing:fechar-excedente')->monthlyOn(1, '00:40')->timezone('
 
 Schedule::command('billing:aplicar-trocas')->dailyAt('00:25')->timezone('America/Sao_Paulo')
     ->withoutOverlapping()->onOneServer();
+
+Schedule::command('api:limpar-idempotencias')->dailyAt('00:50')->timezone('America/Sao_Paulo')
+    ->withoutOverlapping()->onOneServer();
