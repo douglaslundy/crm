@@ -16,12 +16,14 @@ import { ListaDeFaturas } from './ListaDeFaturas';
 
 vi.mock('../api', () => ({
   QUERY_KEY_FATURAS: ['faturas'],
-  cobrancaApi: { checkout: vi.fn(), faturas: vi.fn(), cancelar: vi.fn() },
+  cobrancaApi: { checkout: vi.fn(), faturas: vi.fn(), cancelar: vi.fn(), pagar: vi.fn() },
 }));
 vi.mock('@/features/cadastro/hooks/usePlanosPublicos', () => ({ usePlanosPublicos: vi.fn() }));
 vi.mock('@/features/assinatura/hooks/useAssinatura', () => ({ QUERY_KEY_ASSINATURA: ['assinatura'], useAssinatura: vi.fn() }));
 vi.mock('@/features/auth/hooks/useUsuario', () => ({ useUsuario: vi.fn() }));
 vi.mock('@/lib/mercadopago', () => ({ chavePublicaDoMercadoPago: vi.fn(), montarCartao: vi.fn() }));
+
+const SEM_EXCEDENTE = { pix_qr_code: null, pix_qr_code_base64: null, pix_expira_em: null, mes_referencia: null, documentos_excedentes: null, valor_unitario_centavos: null } as const;
 
 const PLANO: Plano = {
   id: '11111111-1111-4111-8111-111111111111', nome: 'Essencial', descricao: null, preco_mensal_centavos: 9900, preco_anual_centavos: 99000,
@@ -65,7 +67,7 @@ describe('Assinar (planos e checkout)', () => {
     vi.mocked(cobrancaApi.checkout).mockResolvedValue({
       data: {
         assinatura: { id: 'a1', plano_id: PLANO.id, ciclo: 'MENSAL', metodo: 'BOLETO', situacao: 'PENDENTE', paga_ate: null, cancelada_em: null },
-        cobranca: { id: 'c1', tipo: 'ASSINATURA', valor_centavos: 9900, vence_em: '2026-10-10', status: 'PENDENTE', metodo: 'BOLETO', boleto_url: 'https://mp.test/b/1', boleto_linha_digitavel: '1234.5678', pago_em: null },
+        cobranca: { ...SEM_EXCEDENTE, id: 'c1', tipo: 'ASSINATURA', valor_centavos: 9900, vence_em: '2026-10-10', status: 'PENDENTE', metodo: 'BOLETO', boleto_url: 'https://mp.test/b/1', boleto_linha_digitavel: '1234.5678', pago_em: null },
       },
     });
     renderizar(<Assinar />);
@@ -88,7 +90,7 @@ describe('Assinar (planos e checkout)', () => {
     vi.mocked(cobrancaApi.checkout).mockResolvedValue({
       data: {
         assinatura: { id: 'a1', plano_id: PLANO.id, ciclo: 'MENSAL', metodo: 'CARTAO', situacao: 'PENDENTE', paga_ate: null, cancelada_em: null },
-        cobranca: { id: 'c1', tipo: 'ASSINATURA', valor_centavos: 9900, vence_em: '2026-10-07', status: 'PENDENTE', metodo: 'CARTAO', boleto_url: null, boleto_linha_digitavel: null, pago_em: null },
+        cobranca: { ...SEM_EXCEDENTE, id: 'c1', tipo: 'ASSINATURA', valor_centavos: 9900, vence_em: '2026-10-07', status: 'PENDENTE', metodo: 'CARTAO', boleto_url: null, boleto_linha_digitavel: null, pago_em: null },
       },
     });
     renderizar(<Assinar />);
@@ -131,7 +133,7 @@ describe('Assinar (planos e checkout)', () => {
     vi.mocked(cobrancaApi.checkout).mockResolvedValue({
       data: {
         assinatura: ativa,
-        cobranca: { id: 'c2', tipo: 'ASSINATURA', valor_centavos: 99000, vence_em: '2026-10-10', status: 'PENDENTE', metodo: 'BOLETO', boleto_url: 'https://mp.test/b/2', boleto_linha_digitavel: '9999', pago_em: null },
+        cobranca: { ...SEM_EXCEDENTE, id: 'c2', tipo: 'ASSINATURA', valor_centavos: 99000, vence_em: '2026-10-10', status: 'PENDENTE', metodo: 'BOLETO', boleto_url: 'https://mp.test/b/2', boleto_linha_digitavel: '9999', pago_em: null },
       },
     });
     renderizar(<Assinar />);
@@ -163,7 +165,7 @@ describe('Assinar (planos e checkout)', () => {
 });
 
 describe('ListaDeFaturas', () => {
-  const FATURA: Cobranca = { id: 'c1', tipo: 'ASSINATURA', valor_centavos: 9900, vence_em: '2026-10-10', status: 'PENDENTE', metodo: 'BOLETO', boleto_url: 'https://mp.test/b/1', boleto_linha_digitavel: '1234.5678', pago_em: null };
+  const FATURA: Cobranca = { ...SEM_EXCEDENTE, id: 'c1', tipo: 'ASSINATURA', valor_centavos: 9900, vence_em: '2026-10-10', status: 'PENDENTE', metodo: 'BOLETO', boleto_url: 'https://mp.test/b/1', boleto_linha_digitavel: '1234.5678', pago_em: null };
 
   it('lista valor, vencimento, status e o link do boleto', async () => {
     vi.mocked(cobrancaApi.faturas).mockResolvedValue({ data: [FATURA, { ...FATURA, id: 'c0', status: 'PAGA', boleto_url: null, vence_em: '2026-09-10', pago_em: '2026-09-09T10:00:00-03:00' }] });
