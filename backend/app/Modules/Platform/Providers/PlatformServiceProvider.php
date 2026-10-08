@@ -23,6 +23,7 @@ final class PlatformServiceProvider extends ServiceProvider
         }
 
         Route::middleware('api')->prefix('api/app')->group(__DIR__.'/../Http/routes-app.php');
+        Route::middleware('api')->prefix('api/v1')->group(__DIR__.'/../Http/routes-v1.php');
         Route::middleware('api')->prefix('api/admin')->group(__DIR__.'/../Http/routes-admin.php');
         Route::middleware('api')->prefix('api/publico')->group(__DIR__.'/../Http/routes-publico.php');
     }

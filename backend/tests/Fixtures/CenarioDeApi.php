@@ -61,4 +61,16 @@ trait CenarioDeApi
 
         return $this->withHeaders(['Authorization' => 'Bearer '.($texto ?? $this->textoDaChave), 'Accept' => 'application/json']);
     }
+
+    /** Roda $criar com o contexto de outro tenant (para semear dados alheios) e volta ao tenant do cenário. */
+    protected function emOutroTenant(callable $criar): mixed
+    {
+        $outro = Tenant::factory()->for(Plano::factory()->comModulos(Modulo::Api))->create();
+        app(TenantContext::class)->set($outro->id);
+        try {
+            return $criar($outro);
+        } finally {
+            app(TenantContext::class)->set($this->tenant->id);
+        }
+    }
 }
