@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\Identity\Http\Middleware\AutenticarChaveDeApi;
 use App\Modules\Identity\Http\Middleware\GarantirUsuarioAtivo;
+use App\Modules\Identity\Http\Middleware\LimitarRequisicoesDaApi;
 use App\Modules\Platform\Http\Middleware\ExigirUsuarioDaEmpresa;
 use App\Modules\Platform\Http\Middleware\SomentePlataforma;
 use App\Modules\Platform\Http\Middleware\VerificarSituacaoDoTenant;
@@ -62,6 +63,7 @@ return Application::configure(basePath: dirname(__DIR__))
         );
         $middleware->group('api-v1', [
             AutenticarChaveDeApi::class,
+            LimitarRequisicoesDaApi::class,
             VerificarSituacaoDoTenant::class,
         ]);
         $middleware->group('plataforma', [
