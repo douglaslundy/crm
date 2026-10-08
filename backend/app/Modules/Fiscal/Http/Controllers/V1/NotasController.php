@@ -6,9 +6,11 @@ namespace App\Modules\Fiscal\Http\Controllers\V1;
 
 use App\Modules\Fiscal\Application\Actions\EmitirNotaPelaApi;
 use App\Modules\Fiscal\Application\Actions\GerarDanfe;
+use App\Modules\Fiscal\Application\Actions\IniciarCancelamento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
 use App\Modules\Fiscal\Domain\Models\Nota;
 use App\Modules\Fiscal\Http\Controllers\NotaController;
+use App\Modules\Fiscal\Http\Requests\CancelarNotaRequest;
 use App\Modules\Fiscal\Http\Requests\EmitirNotaApiRequest;
 use App\Modules\Fiscal\Http\Resources\NotaResource;
 use App\Modules\Fiscal\Http\Resources\NotaStatusResource;
@@ -75,6 +77,15 @@ final class NotasController
     public function xml(string $id): Response
     {
         return $this->app->xml($this->visiveis()->findOrFail($id));
+    }
+
+    public function cancelar(CancelarNotaRequest $request, string $id, IniciarCancelamento $acao): JsonResponse
+    {
+        /** @var Usuario $autor */
+        $autor = $request->user();
+        $nota = $this->visiveis()->findOrFail($id);
+
+        return (new NotaStatusResource($acao->executar($nota->id, $request->justificativa(), $autor)))->response()->setStatusCode(202);
     }
 
     public function xmlCancelamento(string $id): Response

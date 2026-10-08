@@ -3,11 +3,16 @@
 declare(strict_types=1);
 
 use App\Modules\Fiscal\Http\Controllers\V1\EmpresaController;
+use App\Modules\Fiscal\Http\Controllers\V1\InutilizacoesController;
 use App\Modules\Fiscal\Http\Controllers\V1\NotasController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('api-v1')->group(function (): void {
     Route::get('empresa', EmpresaController::class);
+
+    // Inutilizações antes de notas/{id}: o caminho literal tem que ser casado primeiro.
+    Route::get('notas/inutilizacoes', [InutilizacoesController::class, 'index']);
+    Route::post('notas/inutilizacoes', [InutilizacoesController::class, 'store'])->middleware('idempotencia');
 
     Route::post('notas', [NotasController::class, 'store'])->middleware('idempotencia:obrigatoria');
     Route::get('notas', [NotasController::class, 'index']);
@@ -16,4 +21,5 @@ Route::middleware('api-v1')->group(function (): void {
     Route::get('notas/{id}/pdf', [NotasController::class, 'pdf'])->whereUuid('id');
     Route::get('notas/{id}/xml', [NotasController::class, 'xml'])->whereUuid('id');
     Route::get('notas/{id}/xml-cancelamento', [NotasController::class, 'xmlCancelamento'])->whereUuid('id');
+    Route::post('notas/{id}/cancelar', [NotasController::class, 'cancelar'])->whereUuid('id')->middleware('idempotencia');
 });
