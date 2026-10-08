@@ -33,3 +33,9 @@ Schedule::command('billing:aplicar-trocas')->dailyAt('00:25')->timezone('America
 
 Schedule::command('api:limpar-idempotencias')->dailyAt('00:50')->timezone('America/Sao_Paulo')
     ->withoutOverlapping()->onOneServer();
+
+Schedule::command('webhooks:reenviar-pendentes')->everyMinute()
+    ->withoutOverlapping()->onOneServer();
+
+Schedule::command('webhooks:limpar')->dailyAt('00:55')->timezone('America/Sao_Paulo')
+    ->withoutOverlapping()->onOneServer();

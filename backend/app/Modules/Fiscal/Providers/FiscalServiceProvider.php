@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\Fiscal\Providers;
 
 use App\Modules\Fiscal\Application\ContadorDeDocumentosMes;
+use App\Modules\Fiscal\Application\Webhooks\DespachanteDeEntrega;
+use App\Modules\Fiscal\Application\Webhooks\DespachanteDeEntregaPorJob;
 use App\Modules\Fiscal\Application\Webhooks\ResolvedorDeDns;
 use App\Modules\Fiscal\Application\Webhooks\ResolvedorDeDnsDoSistema;
+use App\Modules\Fiscal\Console\LimparWebhooksCommand;
 use App\Modules\Fiscal\Console\ReconciliarNotasCommand;
+use App\Modules\Fiscal\Console\ReenviarWebhooksPendentesCommand;
 use App\Modules\Fiscal\Console\RetransmitirContingenciaCommand;
 use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfe;
 use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfse;
@@ -31,6 +35,7 @@ final class FiscalServiceProvider extends ServiceProvider
         $this->app->bind(GeradorDeDanfe::class, SpedDaGeradorDeDanfe::class);
         $this->app->bind(GeradorDeDanfse::class, DompdfGeradorDeDanfse::class);
         $this->app->bind(ResolvedorDeDns::class, ResolvedorDeDnsDoSistema::class);
+        $this->app->bind(DespachanteDeEntrega::class, DespachanteDeEntregaPorJob::class);
     }
 
     public function boot(): void
@@ -38,7 +43,10 @@ final class FiscalServiceProvider extends ServiceProvider
         $this->app->make(RegistroDeContadores::class)->registrar(new ContadorDeDocumentosMes);
 
         if ($this->app->runningInConsole()) {
-            $this->commands([ReconciliarNotasCommand::class, RetransmitirContingenciaCommand::class]);
+            $this->commands([
+                ReconciliarNotasCommand::class, RetransmitirContingenciaCommand::class,
+                ReenviarWebhooksPendentesCommand::class, LimparWebhooksCommand::class,
+            ]);
         }
 
         Route::middleware('api')->prefix('api/app')->group(__DIR__.'/../Http/routes-app.php');
