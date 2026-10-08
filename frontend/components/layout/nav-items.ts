@@ -1,4 +1,4 @@
-import { AlertTriangle, Building2, Contact, CreditCard, FileText, Gauge, KeyRound, Landmark, LayoutDashboard, Package, Users, Wrench, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, Building2, Contact, CreditCard, FileText, Gauge, KeyRound, Landmark, LayoutDashboard, Package, Users, Webhook, Wrench, type LucideIcon } from 'lucide-react';
 import type { Papel } from '@/features/auth/types';
 
 export interface NavItem {
@@ -23,6 +23,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/assinatura/faturas', label: 'Assinatura', icon: CreditCard, papeis: ['PROPRIETARIO', 'ADMIN'] },
   { href: '/configuracoes/usuarios', label: 'Usuários', icon: Users, papeis: ['PROPRIETARIO', 'ADMIN'] },
   { href: '/configuracoes/api', label: 'Chaves de API', icon: KeyRound, papeis: ['PROPRIETARIO', 'ADMIN'] },
+  { href: '/configuracoes/webhooks', label: 'Webhooks', icon: Webhook, papeis: ['PROPRIETARIO', 'ADMIN'] },
 ];
 
 export const NAV_ITEMS_ADMIN: NavItem[] = [
