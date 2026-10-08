@@ -11,6 +11,7 @@ import { useUsuario } from '@/features/auth/hooks/useUsuario';
 import { usePlanosPublicos } from '@/features/cadastro/hooks/usePlanosPublicos';
 import { formatarCentavos, formatarData } from '@/lib/formatos';
 import { Checkout } from './Checkout';
+import { TrocaDePlano } from './TrocaDePlano';
 
 const PAPEIS_QUE_ASSINAM = ['PROPRIETARIO', 'ADMIN'];
 
@@ -76,6 +77,7 @@ export function Assinar() {
       <div className="space-y-2">
         <Banner tom="sucesso">Sua assinatura está ativa{atual.paga_ate ? ` até ${formatarData(atual.paga_ate)}` : ''}.</Banner>
         <Link href="/assinatura/faturas" className="text-sm underline">Ver faturas ou cancelar</Link>
+        {assinatura.data?.situacao === 'ATIVA' ? <TrocaDePlano planos={planos.data} assinatura={atual} /> : null}
       </div>
     );
   }

@@ -43,6 +43,14 @@ function Descricao({ fatura: f }: { fatura: Cobranca }) {
       </span>
     );
   }
+  if (f.tipo === 'UPGRADE') {
+    return (
+      <span>
+        Troca de plano: diferença de {formatarCentavos(f.valor_centavos)} · vence em {formatarData(f.vence_em)}
+        {f.pago_em ? ` · paga em ${formatarData(f.pago_em)}` : ''}
+      </span>
+    );
+  }
   return (
     <span>
       Vence em {formatarData(f.vence_em)} · {f.metodo ? ROTULO_METODO[f.metodo] : '—'} · {formatarCentavos(f.valor_centavos)}
@@ -116,7 +124,7 @@ export function ListaDeFaturas() {
                       {f.boleto_url && emAberto(f) ? (
                         <a href={f.boleto_url} target="_blank" rel="noopener noreferrer" className={buttonVariants({ variant: 'outline' })}>Abrir boleto</a>
                       ) : null}
-                      {f.tipo === 'EXCEDENTE' && emAberto(f) ? (
+                      {f.tipo !== 'ASSINATURA' && emAberto(f) ? (
                         <Button type="button" variant="outline" onClick={() => setPagando(pagando === f.id ? null : f.id)}>Pagar</Button>
                       ) : null}
                     </span>

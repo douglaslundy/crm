@@ -9,7 +9,7 @@ export const ROTULO_STATUS_COBRANCA: Record<StatusDaCobranca, string> = { PENDEN
 
 export interface Cobranca {
   id: string;
-  tipo: 'ASSINATURA' | 'EXCEDENTE';
+  tipo: 'ASSINATURA' | 'EXCEDENTE' | 'UPGRADE';
   valor_centavos: number;
   vence_em: string;
   status: StatusDaCobranca;
@@ -23,6 +23,7 @@ export interface Cobranca {
   mes_referencia: string | null;
   documentos_excedentes: number | null;
   valor_unitario_centavos: number | null;
+  plano_destino_id: string | null;
 }
 
 export interface AssinaturaDeCobranca {
@@ -33,6 +34,8 @@ export interface AssinaturaDeCobranca {
   situacao: StatusDaAssinaturaDeCobranca;
   paga_ate: string | null;
   cancelada_em: string | null;
+  plano_proximo_id: string | null;
+  plano_proximo_em: string | null;
 }
 
 export interface CheckoutPayload {
@@ -51,4 +54,10 @@ export interface CheckoutResultado {
 export interface PagarPayload {
   metodo: 'CARTAO' | 'PIX';
   token_do_cartao: string | null;
+}
+
+export interface TrocaDePlanoResultado {
+  tipo: 'UPGRADE' | 'DOWNGRADE';
+  cobranca: Cobranca | null;
+  assinatura: AssinaturaDeCobranca;
 }

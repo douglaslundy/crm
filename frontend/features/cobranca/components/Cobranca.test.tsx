@@ -23,7 +23,7 @@ vi.mock('@/features/assinatura/hooks/useAssinatura', () => ({ QUERY_KEY_ASSINATU
 vi.mock('@/features/auth/hooks/useUsuario', () => ({ useUsuario: vi.fn() }));
 vi.mock('@/lib/mercadopago', () => ({ chavePublicaDoMercadoPago: vi.fn(), montarCartao: vi.fn() }));
 
-const SEM_EXCEDENTE = { pix_qr_code: null, pix_qr_code_base64: null, pix_expira_em: null, mes_referencia: null, documentos_excedentes: null, valor_unitario_centavos: null } as const;
+const SEM_EXCEDENTE = { pix_qr_code: null, pix_qr_code_base64: null, pix_expira_em: null, mes_referencia: null, documentos_excedentes: null, valor_unitario_centavos: null, plano_destino_id: null } as const;
 
 const PLANO: Plano = {
   id: '11111111-1111-4111-8111-111111111111', nome: 'Essencial', descricao: null, preco_mensal_centavos: 9900, preco_anual_centavos: 99000,
@@ -66,7 +66,7 @@ describe('Assinar (planos e checkout)', () => {
   it('boleto: chama o checkout com plano, ciclo e método e mostra o link e a linha digitável', async () => {
     vi.mocked(cobrancaApi.checkout).mockResolvedValue({
       data: {
-        assinatura: { id: 'a1', plano_id: PLANO.id, ciclo: 'MENSAL', metodo: 'BOLETO', situacao: 'PENDENTE', paga_ate: null, cancelada_em: null },
+        assinatura: { id: 'a1', plano_id: PLANO.id, ciclo: 'MENSAL', metodo: 'BOLETO', situacao: 'PENDENTE', paga_ate: null, cancelada_em: null, plano_proximo_id: null, plano_proximo_em: null },
         cobranca: { ...SEM_EXCEDENTE, id: 'c1', tipo: 'ASSINATURA', valor_centavos: 9900, vence_em: '2026-10-10', status: 'PENDENTE', metodo: 'BOLETO', boleto_url: 'https://mp.test/b/1', boleto_linha_digitavel: '1234.5678', pago_em: null },
       },
     });
@@ -89,7 +89,7 @@ describe('Assinar (planos e checkout)', () => {
     });
     vi.mocked(cobrancaApi.checkout).mockResolvedValue({
       data: {
-        assinatura: { id: 'a1', plano_id: PLANO.id, ciclo: 'MENSAL', metodo: 'CARTAO', situacao: 'PENDENTE', paga_ate: null, cancelada_em: null },
+        assinatura: { id: 'a1', plano_id: PLANO.id, ciclo: 'MENSAL', metodo: 'CARTAO', situacao: 'PENDENTE', paga_ate: null, cancelada_em: null, plano_proximo_id: null, plano_proximo_em: null },
         cobranca: { ...SEM_EXCEDENTE, id: 'c1', tipo: 'ASSINATURA', valor_centavos: 9900, vence_em: '2026-10-07', status: 'PENDENTE', metodo: 'CARTAO', boleto_url: null, boleto_linha_digitavel: null, pago_em: null },
       },
     });
@@ -128,7 +128,7 @@ describe('Assinar (planos e checkout)', () => {
   });
 
   it.each(['INADIMPLENTE', 'SUSPENSA'] as const)('assinatura ativa de quem está %s oferece só o boleto de regularização', async (situacao) => {
-    const ativa = { id: 'a1', plano_id: PLANO.id, ciclo: 'ANUAL', metodo: 'BOLETO', situacao: 'ATIVA', paga_ate: '2026-10-01', cancelada_em: null } as const;
+    const ativa = { id: 'a1', plano_id: PLANO.id, ciclo: 'ANUAL', metodo: 'BOLETO', situacao: 'ATIVA', paga_ate: '2026-10-01', cancelada_em: null, plano_proximo_id: null, plano_proximo_em: null } as const;
     vi.mocked(useAssinatura).mockReturnValue({ data: { situacao, teste_termina_em: null, plano: PLANO, consumo: [], assinatura: ativa } } as never);
     vi.mocked(cobrancaApi.checkout).mockResolvedValue({
       data: {
@@ -148,7 +148,7 @@ describe('Assinar (planos e checkout)', () => {
   });
 
   it('assinatura ativa e em dia só mostra o aviso de ativa', async () => {
-    vi.mocked(useAssinatura).mockReturnValue({ data: { situacao: 'ATIVA', teste_termina_em: null, plano: PLANO, consumo: [], assinatura: { id: 'a1', plano_id: PLANO.id, ciclo: 'MENSAL', metodo: 'BOLETO', situacao: 'ATIVA', paga_ate: '2026-11-01', cancelada_em: null } } } as never);
+    vi.mocked(useAssinatura).mockReturnValue({ data: { situacao: 'ATIVA', teste_termina_em: null, plano: PLANO, consumo: [], assinatura: { id: 'a1', plano_id: PLANO.id, ciclo: 'MENSAL', metodo: 'BOLETO', situacao: 'ATIVA', paga_ate: '2026-11-01', cancelada_em: null, plano_proximo_id: null, plano_proximo_em: null } } } as never);
     renderizar(<Assinar />);
 
     expect(await screen.findByText(/Sua assinatura está ativa até 01\/11\/2026/)).toBeInTheDocument();
@@ -180,7 +180,7 @@ describe('ListaDeFaturas', () => {
 
   it('cancelar a assinatura pede confirmação e chama a API', async () => {
     vi.mocked(cobrancaApi.faturas).mockResolvedValue({ data: [FATURA] });
-    const ativa = { id: 'a1', plano_id: PLANO.id, ciclo: 'MENSAL', metodo: 'BOLETO', situacao: 'ATIVA', paga_ate: '2026-11-07', cancelada_em: null } as const;
+    const ativa = { id: 'a1', plano_id: PLANO.id, ciclo: 'MENSAL', metodo: 'BOLETO', situacao: 'ATIVA', paga_ate: '2026-11-07', cancelada_em: null, plano_proximo_id: null, plano_proximo_em: null } as const;
     vi.mocked(useAssinatura).mockReturnValue({ data: { situacao: 'ATIVA', teste_termina_em: null, plano: null, consumo: [], assinatura: ativa } } as never);
     vi.mocked(cobrancaApi.cancelar).mockResolvedValue({ data: { ...ativa, situacao: 'CANCELADA', cancelada_em: '2026-10-07T10:00:00-03:00' } });
     renderizar(<ListaDeFaturas />);

@@ -18,7 +18,7 @@ vi.mock('@/features/assinatura/hooks/useAssinatura', () => ({ QUERY_KEY_ASSINATU
 vi.mock('@/features/auth/hooks/useUsuario', () => ({ useUsuario: vi.fn() }));
 vi.mock('@/lib/mercadopago', () => ({ chavePublicaDoMercadoPago: vi.fn(), montarCartao: vi.fn() }));
 
-const SEM_PIX = { pix_qr_code: null, pix_qr_code_base64: null, pix_expira_em: null } as const;
+const SEM_PIX = { pix_qr_code: null, pix_qr_code_base64: null, pix_expira_em: null, plano_destino_id: null } as const;
 
 const EXCEDENTE: Cobranca = {
   ...SEM_PIX, id: 'e1', tipo: 'EXCEDENTE', valor_centavos: 300, vence_em: '2026-11-11', status: 'PENDENTE', metodo: null,
