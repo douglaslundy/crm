@@ -39,7 +39,8 @@ final class ContratoOpenApi
     /** @return list<string> erros; vazia quando válido */
     public static function validar(string $schema, mixed $dados): array
     {
-        $documento = json_decode((string) json_encode(self::carregar()));
+        // Só os schemas: exemplos em `paths` podem ter chaves `id` que o validador leria como identificador de schema.
+        $documento = json_decode((string) json_encode(['components' => ['schemas' => self::carregar()['components']['schemas']]]));
         $armazem = new SchemaStorage;
         $armazem->addSchema('file://openapi', $documento);
         $validador = new Validator(new Factory($armazem));

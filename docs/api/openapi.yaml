@@ -253,6 +253,230 @@ paths:
         '404': {$ref: '#/components/responses/NaoEncontrado'}
         '422': {$ref: '#/components/responses/Validacao'}
         '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /notas:
+    get:
+      operationId: listarNotas
+      tags: [Notas]
+      summary: Listar notas
+      description: Lista as notas já emitidas (rascunhos do app não aparecem), da mais antiga alterada para a mais recente.
+      parameters:
+        - $ref: '#/components/parameters/Limite'
+        - $ref: '#/components/parameters/Cursor'
+        - {name: status, in: query, required: false, schema: {$ref: '#/components/schemas/StatusDaNota'}}
+        - {name: modelo, in: query, required: false, schema: {$ref: '#/components/schemas/ModeloDaNota'}}
+        - {name: de, in: query, required: false, description: "Criadas a partir desta data (AAAA-MM-DD).", schema: {type: string, format: date}}
+        - {name: ate, in: query, required: false, description: "Criadas até esta data (AAAA-MM-DD).", schema: {type: string, format: date}}
+      responses:
+        '200':
+          description: Página de notas.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ListaDeNotas'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+    post:
+      operationId: emitirNota
+      tags: [Notas]
+      summary: Emitir nota
+      description: |
+        Emite NF-e, NFC-e ou NFS-e. A resposta é `202`: a emissão continua em segundo plano;
+        acompanhe por `GET /notas/{id}/status` ou por webhook (`nota.autorizada`, `nota.rejeitada`…).
+
+        Chave `test_` emite em homologação e chave `live_` em produção; usar a chave do outro ambiente
+        devolve `API_AMBIENTE_DIVERGENTE`. Clientes, produtos e serviços podem ser enviados inline e são
+        cadastrados (ou reaproveitados) junto com a nota.
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/EmissaoEntrada'}
+            examples:
+              nfe:
+                summary: NF-e com cliente e produto existentes
+                value:
+                  modelo: NFE
+                  cliente: {id: 0b6f2d8e-3b1c-4f6a-9d6e-8f1c2a3b4c5d}
+                  desconto_centavos: 0
+                  itens:
+                    - {produto_id: 7c1f0a52-9e3d-4b7a-8a64-2d5e6f708192, quantidade: "2"}
+                  pagamentos:
+                    - {tpag: "01", valor_centavos: 10000}
+              nfse:
+                summary: NFS-e com serviço inline
+                value:
+                  modelo: DPS
+                  cliente: {tipo: PJ, nome: Exemplo Comércio Ltda, cpf_cnpj: "00.000.000/0001-00"}
+                  desconto_centavos: 0
+                  itens:
+                    - servico: {codigo: CONSULT-1, nome: Consultoria, preco_centavos: 20000, codigo_lc116: "17.01", c_trib_nac: "170101", aliquota_iss: "5"}
+                      quantidade: "1"
+      responses:
+        '202':
+          description: Emissão aceita; a nota nasce `PROCESSANDO`.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeEmissao'}
+        '400': {$ref: '#/components/responses/Idempotencia'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '403': {$ref: '#/components/responses/RegraDeNegocio'}
+        '409': {$ref: '#/components/responses/Idempotencia'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /notas/{id}:
+    get:
+      operationId: obterNota
+      tags: [Notas]
+      summary: Obter nota
+      description: Nota completa, com itens, pagamentos e histórico de eventos.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: A nota.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeNota'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /notas/{id}/status:
+    get:
+      operationId: obterStatusDaNota
+      tags: [Notas]
+      summary: Consultar o status da nota
+      description: Resposta leve para acompanhar a emissão ou o cancelamento.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: O status.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeNotaStatus'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /notas/{id}/pdf:
+    get:
+      operationId: baixarPdfDaNota
+      tags: [Notas]
+      summary: Baixar o PDF (DANFE, DANFE NFC-e ou DANFSe)
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: O PDF da nota.
+          content:
+            application/pdf:
+              schema: {type: string, format: binary}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '409': {$ref: '#/components/responses/RegraDeNegocio'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /notas/{id}/xml:
+    get:
+      operationId: baixarXmlDaNota
+      tags: [Notas]
+      summary: Baixar o XML autorizado
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: O XML autorizado.
+          content:
+            application/xml:
+              schema: {type: string}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '409': {$ref: '#/components/responses/RegraDeNegocio'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /notas/{id}/xml-cancelamento:
+    get:
+      operationId: baixarXmlDeCancelamento
+      tags: [Notas]
+      summary: Baixar o XML do cancelamento
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+      responses:
+        '200':
+          description: O XML do evento de cancelamento.
+          content:
+            application/xml:
+              schema: {type: string}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '409': {$ref: '#/components/responses/RegraDeNegocio'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /notas/{id}/cancelar:
+    post:
+      operationId: cancelarNota
+      tags: [Notas]
+      summary: Cancelar nota
+      description: Inicia o cancelamento (`202`). Acompanhe pelo status ou pelo webhook `nota.cancelada`. Se a SEFAZ recusar, a nota volta a `AUTORIZADA` com `cancelamento_motivo`.
+      parameters:
+        - $ref: '#/components/parameters/IdPath'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/CancelamentoEntrada'}
+            example: {justificativa: Cancelamento por erro de digitação do valor total}
+      responses:
+        '202':
+          description: Cancelamento iniciado.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeNotaStatus'}
+        '400': {$ref: '#/components/responses/Idempotencia'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '404': {$ref: '#/components/responses/NaoEncontrado'}
+        '409': {$ref: '#/components/responses/RegraDeNegocio'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+  /notas/inutilizacoes:
+    get:
+      operationId: listarInutilizacoes
+      tags: [Notas]
+      summary: Listar inutilizações
+      parameters:
+        - $ref: '#/components/parameters/Limite'
+        - $ref: '#/components/parameters/Cursor'
+      responses:
+        '200':
+          description: Página de inutilizações.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ListaDeInutilizacoes'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
+    post:
+      operationId: inutilizarNumeracao
+      tags: [Notas]
+      summary: Inutilizar uma faixa de numeração
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/InutilizacaoEntrada'}
+            example: {serie: "1", numero_inicial: 3, numero_final: 5, justificativa: Numeração perdida por queda do servidor}
+      responses:
+        '201':
+          description: Inutilização registrada.
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/RespostaDeInutilizacao'}
+        '400': {$ref: '#/components/responses/Idempotencia'}
+        '401': {$ref: '#/components/responses/NaoAutenticado'}
+        '409': {$ref: '#/components/responses/RegraDeNegocio'}
+        '422': {$ref: '#/components/responses/Validacao'}
+        '429': {$ref: '#/components/responses/LimiteExcedido'}
   /empresa:
     get:
       operationId: obterEmpresa
@@ -416,7 +640,7 @@ components:
         id: {type: string, format: uuid}
         tipo: {type: string, enum: [PF, PJ]}
         nome: {type: string}
-        cpf_cnpj: {type: ["string", "null"], description: Somente dígitos.}
+        cpf_cnpj: {type: ["string", "null"], description: "Somente dígitos."}
         inscricao_estadual: {type: ["string", "null"]}
         ie_isento: {type: boolean}
         email: {type: ["string", "null"]}
@@ -441,7 +665,7 @@ components:
       properties:
         tipo: {type: string, enum: [PF, PJ]}
         nome: {type: string, maxLength: 150}
-        cpf_cnpj: {type: ["string", "null"], description: CPF (PF) ou CNPJ (PJ) válido; único por empresa. Pontuação é aceita.}
+        cpf_cnpj: {type: ["string", "null"], description: "CPF (PF) ou CNPJ (PJ) válido; único por empresa. Pontuação é aceita."}
         inscricao_estadual: {type: ["string", "null"], maxLength: 20}
         ie_isento: {type: boolean}
         email: {type: ["string", "null"], format: email, maxLength: 150}
@@ -465,7 +689,7 @@ components:
         sku: {type: string}
         nome: {type: string}
         unidade: {type: string}
-        preco_centavos: {type: integer, description: Preço em centavos.}
+        preco_centavos: {type: integer, description: "Preço em centavos."}
         gtin: {type: ["string", "null"]}
         ncm: {type: ["string", "null"]}
         cest: {type: ["string", "null"]}
@@ -473,12 +697,12 @@ components:
         tributacao_icms: {type: ["string", "null"], enum: [NORMAL, ST, null]}
         fiscal_fonte: {type: string}
         fiscal_revisado_em: {type: ["string", "null"], format: date-time}
-        pendente_fiscal: {type: boolean, description: Verdadeiro enquanto faltarem dados fiscais; a emissão é bloqueada.}
+        pendente_fiscal: {type: boolean, description: "Verdadeiro enquanto faltarem dados fiscais; a emissão é bloqueada."}
     ProdutoEntrada:
       type: object
       required: [sku, nome, unidade, preco_centavos]
       properties:
-        sku: {type: string, maxLength: 60, description: Único por empresa.}
+        sku: {type: string, maxLength: 60, description: "Único por empresa."}
         nome: {type: string, maxLength: 150}
         unidade: {type: string, maxLength: 10}
         preco_centavos: {type: integer, minimum: 0}
@@ -497,16 +721,16 @@ components:
         nome: {type: string}
         preco_centavos: {type: integer}
         codigo_lc116: {type: ["string", "null"], description: "Formato 00.00."}
-        c_trib_nac: {type: ["string", "null"], description: Seis dígitos.}
-        codigo_municipal: {type: ["string", "null"], description: Três dígitos.}
-        aliquota_iss: {type: ["number", "string", "null"], description: Percentual de 0 a 100.}
+        c_trib_nac: {type: ["string", "null"], description: "Seis dígitos."}
+        codigo_municipal: {type: ["string", "null"], description: "Três dígitos."}
+        aliquota_iss: {type: ["number", "string", "null"], description: "Percentual de 0 a 100."}
         nbs: {type: ["string", "null"]}
         pendente_fiscal: {type: boolean}
     ServicoEntrada:
       type: object
       required: [nome, preco_centavos]
       properties:
-        codigo: {type: ["string", "null"], maxLength: 60, description: Único por empresa.}
+        codigo: {type: ["string", "null"], maxLength: 60, description: "Único por empresa."}
         nome: {type: string, maxLength: 150}
         preco_centavos: {type: integer, minimum: 0}
         codigo_lc116: {type: ["string", "null"], pattern: '^\d{2}\.\d{2}$'}
@@ -533,10 +757,10 @@ components:
         inscricao_estadual: {type: ["string", "null"]}
         inscricao_municipal: {type: ["string", "null"]}
         cnae: {type: ["string", "null"]}
-        ambiente_fiscal: {type: ["string", "null"], description: Ambiente de emissão configurado na empresa.}
+        ambiente_fiscal: {type: ["string", "null"], description: "Ambiente de emissão configurado na empresa."}
         certificado_status: {type: ["string", "null"]}
         certificado_validade: {type: ["string", "null"], format: date}
-        ambiente_da_chave: {type: string, enum: [live, test], description: Ambiente da chave usada na requisição.}
+        ambiente_da_chave: {type: string, enum: [live, test], description: "Ambiente da chave usada na requisição."}
     ConsumoItem:
       type: object
       additionalProperties: false
@@ -599,6 +823,285 @@ components:
         data: {type: array, items: {$ref: '#/components/schemas/Servico'}}
         links: {$ref: '#/components/schemas/LinksDePagina'}
         meta: {$ref: '#/components/schemas/MetaDePagina'}
+    StatusDaNota:
+      type: string
+      enum: [PROCESSANDO, AUTORIZADA, REJEITADA, ERRO, CANCELADA, CANCELANDO, CONTINGENCIA]
+      description: Estado da nota. `PROCESSANDO`, `CANCELANDO` e `CONTINGENCIA` ainda mudam; os demais são finais (exceto reenvio pelo app).
+    ModeloDaNota:
+      type: string
+      enum: [NFE, NFCE, DPS]
+      description: NF-e, NFC-e ou NFS-e (DPS).
+    ItemDaNota:
+      type: object
+      additionalProperties: false
+      required: [id, produto_id, ordem, sku, descricao, unidade, quantidade, valor_unitario_centavos, desconto_centavos, total_centavos, cfop, csosn, servico_id, c_trib_nac, codigo_municipal, aliquota_iss, nbs]
+      properties:
+        id: {type: ["integer", "string"]}
+        produto_id: {type: ["string", "null"]}
+        ordem: {type: integer}
+        sku: {type: ["string", "null"]}
+        descricao: {type: ["string", "null"]}
+        unidade: {type: ["string", "null"]}
+        quantidade: {type: string, description: "Decimal com até 3 casas, como texto."}
+        valor_unitario_centavos: {type: integer}
+        desconto_centavos: {type: ["integer", "null"]}
+        total_centavos: {type: integer}
+        cfop: {type: ["string", "null"]}
+        csosn: {type: ["string", "null"]}
+        servico_id: {type: ["string", "null"]}
+        c_trib_nac: {type: ["string", "null"]}
+        codigo_municipal: {type: ["string", "null"]}
+        aliquota_iss: {type: ["number", "string", "null"]}
+        nbs: {type: ["string", "null"]}
+    PagamentoDaNota:
+      type: object
+      additionalProperties: false
+      required: [tpag, xpag, valor_centavos]
+      properties:
+        tpag: {type: string, enum: ["01", "03", "04", "17", "99"], description: "01 dinheiro, 03 crédito, 04 débito, 17 PIX, 99 outros."}
+        xpag: {type: ["string", "null"]}
+        valor_centavos: {type: integer}
+    EventoDaNota:
+      type: object
+      additionalProperties: false
+      required: [status_de, status_para, detalhe, em]
+      properties:
+        status_de: {type: ["string", "null"]}
+        status_para: {type: string}
+        detalhe: {type: ["string", "null"]}
+        em: {type: string, format: date-time}
+    Nota:
+      type: object
+      additionalProperties: false
+      required: [id, modelo, status, ambiente, numero, serie, chave, protocolo, numero_nfse, venda_id, cstat, motivo, mensagem_erro, natureza_operacao, consumidor_final, subtotal_centavos, desconto_centavos, total_centavos, informacoes_complementares, emitido_em, contingencia_limite_em, contingencia_motivo, contingencia_tipo, epec_protocolo, epec_registrado_em, cancelamento_justificativa, cancelado_em, cancelamento_protocolo, cancelamento_cstat, cancelamento_motivo, created_at]
+      properties:
+        id: {type: string, format: uuid}
+        modelo: {$ref: '#/components/schemas/ModeloDaNota'}
+        status: {$ref: '#/components/schemas/StatusDaNota'}
+        ambiente: {type: ["string", "null"], enum: [HOMOLOGACAO, PRODUCAO, null]}
+        numero: {type: ["integer", "null"]}
+        serie: {type: ["string", "null"]}
+        chave: {type: ["string", "null"], description: "Chave de acesso (44 dígitos na NF-e/NFC-e; 50 na NFS-e)."}
+        protocolo: {type: ["string", "null"]}
+        numero_nfse: {type: ["string", "null"]}
+        venda_id: {type: ["string", "null"]}
+        cstat: {type: ["string", "null"], description: "Código de retorno da SEFAZ ou da ADN."}
+        motivo: {type: ["string", "null"], description: "Mensagem do órgão autorizador."}
+        mensagem_erro: {type: ["string", "null"]}
+        natureza_operacao: {type: ["string", "null"]}
+        consumidor_final: {type: ["boolean", "null"]}
+        subtotal_centavos: {type: integer}
+        desconto_centavos: {type: integer}
+        total_centavos: {type: integer}
+        informacoes_complementares: {type: ["string", "null"]}
+        emitido_em: {type: ["string", "null"], format: date-time}
+        contingencia_limite_em: {type: ["string", "null"], format: date-time}
+        contingencia_motivo: {type: ["string", "null"]}
+        contingencia_tipo: {type: ["string", "null"], enum: [OFFLINE_NFCE, EPEC, null]}
+        epec_protocolo: {type: ["string", "null"]}
+        epec_registrado_em: {type: ["string", "null"], format: date-time}
+        cancelamento_justificativa: {type: ["string", "null"]}
+        cancelado_em: {type: ["string", "null"], format: date-time}
+        cancelamento_protocolo: {type: ["string", "null"]}
+        cancelamento_cstat: {type: ["string", "null"]}
+        cancelamento_motivo: {type: ["string", "null"], description: "Motivo da recusa quando o cancelamento não foi aceito; nesse caso a nota volta a `AUTORIZADA`."}
+        created_at: {type: string, format: date-time}
+        cliente:
+          type: ["object", "null"]
+          description: Presente nas listas e na consulta de uma nota.
+          additionalProperties: false
+          properties:
+            id: {type: string, format: uuid}
+            nome: {type: string}
+        itens:
+          type: array
+          description: Presente apenas ao consultar a nota pelo id.
+          items: {$ref: '#/components/schemas/ItemDaNota'}
+        pagamentos:
+          type: array
+          description: Presente apenas ao consultar a nota pelo id.
+          items: {$ref: '#/components/schemas/PagamentoDaNota'}
+        eventos:
+          type: array
+          description: Histórico de transições; presente apenas ao consultar a nota pelo id.
+          items: {$ref: '#/components/schemas/EventoDaNota'}
+    NotaStatus:
+      type: object
+      additionalProperties: false
+      required: [id, status, numero, serie, chave, cstat, motivo, mensagem_erro, cancelamento_cstat, cancelamento_motivo]
+      properties:
+        id: {type: string, format: uuid}
+        status: {$ref: '#/components/schemas/StatusDaNota'}
+        numero: {type: ["integer", "null"]}
+        serie: {type: ["string", "null"]}
+        chave: {type: ["string", "null"]}
+        cstat: {type: ["string", "null"]}
+        motivo: {type: ["string", "null"]}
+        mensagem_erro: {type: ["string", "null"]}
+        cancelamento_cstat: {type: ["string", "null"]}
+        cancelamento_motivo: {type: ["string", "null"]}
+    EmissaoAceita:
+      type: object
+      additionalProperties: false
+      required: [id, modelo, status]
+      properties:
+        id: {type: string, format: uuid}
+        modelo: {$ref: '#/components/schemas/ModeloDaNota'}
+        status: {$ref: '#/components/schemas/StatusDaNota'}
+    ProdutoInline:
+      type: object
+      description: Produto cadastrado junto com a emissão. Se o `sku` já existir, o cadastro existente é reaproveitado.
+      required: [sku]
+      properties:
+        sku: {type: string, maxLength: 60}
+        nome: {type: string, maxLength: 150}
+        unidade: {type: string, maxLength: 10}
+        preco_centavos: {type: integer, minimum: 0}
+        gtin: {type: ["string", "null"], maxLength: 14}
+        ncm: {type: ["string", "null"]}
+        cest: {type: ["string", "null"]}
+        origem: {type: ["string", "integer", "null"]}
+        tributacao_icms: {type: ["string", "null"], enum: [NORMAL, ST, null]}
+    ServicoInline:
+      type: object
+      description: Serviço cadastrado junto com a emissão. Se o `codigo` já existir, o cadastro existente é reaproveitado.
+      required: [codigo]
+      properties:
+        codigo: {type: string, maxLength: 60}
+        nome: {type: string, maxLength: 150}
+        preco_centavos: {type: integer, minimum: 0}
+        codigo_lc116: {type: ["string", "null"], pattern: '^\d{2}\.\d{2}$'}
+        c_trib_nac: {type: ["string", "null"], pattern: '^\d{6}$'}
+        codigo_municipal: {type: ["string", "null"], pattern: '^\d{3}$'}
+        aliquota_iss: {type: ["number", "string", "null"]}
+        nbs: {type: ["string", "null"], maxLength: 9}
+    ClienteDaNota:
+      type: object
+      description: Informe só `id` (cliente existente) ou só os dados do cliente, com `cpf_cnpj`. Na NFC-e o cliente é opcional.
+      properties:
+        id: {type: string, format: uuid}
+        tipo: {type: string, enum: [PF, PJ]}
+        nome: {type: string, maxLength: 150}
+        cpf_cnpj: {type: string}
+        inscricao_estadual: {type: ["string", "null"], maxLength: 20}
+        ie_isento: {type: boolean}
+        email: {type: ["string", "null"], maxLength: 150}
+        telefone: {type: ["string", "null"], maxLength: 20}
+        logradouro: {type: ["string", "null"], maxLength: 150}
+        numero: {type: ["string", "null"], maxLength: 20}
+        bairro: {type: ["string", "null"], maxLength: 100}
+        cidade: {type: ["string", "null"], maxLength: 100}
+        uf: {type: ["string", "null"], minLength: 2, maxLength: 2}
+        cep: {type: ["string", "null"]}
+        codigo_ibge: {type: ["string", "null"]}
+    ItemDeEmissao:
+      type: object
+      description: Informe exatamente um entre `produto_id`, `produto`, `servico_id` e `servico`. Produtos valem para NF-e e NFC-e; serviços, para NFS-e (`DPS`).
+      required: [quantidade]
+      properties:
+        produto_id: {type: string, format: uuid}
+        servico_id: {type: string, format: uuid}
+        produto: {$ref: '#/components/schemas/ProdutoInline'}
+        servico: {$ref: '#/components/schemas/ServicoInline'}
+        quantidade: {type: string, pattern: '^\d{1,9}(\.\d{1,3})?$', description: "Decimal com até 3 casas, como texto."}
+        valor_unitario_centavos: {type: ["integer", "null"], minimum: 0, description: "Se omitido, usa o preço do cadastro."}
+    PagamentoDeEmissao:
+      type: object
+      required: [tpag, valor_centavos]
+      properties:
+        tpag: {type: string, enum: ["01", "03", "04", "17", "99"]}
+        xpag: {type: ["string", "null"], maxLength: 60}
+        valor_centavos: {type: integer, minimum: 1}
+    EmissaoEntrada:
+      type: object
+      required: [itens, desconto_centavos]
+      properties:
+        modelo: {$ref: '#/components/schemas/ModeloDaNota', description: "Padrão NFE."}
+        cliente: {$ref: '#/components/schemas/ClienteDaNota'}
+        consumidor_final: {type: ["boolean", "null"]}
+        desconto_centavos: {type: integer, minimum: 0}
+        informacoes_complementares: {type: ["string", "null"], maxLength: 5000}
+        itens:
+          type: array
+          minItems: 1
+          maxItems: 990
+          items: {$ref: '#/components/schemas/ItemDeEmissao'}
+        pagamentos:
+          type: array
+          minItems: 1
+          description: Obrigatório em NF-e e NFC-e; proibido em NFS-e (`DPS`).
+          items: {$ref: '#/components/schemas/PagamentoDeEmissao'}
+    CancelamentoEntrada:
+      type: object
+      required: [justificativa]
+      properties:
+        justificativa: {type: string, minLength: 15, maxLength: 255}
+    Inutilizacao:
+      type: object
+      additionalProperties: false
+      required: [id, modelo, serie, numero_inicial, numero_final, justificativa, ambiente, status, cstat, motivo, protocolo, created_at]
+      properties:
+        id: {type: string, format: uuid}
+        modelo: {type: string, enum: [NFE, NFCE]}
+        serie: {type: string}
+        numero_inicial: {type: integer}
+        numero_final: {type: integer}
+        justificativa: {type: string}
+        ambiente: {type: ["string", "null"], enum: [HOMOLOGACAO, PRODUCAO, null]}
+        status: {type: string, enum: [INUTILIZADA, RECUSADA, ERRO]}
+        cstat: {type: ["string", "null"]}
+        motivo: {type: ["string", "null"]}
+        protocolo: {type: ["string", "null"]}
+        created_at: {type: string, format: date-time}
+    InutilizacaoEntrada:
+      type: object
+      required: [serie, numero_inicial, numero_final, justificativa]
+      properties:
+        modelo: {type: string, enum: [NFE, NFCE], description: "Padrão NFE."}
+        serie: {type: string, pattern: '^\d{1,3}$'}
+        numero_inicial: {type: integer, minimum: 1}
+        numero_final: {type: integer, minimum: 1}
+        justificativa: {type: string, minLength: 15, maxLength: 255}
+    RespostaDeEmissao:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/EmissaoAceita'}
+    RespostaDeNota:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/Nota'}
+    RespostaDeNotaStatus:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/NotaStatus'}
+    ListaDeNotas:
+      type: object
+      additionalProperties: false
+      required: [data, links, meta]
+      properties:
+        data: {type: array, items: {$ref: '#/components/schemas/Nota'}}
+        links: {$ref: '#/components/schemas/LinksDePagina'}
+        meta: {$ref: '#/components/schemas/MetaDePagina'}
+    RespostaDeInutilizacao:
+      type: object
+      additionalProperties: false
+      required: [data]
+      properties:
+        data: {$ref: '#/components/schemas/Inutilizacao'}
+    ListaDeInutilizacoes:
+      type: object
+      additionalProperties: false
+      required: [data, links, meta]
+      properties:
+        data: {type: array, items: {$ref: '#/components/schemas/Inutilizacao'}}
+        links: {$ref: '#/components/schemas/LinksDePagina'}
+        meta: {$ref: '#/components/schemas/MetaDePagina'}
   responses:
     NaoAutenticado:
       description: Chave ausente, inválida ou revogada (`API_CHAVE_AUSENTE`, `API_CHAVE_INVALIDA`).
@@ -614,6 +1117,21 @@ components:
             $ref: '#/components/schemas/Problem'
     Validacao:
       description: Dados inválidos (`VALIDACAO`, com `errors[]`) ou cursor inválido (`CURSOR_INVALIDO`).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Idempotencia:
+      description: |
+        Problema de idempotência. `IDEMPOTENCY_KEY_AUSENTE` ou `IDEMPOTENCY_KEY_INVALIDA` (400);
+        `IDEMPOTENCIA_EM_ANDAMENTO` (409, a primeira chamada ainda não terminou; traz `Retry-After` e, se já houver, `nota_id`);
+        `IDEMPOTENCIA_CORPO_DIFERENTE` (409, a chave já foi usada com outro corpo ou endereço).
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    RegraDeNegocio:
+      description: Regra de negócio não atendida; o `codigo` diz qual (por exemplo `CANCELAMENTO_NAO_PERMITIDO`, `LIMITE_DO_PLANO`, `MODULO_NAO_CONTRATADO`, `API_AMBIENTE_DIVERGENTE`).
       content:
         application/problem+json:
           schema:
