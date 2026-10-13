@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Fiscal\Providers;
 
+use App\Modules\Crm\Domain\Contracts\ConsultorDeValorFaturado;
 use App\Modules\Crm\Domain\Contracts\GeradorDeRascunhoDeNota;
+use App\Modules\Fiscal\Application\ConsultorDeValorFaturadoDoFiscal;
 use App\Modules\Fiscal\Application\ContadorDeDocumentosMes;
 use App\Modules\Fiscal\Application\GeradorDeRascunhoParaCrm;
 use App\Modules\Fiscal\Application\Webhooks\DespachanteDeEntrega;
@@ -34,6 +36,7 @@ final class FiscalServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(GeradorDeRascunhoDeNota::class, GeradorDeRascunhoParaCrm::class);
+        $this->app->bind(ConsultorDeValorFaturado::class, ConsultorDeValorFaturadoDoFiscal::class);
         // Os testes sobrescrevem com app()->instance(EmissorDeNfe::class, new EmissorFake).
         $this->app->bind(EmissorDeNfe::class, NfePhpEmissor::class);
         $this->app->bind(EmissorDeNfse::class, NfseNacionalEmissor::class);
