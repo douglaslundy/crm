@@ -12,4 +12,8 @@ enum TipoDeRegistro: string
     case NegocioMovido = 'NEGOCIO_MOVIDO';
     case NegocioGanho = 'NEGOCIO_GANHO';
     case NegocioPerdido = 'NEGOCIO_PERDIDO';
+    case PropostaEnviada = 'PROPOSTA_ENVIADA';
+    case PropostaAceita = 'PROPOSTA_ACEITA';
+    case PropostaRecusada = 'PROPOSTA_RECUSADA';
+    case PropostaNotaGerada = 'PROPOSTA_NOTA_GERADA';
 }
