@@ -27,5 +27,8 @@ final class CrmServiceProvider extends ServiceProvider
         if (is_file($rotas)) {
             Route::middleware('api')->prefix('api/app/crm')->group($rotas);
         }
+
+        // Rotas sem sessão (link da proposta): o token do caminho identifica tudo; limite por IP.
+        Route::middleware(['api', 'throttle:60,1'])->prefix('api/public')->group(__DIR__.'/../Http/routes-public.php');
     }
 }

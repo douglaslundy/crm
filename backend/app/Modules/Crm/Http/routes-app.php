@@ -55,6 +55,6 @@ Route::middleware('empresa')->whereUuid(['id', 'funilId'])->group(function (): v
     Route::post('propostas/{id}/nota', [PropostasController::class, 'nota'])->name('app.crm.propostas.nota');
     Route::get('propostas/{id}/pdf', [PropostasController::class, 'pdf'])->name('app.crm.propostas.pdf');
 
-    Route::get('configuracao',[ConfiguracaoController::class, 'show'])->name('app.crm.configuracao.show');
+    Route::get('configuracao', [ConfiguracaoController::class, 'show'])->name('app.crm.configuracao.show');
     Route::put('configuracao', [ConfiguracaoController::class, 'update'])->name('app.crm.configuracao.update');
 });
