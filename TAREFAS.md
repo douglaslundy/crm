@@ -32,7 +32,7 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
 - [ ] **F7 CRM** (decomposta em quatro partes, cada uma com spec, plano e execução próprios):
   - [x] **F7a Funis e negócios** (12 de 12, concluída em 2026-10-13): módulo `Crm`, funis e etapas, motivos de perda, negócios com itens, ganhar/perder, API `api/app/crm/*`, kanban, visibilidade por vendedor.
   - [x] **F7b Atividades e timeline** (11 de 11, concluída em 2026-10-13): atividades e agenda, timeline do cliente, negócio parado calculado na leitura, WhatsApp e e-mail em 1 clique.
-  - [ ] **F7c Propostas:** PDF, link público com aceite, aceite → ganho → emissão da nota em 1 clique.
+  - [x] **F7c Propostas** (10 de 10, concluída em 2026-10-13): PDF, link público com aceite, aceite → ganho → rascunho de nota em 1 clique.
   - [ ] **F7d Relatórios e metas:** relatórios comerciais, metas por vendedor, dashboard CRM.
 - [ ] **F8 Go-live:** auditoria fiscal, carga, backup e restauração, piloto em produção.
 
@@ -198,3 +198,13 @@ Achados menores adiados e uma decisão de produto parcada durante a revisão das
 - [ ] Reatribuir atividade a outro usuário só para PROPRIETARIO/ADMIN (vendedor não atribui a colega); revisar com o uso real.
 - [ ] Editar atividade (título, data, responsável) não tem tela: só a API (`PUT /atividades/{id}`) e o hook `crmApi.editarAtividade`; a UI só cria, conclui e reabre. Excluir também não tem botão (`useExcluirAtividade` sem uso).
 - [ ] Sem teste de isolamento de tenant dedicado para `GET /agenda` e `GET /resumo` (escopam por `visiveisPara`, que é por tenant via Global Scope).
+
+## Pendências da F7c (2026-10-13)
+- [ ] **Concorrência do aceite não verificada:** `lockForUpdate` em aceitar/recusar/enviar/gerar nota é no-op no SQLite dos testes; só vale em PostgreSQL (staging).
+- [ ] **Fumaça no navegador não feita:** aba Propostas, copiar link, página pública `/p/<token>` (aceitar, recusar, expirada), PDF visual, "Emitir nota" abrindo o editor fiscal.
+- [ ] A proposta nunca gera NFC-e: produtos viram NFE e serviços viram DPS; para NFC-e o vendedor exclui o rascunho e cria a nota pelo fluxo comum. Rascunho nasce sem pagamento (completar no editor).
+- [ ] Sem e-mail enviado pelo servidor: o vendedor copia o link ou usa WhatsApp/e-mail do cliente de e-mail do navegador.
+- [ ] Proposta enviada é imutável: ajustar exige cancelar e criar outra; sem "renovar" proposta expirada.
+- [ ] Página pública sem aviso de privacidade; `aceite_ip` e `aceite_nome` são gravados e devem constar na política de privacidade.
+- [ ] Sem teste de renderização da página pública contra a API real (só mocks); sem limite por token além do `throttle:60,1` por IP.
+- [ ] Proposta de negócio ganho/perdido/cancelado: recusa e aceite dependem só do status da proposta (aceite de proposta de negócio perdido bloqueia por `NEGOCIO_FECHADO`; revisar a mensagem mostrada ao cliente).
