@@ -87,7 +87,7 @@ final class PeriodoDoRelatorio
         }
 
         // `2026-02-31` não falha na criação: vira 3 de março. A comparação pega o estouro.
-        if ($dia === false || $dia->format('Y-m-d') !== $texto) {
+        if (! $dia instanceof CarbonImmutable || $dia->format('Y-m-d') !== $texto) {
             throw RegraDoCrmException::periodoInvalido($mensagem);
         }
 
