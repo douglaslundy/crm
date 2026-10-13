@@ -29,7 +29,11 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
   - [x] **F6b Notas pela API** (7 de 7, concluída em 2026-10-08): emissão com `Idempotency-Key` e itens inline, consultas, pdf/xml, cancelar e inutilizar; chave `test_`⇔homologação.
   - [x] **F6c1 Webhooks de saída** (9 de 9, concluída em 2026-10-08): eventos de nota assinados, retentativas, log, reenvio, teste, API v1 e tela.
   - [x] **F6c2 OpenAPI 3.1 e guia do integrador** (7 de 7, concluída em 2026-10-08): `docs/api/openapi.yaml` (33 operações + webhooks), guia do integrador com cURL/PHP/JS, página `/docs/api`, testes de cobertura e de conformidade.
-- [ ] **F7 CRM:** funis, negócios, atividades, timeline, propostas → nota, relatórios, metas.
+- [ ] **F7 CRM** (decomposta em quatro partes, cada uma com spec, plano e execução próprios):
+  - [x] **F7a Funis e negócios** (12 de 12, concluída em 2026-10-13): módulo `Crm`, funis e etapas, motivos de perda, negócios com itens, ganhar/perder, API `api/app/crm/*`, kanban, visibilidade por vendedor.
+  - [ ] **F7b Atividades e timeline:** atividades e agenda, timeline do cliente, alerta de negócio parado, WhatsApp e e-mail em 1 clique.
+  - [ ] **F7c Propostas:** PDF, link público com aceite, aceite → ganho → emissão da nota em 1 clique.
+  - [ ] **F7d Relatórios e metas:** relatórios comerciais, metas por vendedor, dashboard CRM.
 - [ ] **F8 Go-live:** auditoria fiscal, carga, backup e restauração, piloto em produção.
 
 ## Pendências herdadas da revisão da F0 (resolver no início da F1)

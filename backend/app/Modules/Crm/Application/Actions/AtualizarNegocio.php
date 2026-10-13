@@ -28,7 +28,7 @@ final class AtualizarNegocio
             $negocio->garantirAberto();
             $alteracoes = [];
 
-            if (array_key_exists('titulo', $dados) && $dados['titulo'] !== null) {
+            if (array_key_exists('titulo', $dados)) {
                 $alteracoes['titulo'] = trim($dados['titulo']);
             }
             if (array_key_exists('previsao_fechamento', $dados)) {

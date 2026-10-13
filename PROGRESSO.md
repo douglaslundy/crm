@@ -1,10 +1,10 @@
 # Progresso do Projeto
 
 ## Última atualização
-2026-10-08
+2026-10-13
 
 ## Tarefa em andamento
-**Nenhuma tarefa em andamento. F3, F4 (a e b), F5 inteira e F6a, F6b e F6c1 (API pública: fundação, notas e webhooks) concluídas.** Próxima: F6c2 (OpenAPI 3.1 e guia do integrador), começando por brainstorming.
+**Nenhuma tarefa em andamento. F3, F4 (a e b), F5 inteira, F6 inteira (a, b, c1 e c2) e F7a (CRM: funis e negócios) concluídas.** Próxima: F7b (atividades, agenda, timeline, alerta de negócio parado, WhatsApp e e-mail em 1 clique), começando por brainstorming.
 
 Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é decisão da SEFAZ (sem número fixo no código); cancelada continua contando na cota `DOCUMENTOS_MES`; `consultarPorChave` usa o ambiente da **nota** (corrige consulta no ambiente errado depois de "Ir para produção"); o XML do cancelamento é o `nfeProc` com `retEvento` (`Complements::cancelRegister`); aceitos 135/136/155; inutilização síncrona com guardas locais (faixa já alocada, sem nota autorizada/em processamento/cancelada na faixa), resultado sempre gravado.
 
@@ -36,6 +36,12 @@ Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é dec
 - **Verificado:** build, migrations de todas as fases no PostgreSQL 16 (primeira vez fora do SQLite), login com sessão pela API, CORS, URL da API embutida no front, worker e agendador de pé, API ~35 ms. **Não verificado:** as telas no navegador.
 - **Reimplantar:** `git -c core.autocrlf=false archive --format=tar.gz -o crm.tar.gz HEAD`, enviar para `~/crm-plataforma/`, extrair em `src/` (NÃO apagar `src/deploy/.env`: tem a senha do banco) e rodar `bash src/deploy/deploy.sh`. Detalhes em `deploy/README.md`.
 - **Diferenças para produção real:** HTTP sem domínio, `INSTALL_DEV=1` (Faker para o seeder), `SESSION_SECURE_COOKIE=false`. Antes de expor à internet: HTTPS, domínio, trocar a senha do usuário SSH e as contas de demonstração.
+
+## Fechamento da F7a (2026-10-13)
+- **F7 decomposta em quatro partes** (decisão do usuário): F7a funis e negócios, F7b atividades/agenda/timeline/alerta de parado/WhatsApp e e-mail, F7c propostas → aceite → nota, F7d relatórios/metas/dashboard. Spec `docs/superpowers/specs/2026-10-13-crm-f7a-funis-e-negocios-design.md`, plano `docs/superpowers/plans/2026-10-13-f7a-crm-funis-e-negocios.md`.
+- **Feito:** módulo `Crm` (`backend/app/Modules/Crm`): funis e etapas configuráveis (funil padrão "Vendas" semeado no primeiro uso, por `PreparadorDoCrm`), motivos de perda por empresa, negócios com itens do catálogo (snapshot; valor = soma dos itens), mover/ganhar/perder, eventos `NegocioCriado/Movido/Ganho/Perdido` (sem listeners ainda), API `api/app/crm/*`, interruptor "vendedor vê só os seus". Frontend: `features/crm` (kanban com `@dnd-kit` e menu "Mover para...", detalhe do negócio, configurações), rotas `/crm/negocios`, `/crm/negocios/[id]`, `/configuracoes/crm`, item de menu por módulo `CRM`.
+- **Decisões não óbvias:** `Crm` só fala com outros módulos por contratos em `Crm/Domain/Contracts` (`ConsultaDeClientes`←Customers, `CatalogoDeItens`←Catalog, `DiretorioDeUsuarios`←Identity), registrados nos `ServiceProvider` dos provedores. Papel Fiscal sem acesso ao CRM; vendedor fora da visibilidade recebe 404 (não 403). Negócio sempre tem `Cliente` (lead criado na hora, `estagio = LEAD`, convertido ao ganhar). Ganho/perdido é `status`, não etapa. Quantidade de item é inteira. Etapa com negócio aberto e funil padrão não desativam. Fixture de teste: `Tests\Support\ComCrm` (plano com módulo `CRM` e limite de clientes ilimitado).
+- **Verificado:** backend 1363 testes, Pint e PHPStan limpos; frontend 383 testes, eslint (gates de qualidade), tsc e build limpos. **Não verificado:** fumaça no navegador do kanban (arrastar e soltar real); `lockForUpdate` é no-op no SQLite dos testes, a concorrência só vale em PostgreSQL; kanban carrega todos os negócios abertos do funil, sem paginação.
 
 ## Fechamento da F6c2 (2026-10-08)
 - **Feito:** contrato OpenAPI 3.1 escrito à mão em `docs/api/openapi.yaml` (33 operações de `/api/v1`, schemas de entrada e saída, erros RFC 9457 e os 6 eventos de webhook no campo `webhooks`), guia do integrador em `docs/api/guia-do-integrador.md` (movido de `docs/api-publica.md`, com "Primeiros passos" em cURL, PHP e JS) e página pública `/docs/api` (Redoc sob demanda; `scripts/copiar-openapi.mjs` copia o YAML para `public/openapi.yaml` em `predev`/`prebuild`).
@@ -210,4 +216,4 @@ O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artis
 - Fumaça com curl: usar banco SQLite descartável, host `localhost` (não `127.0.0.1`, por causa do `SESSION_DOMAIN`) e login em `/api/app/auth/login`.
 
 ## Próxima tarefa
-F7 (CRM: funis, negócios, atividades, timeline, propostas → nota, relatórios, metas): brainstorming primeiro, arquitetural. Contexto: spec mestre (seções do módulo `Crm` e do dashboard), `docs/design-system/` (layout do CRM), módulos `Customers` e `Catalog` e as Actions de emissão (`IniciarEmissao`, `EmitirNotaPelaApi`) que a proposta aceita vai reaproveitar. A F6 está fechada. Antes ou em paralelo, o usuário pode: fazer o push (nada enviado desde `db2bc7d`), reimplantar o staging (worker agora lê `default,webhooks`), rodar o sandbox do Mercado Pago e os roteiros de homologação real, e abrir `/docs/api` no navegador.
+F7b (CRM: atividades e agenda, timeline do cliente, alerta de negócio parado, WhatsApp e e-mail em 1 clique): brainstorming primeiro, arquitetural. Contexto necessário: spec mestre §9 e §10 (CRM e dashboard), spec e código da F7a (`backend/app/Modules/Crm`, em especial os eventos `Negocio*` em `Domain/Events`, que a timeline vai escutar, e `PoliticaDoCrm`), `docs/design-system/`. F7c depois usa as Actions de emissão (`IniciarEmissao`, `EmitirNotaPelaApi`). Antes ou em paralelo, o usuário pode: fazer o push (nada enviado desde `db2bc7d`), reimplantar o staging (worker agora lê `default,webhooks`), rodar o sandbox do Mercado Pago e os roteiros de homologação real, abrir `/docs/api` e `/crm/negocios` no navegador.
