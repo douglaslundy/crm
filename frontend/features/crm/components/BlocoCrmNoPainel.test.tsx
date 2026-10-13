@@ -30,6 +30,34 @@ describe('BlocoCrmNoPainel', () => {
     expect(screen.getByRole('link', { name: /parados/i })).toHaveTextContent('3');
   });
 
+  it('mostra previsão do mês e progresso da meta com link para os relatórios', async () => {
+    vi.mocked(crmApi.resumo).mockResolvedValue({
+      data: {
+        hoje: 0, atrasadas: 0, parados: 0, funil: null,
+        previsao_do_mes: { quantidade: 2, valor_centavos: 20000, ponderada_centavos: 8000 },
+        meta_do_mes: { unidade: 'VALOR', alvo: 30000, realizado: 15000, percentual: 50 },
+      },
+    });
+    renderizar();
+
+    expect(await screen.findByRole('link', { name: /previsão do mês/i })).toHaveAttribute('href', '/crm/relatorios');
+    expect(screen.getByRole('link', { name: /previsão do mês/i })).toHaveTextContent(/R\$\s*80,00/);
+    expect(screen.getByRole('link', { name: /meta do mês/i })).toHaveTextContent('50%');
+  });
+
+  it('sem meta definida não mostra o cartão de meta', async () => {
+    vi.mocked(crmApi.resumo).mockResolvedValue({
+      data: {
+        hoje: 0, atrasadas: 0, parados: 0, funil: null,
+        previsao_do_mes: { quantidade: 0, valor_centavos: 0, ponderada_centavos: 0 }, meta_do_mes: null,
+      },
+    });
+    renderizar();
+
+    await screen.findByRole('link', { name: /hoje/i });
+    expect(screen.queryByRole('link', { name: /meta do mês/i })).not.toBeInTheDocument();
+  });
+
   it('não renderiza nada quando a API falha', async () => {
     vi.mocked(crmApi.resumo).mockRejectedValue(new ApiError(500, 'Erro'));
     const { container } = renderizar();
