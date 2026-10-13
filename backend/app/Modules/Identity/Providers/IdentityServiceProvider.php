@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\Identity\Providers;
 
+use App\Modules\Crm\Domain\Contracts\DiretorioDeUsuarios;
 use App\Modules\Identity\Application\ContadorDeUsuariosAtivos;
+use App\Modules\Identity\Application\DiretorioDeUsuariosDoIdentity;
 use App\Modules\Platform\Application\RegistroDeContadores;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -13,6 +15,11 @@ use Illuminate\Support\ServiceProvider;
 
 final class IdentityServiceProvider extends ServiceProvider
 {
+    public function register(): void
+    {
+        $this->app->bind(DiretorioDeUsuarios::class, DiretorioDeUsuariosDoIdentity::class);
+    }
+
     public function boot(): void
     {
         $this->app->make(RegistroDeContadores::class)->registrar(new ContadorDeUsuariosAtivos);

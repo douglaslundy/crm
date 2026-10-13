@@ -26,7 +26,7 @@ O vendedor de uma PME gerencia negócios num funil kanban, com itens do catálog
 | D3 | Itens do negócio são opcionais e só do catálogo (`Produto` ou `Servico`), com snapshot de descrição, quantidade e valor unitário | a emissão da F7c usa dados fiscais do catálogo, sem item avulso sem dado fiscal |
 | D4 | Motivo de perda é uma lista por empresa, obrigatório ao perder, com observação opcional | relatório de motivos da F7d confiável |
 | D5 | `Negocio` tem `etapa_id` (onde está) e `status` `ABERTO`, `GANHO` ou `PERDIDO` (como terminou). Ganho e perda não são colunas do kanban | etapas finais complicariam a configuração do funil |
-| D6 | `Crm` não acessa tabelas nem Models de outros módulos; usa contratos declarados em `Crm/Domain/Contracts` e implementados em Customers e Catalog | regra de fronteiras da spec mestre (§3) |
+| D6 | `Crm` não acessa tabelas nem Models de outros módulos; usa contratos declarados em `Crm/Domain/Contracts` e implementados em Customers e Catalog | regra de fronteiras da spec mestre (§3); inclui o diretório de usuários (responsável do negócio), para o `Crm` não importar o Model `Usuario` |
 | D7 | Papel Fiscal sem acesso ao CRM | a spec descreve vendedor, gestor e leitura |
 | D8 | `@dnd-kit/core` e `@dnd-kit/sortable` para o arrastar no frontend | HTML5 nativo não funciona bem em toque; a biblioteca cobre teclado |
 
@@ -60,6 +60,7 @@ Todas as tabelas levam `tenant_id` (UUID, `BelongsToTenant` com Global Scope), c
 |---|---|---|
 | `ConsultaDeClientes` | Customers | `existe(id)`, `resumo(id)`, `criarLead(nome, telefone?, email?)`, `converterEmCliente(id)` |
 | `CatalogoDeItens` | Catalog | `descrever(tipo, id)` retorna descrição e valor unitário atual em centavos; falha se o item não existe no tenant |
+| `DiretorioDeUsuarios` | Identity | `ehDaEmpresa(id)` (usuário ativo da empresa atual), `nomes(ids)` (mapa id => nome) |
 
 **Actions do `Crm`** (o controller só valida e chama a Action; a API pública futura reaproveita as mesmas):
 
