@@ -8,6 +8,7 @@ import { useState } from 'react';
 import { formatarCentavos, formatarData } from '@/lib/formatos';
 import { cn } from '@/lib/utils';
 import type { Etapa, Negocio } from '../types';
+import { SeloDeParado } from './SeloDeParado';
 
 interface Props {
   negocio: Negocio;
@@ -60,6 +61,7 @@ export function CartaoDoNegocio({ negocio, etapas, podeEscrever, aoMover }: Prop
               </span>
             ) : null}
           </p>
+          {negocio.parado ? <SeloDeParado dias={negocio.dias_parado ?? 0} /> : null}
         </div>
       </div>
       {podeEscrever ? (

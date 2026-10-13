@@ -14,7 +14,10 @@ import { crmApi, QUERY_KEY_CRM } from '../api';
 import { useMotivosDePerda } from '../hooks/useMotivosDePerda';
 import type { StatusDoNegocio } from '../types';
 import { EditorDeItens } from './EditorDeItens';
+import { AtividadesDoNegocio } from './AtividadesDoNegocio';
+import { BotoesDeContato } from './BotoesDeContato';
 import { PainelDePerda } from './PainelDePerda';
+import { SeloDeParado } from './SeloDeParado';
 
 const PAPEIS_QUE_ESCREVEM = ['PROPRIETARIO', 'ADMIN', 'VENDEDOR'];
 
@@ -53,7 +56,10 @@ export function DetalheDoNegocio({ id }: { id: string }) {
       <Card>
         <CardHeader><CardTitle>Dados</CardTitle></CardHeader>
         <CardContent className="grid gap-2 text-sm sm:grid-cols-2">
-          <p><span className="text-muted-foreground">Situação: </span><strong>{ROTULO_STATUS[n.status]}</strong></p>
+          <p>
+            <span className="text-muted-foreground">Situação: </span><strong>{ROTULO_STATUS[n.status]}</strong>
+            {n.parado ? <span className="ml-2"><SeloDeParado dias={n.dias_parado ?? 0} /></span> : null}
+          </p>
           <p><span className="text-muted-foreground">Valor: </span><strong>{formatarCentavos(n.valor_centavos)}</strong></p>
           <p><span className="text-muted-foreground">Cliente: </span>{n.cliente?.nome ?? '—'}{n.cliente?.estagio === 'LEAD' ? ' (lead)' : ''}</p>
           <p><span className="text-muted-foreground">Contato: </span>{n.cliente?.telefone ?? n.cliente?.email ?? '—'}</p>
@@ -63,6 +69,12 @@ export function DetalheDoNegocio({ id }: { id: string }) {
             {n.previsao_fechamento ? formatarData(n.previsao_fechamento) : '—'}
           </p>
           {n.fechado_em ? <p><span className="text-muted-foreground">Fechado em: </span>{formatarData(n.fechado_em)}</p> : null}
+          {n.cliente ? (
+            <div className="flex flex-wrap items-center gap-3 sm:col-span-2">
+              <BotoesDeContato clienteId={n.cliente.id} negocioId={n.id} podeEscrever={podeEscrever && n.status === 'ABERTO'} />
+              <Link href={`/crm/clientes/${n.cliente.id}`} className="text-sm underline">Ver timeline do cliente</Link>
+            </div>
+          ) : null}
           {n.status === 'PERDIDO' ? (
             <p className="sm:col-span-2">
               <span className="text-muted-foreground">Motivo da perda: </span>
@@ -76,6 +88,11 @@ export function DetalheDoNegocio({ id }: { id: string }) {
       <Card>
         <CardHeader><CardTitle>Itens</CardTitle></CardHeader>
         <CardContent><EditorDeItens negocio={n} podeEditar={podeEscrever} /></CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Atividades</CardTitle></CardHeader>
+        <CardContent><AtividadesDoNegocio negocio={n} podeEscrever={podeEscrever} /></CardContent>
       </Card>
 
       {n.status === 'ABERTO' && podeEscrever ? (

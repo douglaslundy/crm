@@ -25,6 +25,7 @@ export function QuadroDeNegocios() {
   const [status, setStatus] = useState<StatusDoNegocio>('ABERTO');
   const [funilEscolhido, setFunilEscolhido] = useState<string | null>(null);
   const [criando, setCriando] = useState(false);
+  const [soParados, setSoParados] = useState(false);
 
   const funis = useFunis();
   const ativos = (funis.data ?? []).filter((f) => f.ativo);
@@ -65,6 +66,11 @@ export function QuadroDeNegocios() {
               ))}
             </select>
           ) : null}
+          {status === 'ABERTO' ? (
+            <label className="flex items-center gap-1.5 text-sm">
+              <input type="checkbox" checked={soParados} onChange={(e) => setSoParados(e.target.checked)} /> Só parados
+            </label>
+          ) : null}
           {podeEscrever ? <Button onClick={() => setCriando((v) => !v)}>Novo negócio</Button> : null}
         </div>
       </div>
@@ -74,7 +80,11 @@ export function QuadroDeNegocios() {
       {negocios.isPending ? <p className="text-muted-foreground">Carregando...</p> : null}
       {negocios.isError ? <Banner tom="perigo">Não foi possível carregar os negócios.</Banner> : null}
       {negocios.isSuccess && status === 'ABERTO' ? (
-        <KanbanDeNegocios funil={funil} negocios={negocios.data} podeEscrever={podeEscrever} />
+        <KanbanDeNegocios
+          funil={funil}
+          negocios={soParados ? negocios.data.filter((n) => n.parado) : negocios.data}
+          podeEscrever={podeEscrever}
+        />
       ) : null}
       {negocios.isSuccess && status !== 'ABERTO' ? <TabelaDeFechados negocios={negocios.data} status={status} /> : null}
     </div>

@@ -57,6 +57,24 @@ describe('kanban', () => {
     expect(screen.getByRole('region', { name: 'Proposta' })).toBeInTheDocument();
   });
 
+  it('mostra o selo de parado e filtra só os parados', async () => {
+    vi.mocked(crmApi.negocios).mockResolvedValue({
+      data: [
+        negocio({ id: 'n1', titulo: 'Reforma', parado: true, dias_parado: 9 }),
+        negocio({ id: 'n2', titulo: 'Pintura', parado: false, dias_parado: 1 }),
+      ],
+    });
+    renderizar(<QuadroDeNegocios />);
+
+    expect(await screen.findByText('Parado há 9 dias')).toBeInTheDocument();
+    expect(screen.getByText('Pintura')).toBeInTheDocument();
+
+    await userEvent.click(screen.getByLabelText('Só parados'));
+
+    expect(screen.queryByText('Pintura')).not.toBeInTheDocument();
+    expect(screen.getByText('Reforma')).toBeInTheDocument();
+  });
+
   it('move pelo menu "Mover para" e chama a API', async () => {
     vi.mocked(crmApi.mover).mockResolvedValue({ data: negocio({ etapa_id: 'e2' }) });
     // Primeira carga na etapa de origem; depois do movimento o servidor já devolve a nova etapa (refetch).
