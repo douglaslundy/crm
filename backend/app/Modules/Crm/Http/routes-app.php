@@ -7,6 +7,7 @@ use App\Modules\Crm\Http\Controllers\ConfiguracaoController;
 use App\Modules\Crm\Http\Controllers\ContatosController;
 use App\Modules\Crm\Http\Controllers\EtapasController;
 use App\Modules\Crm\Http\Controllers\FunisController;
+use App\Modules\Crm\Http\Controllers\MetasController;
 use App\Modules\Crm\Http\Controllers\MotivosDePerdaController;
 use App\Modules\Crm\Http\Controllers\NegociosController;
 use App\Modules\Crm\Http\Controllers\PropostasController;
@@ -54,6 +55,10 @@ Route::middleware('empresa')->whereUuid(['id', 'funilId'])->group(function (): v
     Route::post('propostas/{id}/cancelar', [PropostasController::class, 'cancelar'])->name('app.crm.propostas.cancelar');
     Route::post('propostas/{id}/nota', [PropostasController::class, 'nota'])->name('app.crm.propostas.nota');
     Route::get('propostas/{id}/pdf', [PropostasController::class, 'pdf'])->name('app.crm.propostas.pdf');
+
+    Route::get('metas', [MetasController::class, 'index'])->name('app.crm.metas.index');
+    Route::put('metas', [MetasController::class, 'update'])->name('app.crm.metas.update');
+    Route::delete('metas/{id}', [MetasController::class, 'destroy'])->name('app.crm.metas.destroy');
 
     Route::get('configuracao', [ConfiguracaoController::class, 'show'])->name('app.crm.configuracao.show');
     Route::put('configuracao', [ConfiguracaoController::class, 'update'])->name('app.crm.configuracao.update');
