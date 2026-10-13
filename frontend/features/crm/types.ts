@@ -113,10 +113,87 @@ export interface RegistroDaTimeline {
   ocorreu_em: string;
 }
 
+export type UnidadeDaMeta = 'VALOR' | 'QUANTIDADE';
+
+export interface ProgressoDeMeta {
+  unidade: UnidadeDaMeta;
+  alvo: number;
+  realizado: number;
+  percentual: number;
+}
+
+export interface TotalDeNegocios {
+  quantidade: number;
+  valor_centavos: number;
+}
+
+export interface EtapaDoFunil {
+  id: string;
+  nome: string;
+  probabilidade: number;
+  quantidade: number;
+  valor_centavos: number;
+}
+
+export interface FunilDoRelatorio {
+  id: string;
+  nome: string;
+  etapas: EtapaDoFunil[];
+}
+
+export interface PrevisaoDoPeriodo extends TotalDeNegocios {
+  ponderada_centavos: number;
+}
+
+export interface MotivoDoRelatorio extends TotalDeNegocios {
+  motivo_id: string | null;
+  nome: string;
+}
+
+export interface VendedorDoRelatorio {
+  usuario_id: string;
+  nome: string;
+  abertos: TotalDeNegocios;
+  ganhos: TotalDeNegocios;
+  perdidos: TotalDeNegocios;
+  meta: ProgressoDeMeta | null;
+}
+
+export interface PropostasDoRelatorio {
+  enviadas: number;
+  aceitas: number;
+  recusadas: number;
+  valor_aceito_centavos: number;
+  taxa_de_aceite: number | null;
+}
+
+export interface RelatorioComercial {
+  periodo: { de: string; ate: string };
+  resumo: { abertos: TotalDeNegocios; ganhos: TotalDeNegocios; perdidos: TotalDeNegocios; taxa_de_conversao: number | null };
+  funil: FunilDoRelatorio | null;
+  previsao: { no_periodo: PrevisaoDoPeriodo; sem_previsao: TotalDeNegocios };
+  motivos_de_perda: MotivoDoRelatorio[];
+  vendedores: VendedorDoRelatorio[] | null;
+  propostas: PropostasDoRelatorio;
+  faturado_centavos: number | null;
+}
+
+export interface MetaDoVendedor {
+  id: string;
+  usuario_id: string;
+  usuario_nome: string | null;
+  mes: string;
+  unidade: UnidadeDaMeta;
+  alvo: number;
+}
+
 export interface ResumoDoCrm {
   hoje: number;
   atrasadas: number;
   parados: number;
+  funil: FunilDoRelatorio | null;
+  previsao_do_mes: PrevisaoDoPeriodo;
+  meta_do_mes: ProgressoDeMeta | null;
 }
 
 export interface NovaAtividadePayload {

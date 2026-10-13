@@ -16,14 +16,14 @@ function renderizar() {
 
 describe('EmblemaDeAtrasadas', () => {
   it('mostra a quantidade de atividades atrasadas', async () => {
-    vi.mocked(crmApi.resumo).mockResolvedValue({ data: { hoje: 0, atrasadas: 3, parados: 0 } });
+    vi.mocked(crmApi.resumo).mockResolvedValue({ data: { hoje: 0, atrasadas: 3, parados: 0, funil: null, previsao_do_mes: { quantidade: 0, valor_centavos: 0, ponderada_centavos: 0 }, meta_do_mes: null } });
     renderizar();
 
     expect(await screen.findByLabelText('3 atividades atrasadas')).toHaveTextContent('3');
   });
 
   it('não mostra nada sem atrasadas', async () => {
-    vi.mocked(crmApi.resumo).mockResolvedValue({ data: { hoje: 1, atrasadas: 0, parados: 0 } });
+    vi.mocked(crmApi.resumo).mockResolvedValue({ data: { hoje: 1, atrasadas: 0, parados: 0, funil: null, previsao_do_mes: { quantidade: 0, valor_centavos: 0, ponderada_centavos: 0 }, meta_do_mes: null } });
     const { container } = renderizar();
 
     await vi.waitFor(() => expect(crmApi.resumo).toHaveBeenCalled());

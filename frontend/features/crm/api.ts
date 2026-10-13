@@ -1,7 +1,8 @@
 import { api } from '@/lib/api';
 import type {
-  Atividade, ConfiguracaoDoCrm, Etapa, Funil, ItemEntrada, MotivoDePerda, Negocio, NovaAtividadePayload,
-  NovaPropostaPayload, NovoNegocioPayload, Proposta, RegistroDaTimeline, ResumoDoCrm, StatusDoNegocio,
+  Atividade, ConfiguracaoDoCrm, Etapa, Funil, ItemEntrada, MetaDoVendedor, MotivoDePerda, Negocio, NovaAtividadePayload,
+  NovaPropostaPayload, NovoNegocioPayload, Proposta, RegistroDaTimeline, RelatorioComercial, ResumoDoCrm, StatusDoNegocio,
+  UnidadeDaMeta,
 } from './types';
 
 export const QUERY_KEY_CRM = ['crm'] as const;
@@ -64,6 +65,16 @@ export const crmApi = {
     return api<{ data: Atividade[] }>(`${BASE}/agenda?${q.toString()}`);
   },
   resumo: () => api<{ data: ResumoDoCrm }>(`${BASE}/resumo`),
+  relatorio: (p: { de: string; ate: string; vendedor_id?: string; funil_id?: string }) => {
+    const q = new URLSearchParams({ de: p.de, ate: p.ate });
+    if (p.vendedor_id) q.set('vendedor_id', p.vendedor_id);
+    if (p.funil_id) q.set('funil_id', p.funil_id);
+    return api<{ data: RelatorioComercial }>(`${BASE}/relatorios?${q.toString()}`);
+  },
+  metas: (mes: string) => api<{ data: MetaDoVendedor[] }>(`${BASE}/metas?mes=${mes}`),
+  definirMeta: (dados: { usuario_id: string; mes: string; unidade: UnidadeDaMeta; alvo: number }) =>
+    api<{ data: MetaDoVendedor }>(`${BASE}/metas`, { method: 'PUT', body: json(dados) }),
+  removerMeta: (id: string) => api<void>(`${BASE}/metas/${id}`, { method: 'DELETE' }),
   criarAtividade: (dados: NovaAtividadePayload) =>
     api<{ data: Atividade }>(`${BASE}/atividades`, { method: 'POST', body: json(dados) }),
   editarAtividade: (id: string, dados: Partial<Omit<NovaAtividadePayload, 'cliente_id' | 'negocio_id'>>) =>

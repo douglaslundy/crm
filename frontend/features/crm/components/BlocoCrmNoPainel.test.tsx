@@ -19,7 +19,7 @@ describe('BlocoCrmNoPainel', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('mostra hoje, atrasadas e parados com links', async () => {
-    vi.mocked(crmApi.resumo).mockResolvedValue({ data: { hoje: 2, atrasadas: 1, parados: 3 } });
+    vi.mocked(crmApi.resumo).mockResolvedValue({ data: { hoje: 2, atrasadas: 1, parados: 3, funil: null, previsao_do_mes: { quantidade: 0, valor_centavos: 0, ponderada_centavos: 0 }, meta_do_mes: null } });
     renderizar();
 
     expect(await screen.findByRole('link', { name: /hoje/i })).toHaveAttribute('href', '/crm/agenda');
