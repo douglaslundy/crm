@@ -14,6 +14,7 @@ final class ApresentadorDeNegocios
     public function __construct(
         private readonly ConsultaDeClientes $clientes,
         private readonly DiretorioDeUsuarios $usuarios,
+        private readonly ConsultorDeParados $parados,
     ) {}
 
     /**
@@ -26,7 +27,9 @@ final class ApresentadorDeNegocios
         $clientes = $this->clientes->resumos(array_values(array_unique(array_map(fn (Negocio $n): string => $n->cliente_id, $lista))));
         $nomes = $this->usuarios->nomes(array_values(array_unique(array_map(fn (Negocio $n): string => $n->responsavel_id, $lista))));
 
-        return array_map(function (Negocio $n) use ($clientes, $nomes): array {
+        $situacao = $this->parados->situacao($lista);
+
+        return array_map(function (Negocio $n) use ($clientes, $nomes, $situacao): array {
             $cliente = $clientes[$n->cliente_id] ?? null;
 
             return [
@@ -49,6 +52,8 @@ final class ApresentadorDeNegocios
                 'motivo_de_perda_id' => $n->motivo_de_perda_id,
                 'observacao_da_perda' => $n->observacao_da_perda,
                 'fechado_em' => $n->fechado_em?->toIso8601String(),
+                'parado' => $situacao[$n->id]['parado'] ?? false,
+                'dias_parado' => $situacao[$n->id]['dias'] ?? null,
                 'itens' => $n->itens->map(fn ($i): array => [
                     'id' => $i->id,
                     'tipo' => $i->tipo->value,

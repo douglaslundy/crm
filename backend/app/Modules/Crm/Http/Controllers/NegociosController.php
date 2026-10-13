@@ -41,6 +41,7 @@ final class NegociosController
             'funil_id' => ['nullable', 'uuid'],
             'responsavel_id' => ['nullable', 'uuid'],
             'cliente_id' => ['nullable', 'uuid'],
+            'parado' => ['nullable', 'boolean'],
         ]);
 
         $status = StatusDoNegocio::tryFrom($request->string('status', 'ABERTO')->toString()) ?? StatusDoNegocio::Aberto;
@@ -56,7 +57,12 @@ final class NegociosController
             ? $consulta->orderBy('posicao_na_etapa')->orderBy('id')
             : $consulta->orderByDesc('fechado_em')->orderBy('id');
 
-        return response()->json(['data' => $this->apresentador->apresentar($consulta->get())]);
+        $lista = $this->apresentador->apresentar($consulta->get());
+        if ($request->boolean('parado')) {
+            $lista = array_values(array_filter($lista, fn (array $n): bool => $n['parado'] === true));
+        }
+
+        return response()->json(['data' => $lista]);
     }
 
     public function show(Request $request, string $id): JsonResponse
