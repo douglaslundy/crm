@@ -6,6 +6,8 @@ namespace Tests\Feature\Crm;
 
 use App\Modules\Crm\Application\Actions\AceitarProposta;
 use App\Modules\Crm\Application\Actions\CancelarProposta;
+use App\Modules\Crm\Application\Actions\CriarProposta;
+use App\Modules\Crm\Application\Actions\EnviarProposta;
 use App\Modules\Crm\Application\Actions\GanharNegocio;
 use App\Modules\Crm\Application\Actions\RecusarProposta;
 use App\Modules\Crm\Application\ResolvedorDePropostaPublica;
@@ -23,6 +25,7 @@ use App\Modules\Tenancy\Domain\Models\Tenant;
 use App\Modules\Tenancy\Domain\TenantContext;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Tests\Support\ComCrm;
 use Tests\Support\ComPropostas;
 use Tests\TestCase;
@@ -153,10 +156,10 @@ class AceiteDePropostaTest extends TestCase
         $dono = Usuario::factory()->for($outro)->create();
         app(TenantContext::class)->set($outro->id);
         $negocioB = Negocio::factory()->create(['responsavel_id' => $dono->id]);
-        $negocioB->itens()->create(['tipo' => 'PRODUTO', 'item_id' => (string) \Illuminate\Support\Str::uuid(), 'descricao' => 'B', 'quantidade' => 1, 'valor_unitario_centavos' => 100]);
-        $b = app(\App\Modules\Crm\Application\Actions\EnviarProposta::class)->executar(
+        $negocioB->itens()->create(['tipo' => 'PRODUTO', 'item_id' => (string) Str::uuid(), 'descricao' => 'B', 'quantidade' => 1, 'valor_unitario_centavos' => 100]);
+        $b = app(EnviarProposta::class)->executar(
             $dono,
-            app(\App\Modules\Crm\Application\Actions\CriarProposta::class)->executar($dono, $negocioB),
+            app(CriarProposta::class)->executar($dono, $negocioB),
         );
         app(TenantContext::class)->clear();
 

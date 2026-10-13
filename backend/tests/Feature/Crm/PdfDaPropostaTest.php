@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Crm;
 
+use App\Modules\Crm\Application\Actions\CriarProposta;
 use App\Modules\Crm\Application\ApresentadorDePropostas;
 use App\Modules\Crm\Application\GeradorDePdfDaProposta;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -55,7 +56,7 @@ class PdfDaPropostaTest extends TestCase
 
     public function test_rascunho_nao_tem_link_mesmo_pedido(): void
     {
-        $rascunho = app(\App\Modules\Crm\Application\Actions\CriarProposta::class)->executar($this->admin, $this->negocioComItens());
+        $rascunho = app(CriarProposta::class)->executar($this->admin, $this->negocioComItens());
 
         $this->assertNull(app(ApresentadorDePropostas::class)->apresentar($rascunho, true)['link']);
     }
