@@ -85,6 +85,26 @@ export function useExcluirAtividade() {
   });
 }
 
+/** `mailto:` navega na própria aba (abre o cliente de e-mail); `wa.me` abre outra aba. Janela bloqueada vira botão. */
+function abrirCanal(url: string, rotulo: string) {
+  if (url.startsWith('mailto:')) {
+    window.location.href = url;
+    return;
+  }
+
+  const janela = window.open(url, '_blank');
+  if (janela) {
+    janela.opener = null;
+    return;
+  }
+
+  // O navegador bloqueou o pop-up (a abertura aconteceu depois de uma chamada assíncrona): o clique no
+  // botão do aviso é um gesto do usuário e abre a janela.
+  toast.info('O navegador bloqueou a janela.', {
+    action: { label: `Abrir ${rotulo}`, onClick: () => void window.open(url, '_blank') },
+  });
+}
+
 /** Registra o contato e só então abre o canal; o servidor bloqueia dado inválido com mensagem acionável. */
 export function useContato() {
   const invalidar = useInvalidarAtividades();
@@ -92,7 +112,7 @@ export function useContato() {
     mutationFn: ({ canal, clienteId, negocioId }: { canal: 'WHATSAPP' | 'EMAIL'; clienteId?: string; negocioId?: string }) =>
       crmApi.registrarContato(canal, { cliente_id: clienteId, negocio_id: negocioId }),
     onSuccess: ({ data }) => {
-      window.open(data.url, '_blank', 'noopener,noreferrer');
+      abrirCanal(data.url, data.atividade.tipo === 'EMAIL' ? 'e-mail' : 'WhatsApp');
       void invalidar();
     },
     onError: (erro) => toast.error(mensagem(erro, 'Não foi possível registrar o contato.')),

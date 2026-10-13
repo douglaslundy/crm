@@ -7,7 +7,10 @@ import { crmApi } from '../api';
 import { BotoesDeContato } from './BotoesDeContato';
 
 const erroToast = vi.hoisted(() => vi.fn());
-vi.mock('sonner', () => ({ toast: { success: vi.fn(), error: (m: string) => erroToast(m) } }));
+const infoToast = vi.hoisted(() => vi.fn());
+vi.mock('sonner', () => ({
+  toast: { success: vi.fn(), error: (m: string) => erroToast(m), info: (m: string, o: unknown) => infoToast(m, o) },
+}));
 vi.mock('../api', async (original) => {
   const real = await original<typeof import('../api')>();
   return { ...real, crmApi: { ...real.crmApi, registrarContato: vi.fn() } };
@@ -32,7 +35,23 @@ describe('BotoesDeContato', () => {
     await userEvent.click(screen.getByRole('button', { name: /whatsapp/i }));
 
     expect(crmApi.registrarContato).toHaveBeenCalledWith('WHATSAPP', { cliente_id: 'c1', negocio_id: undefined });
-    await vi.waitFor(() => expect(abrir).toHaveBeenCalledWith('https://wa.me/5511999990000', '_blank', 'noopener,noreferrer'));
+    await vi.waitFor(() => expect(abrir).toHaveBeenCalledWith('https://wa.me/5511999990000', '_blank'));
+  });
+
+  it('se o navegador bloquear a janela, oferece um botão para abrir o canal', async () => {
+    const abrir = vi.fn(() => null);
+    vi.stubGlobal('open', abrir);
+    vi.mocked(crmApi.registrarContato).mockResolvedValue({ data: { url: 'https://wa.me/5511999990000', atividade: {} as never } });
+    renderizar(true);
+
+    await userEvent.click(screen.getByRole('button', { name: /whatsapp/i }));
+
+    await vi.waitFor(() => expect(infoToast).toHaveBeenCalled());
+    const opcoes = infoToast.mock.calls[0][1] as { action: { label: string; onClick: () => void } };
+    expect(opcoes.action.label).toBe('Abrir WhatsApp');
+    abrir.mockClear();
+    opcoes.action.onClick();
+    expect(abrir).toHaveBeenCalledWith('https://wa.me/5511999990000', '_blank');
   });
 
   it('mostra a mensagem do servidor quando o cadastro está incompleto e não abre o canal', async () => {

@@ -31,7 +31,7 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
   - [x] **F6c2 OpenAPI 3.1 e guia do integrador** (7 de 7, concluída em 2026-10-08): `docs/api/openapi.yaml` (33 operações + webhooks), guia do integrador com cURL/PHP/JS, página `/docs/api`, testes de cobertura e de conformidade.
 - [ ] **F7 CRM** (decomposta em quatro partes, cada uma com spec, plano e execução próprios):
   - [x] **F7a Funis e negócios** (12 de 12, concluída em 2026-10-13): módulo `Crm`, funis e etapas, motivos de perda, negócios com itens, ganhar/perder, API `api/app/crm/*`, kanban, visibilidade por vendedor.
-  - [ ] **F7b Atividades e timeline:** atividades e agenda, timeline do cliente, alerta de negócio parado, WhatsApp e e-mail em 1 clique.
+  - [x] **F7b Atividades e timeline** (11 de 11, concluída em 2026-10-13): atividades e agenda, timeline do cliente, negócio parado calculado na leitura, WhatsApp e e-mail em 1 clique.
   - [ ] **F7c Propostas:** PDF, link público com aceite, aceite → ganho → emissão da nota em 1 clique.
   - [ ] **F7d Relatórios e metas:** relatórios comerciais, metas por vendedor, dashboard CRM.
 - [ ] **F8 Go-live:** auditoria fiscal, carga, backup e restauração, piloto em produção.
@@ -185,3 +185,16 @@ Achados menores adiados e uma decisão de produto parcada durante a revisão das
 - [ ] Lista de inutilizações sem filtros e sem paginação no frontend (a API pagina de 25 em 25).
 - [ ] `NfePhpEmissor::cancelar` e `inutilizar` sem teste automatizado (precisam de SEFAZ).
 - [ ] Conferência visual de `/notas/{id}` (cancelar) e `/notas/inutilizar` (temas e celular), não feita.
+
+## Pendências da F7b (2026-10-13)
+- [ ] **Concorrência não verificada:** `lockForUpdate` em concluir/reabrir/atualizar atividade é no-op no SQLite dos testes; só vale em PostgreSQL (staging).
+- [ ] **Fumaça no navegador não feita:** agenda, timeline do cliente, contato em 1 clique (pop-up e `mailto:` em Safari/Chrome reais), selo e filtro "Só parados", bloco do painel, contador do menu.
+- [ ] **Perda de registro na timeline:** os eventos `Negocio*` saem depois do commit; se o listener falhar, o registro daquela ação é perdido (só vai para o log). Risco assumido na spec §4; considerar um reconciliador ou gravar na mesma transação.
+- [ ] `POST /clientes/{id}/notas` e `POST /contatos` com cliente ou negócio fora da visibilidade devolvem 422 (`CLIENTE_INVALIDO`/`NEGOCIO_INVALIDO`), não 404 como as rotas de leitura e de atividade existente.
+- [ ] Papel Leitura e Fiscal passam por `findOrFail` antes da política em `concluir`/`reabrir`/`excluir`: um id inexistente dá 404 antes do 403.
+- [ ] `PaginaDoClienteNoCrm` não tem o nome do cliente quando ele não tem atividade (título "Cliente"): falta um contrato `ConsultaDeClientes` que sirva a página (já há `resumo()`), ou um endpoint `GET /clientes/{id}`.
+- [ ] Agenda: `de`/`ate` do frontend usam a data local do navegador, o servidor usa o fuso SP; diverge para quem está fora de SP. Sem paginação (limite 200 em `/atividades`, agenda sem limite).
+- [ ] Atividade de negócio ganho/perdido continua aberta na agenda; decidir se fecha ou some quando o negócio fecha.
+- [ ] Reatribuir atividade a outro usuário só para PROPRIETARIO/ADMIN (vendedor não atribui a colega); revisar com o uso real.
+- [ ] Editar atividade (título, data, responsável) não tem tela: só a API (`PUT /atividades/{id}`) e o hook `crmApi.editarAtividade`; a UI só cria, conclui e reabre. Excluir também não tem botão (`useExcluirAtividade` sem uso).
+- [ ] Sem teste de isolamento de tenant dedicado para `GET /agenda` e `GET /resumo` (escopam por `visiveisPara`, que é por tenant via Global Scope).

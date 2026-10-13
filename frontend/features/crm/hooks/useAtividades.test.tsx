@@ -41,7 +41,7 @@ describe('hooks de atividades', () => {
 
     result.current.mutate({ canal: 'WHATSAPP', clienteId: 'c1' });
 
-    await waitFor(() => expect(abrir).toHaveBeenCalledWith('https://wa.me/5511999990000', '_blank', 'noopener,noreferrer'));
+    await waitFor(() => expect(abrir).toHaveBeenCalledWith('https://wa.me/5511999990000', '_blank'));
     expect(crmApi.registrarContato).toHaveBeenCalledWith('WHATSAPP', { cliente_id: 'c1', negocio_id: undefined });
   });
 });
