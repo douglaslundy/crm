@@ -74,11 +74,17 @@ class Negocio extends Model
      */
     public function scopeVisiveisPara(Builder $query, Usuario $usuario): Builder
     {
-        if ($usuario->papel === Papel::Vendedor && ConfiguracaoDoCrm::vendedorVeSoOsSeus()) {
+        if (self::restritoParaVendedor($usuario)) {
             $query->where('responsavel_id', $usuario->id);
         }
 
         return $query;
+    }
+
+    /** Vendedor com o interruptor "vê só os seus" ligado enxerga só o que é dele (spec F7a §5). */
+    public static function restritoParaVendedor(Usuario $usuario): bool
+    {
+        return $usuario->papel === Papel::Vendedor && ConfiguracaoDoCrm::vendedorVeSoOsSeus();
     }
 
     public function garantirAberto(): void

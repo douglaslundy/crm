@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $posicao
  * @property int $probabilidade
  * @property bool $ativa
+ * @property ?int $dias_para_parado
  */
 class Etapa extends Model
 {
@@ -30,12 +31,12 @@ class Etapa extends Model
 
     protected $table = 'crm_etapas';
 
-    protected $fillable = ['funil_id', 'nome', 'posicao', 'probabilidade', 'ativa'];
+    protected $fillable = ['funil_id', 'nome', 'posicao', 'probabilidade', 'ativa', 'dias_para_parado'];
 
     /** @return array<string, string> */
     protected function casts(): array
     {
-        return ['posicao' => 'integer', 'probabilidade' => 'integer', 'ativa' => 'boolean'];
+        return ['posicao' => 'integer', 'probabilidade' => 'integer', 'ativa' => 'boolean', 'dias_para_parado' => 'integer'];
     }
 
     /** @return BelongsTo<Funil, $this> */

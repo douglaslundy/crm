@@ -21,6 +21,7 @@ final class EtapaResource extends JsonResource
             'posicao' => $this->posicao,
             'probabilidade' => $this->probabilidade,
             'ativa' => $this->ativa,
+            'dias_para_parado' => $this->dias_para_parado,
         ];
     }
 }

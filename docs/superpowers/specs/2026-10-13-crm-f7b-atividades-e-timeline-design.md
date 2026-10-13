@@ -34,6 +34,7 @@ O vendedor registra e agenda contatos (ligação, reunião, e-mail, WhatsApp, ta
 - `id` (uuid), `tenant_id`, `cliente_id`, `negocio_id` (nulável)
 - `tipo`: NOTA, ATIVIDADE_CONCLUIDA, NEGOCIO_CRIADO, NEGOCIO_MOVIDO, NEGOCIO_GANHO, NEGOCIO_PERDIDO
 - `texto`, `dados` (json: nomes das etapas de/para, tipo e título da atividade, motivo da perda; snapshot, sobrevive à edição da origem)
+- `atividade_id` (nulável; liga o registro `ATIVIDADE_CONCLUIDA` à atividade, para a reabertura)
 - `autor_id`, `ocorreu_em`
 - Índice `(tenant_id, cliente_id, ocorreu_em desc, id)`
 
@@ -52,7 +53,7 @@ Mudança de schema só por migration.
 
 ## 5. Parado (D3)
 
-Negócio aberto está parado quando `max(criado_em, última NEGOCIO_MOVIDO, última atividade concluída do negócio)` é anterior a `hoje (SP) − dias_para_parado` da etapa atual. Etapa com `dias_para_parado` nulo nunca para. Ganho e perdido nunca estão parados.
+Negócio aberto está parado quando `max(criado_em, última NEGOCIO_MOVIDO, última atividade concluída do negócio)` tem `dias_parado >= dias_para_parado` da etapa atual, com `dias_parado` contado em dias de calendário no fuso SP. Etapa com `dias_para_parado` nulo nunca para. Ganho e perdido nunca estão parados.
 
 O `ApresentadorDeNegocios` devolve `parado` (bool) e `dias_parado` (int ou null). `GET /negocios` ganha `?parado=1`. A consulta usa subquery agregada, sem N+1; o kanban continua carregando os abertos do funil.
 

@@ -15,7 +15,7 @@ final class AtualizarEtapa
 {
     public function __construct(private readonly PoliticaDoCrm $politica) {}
 
-    /** @param array{nome?: string, probabilidade?: int, ativa?: bool} $dados */
+    /** @param array{nome?: string, probabilidade?: int, ativa?: bool, dias_para_parado?: ?int} $dados */
     public function executar(Usuario $autor, Etapa $etapa, array $dados): Etapa
     {
         $this->politica->garantirPodeConfigurar($autor);
@@ -29,7 +29,7 @@ final class AtualizarEtapa
             throw new RegraDoCrmException('Mova os negócios abertos antes de desativar a etapa.', 'ETAPA_COM_NEGOCIOS');
         }
 
-        $etapa->update(array_intersect_key($dados, ['nome' => 1, 'probabilidade' => 1, 'ativa' => 1]));
+        $etapa->update(array_intersect_key($dados, ['nome' => 1, 'probabilidade' => 1, 'ativa' => 1, 'dias_para_parado' => 1]));
 
         return $etapa;
     }

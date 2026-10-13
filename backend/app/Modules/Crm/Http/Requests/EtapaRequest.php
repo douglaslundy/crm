@@ -17,6 +17,7 @@ final class EtapaRequest extends FormRequest
             'nome' => [$criando ? 'required' : 'sometimes', 'string', 'min:1', 'max:100'],
             'probabilidade' => [$criando ? 'required' : 'sometimes', 'integer'],
             'ativa' => ['sometimes', 'boolean'],
+            'dias_para_parado' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:365'],
         ];
     }
 }
