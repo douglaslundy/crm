@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { Banner } from '@/components/ui/banner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAssinatura } from '@/features/assinatura/hooks/useAssinatura';
 import { useUsuario } from '@/features/auth/hooks/useUsuario';
 import { ApiError } from '@/lib/api';
 import { formatarCentavos, formatarData } from '@/lib/formatos';
@@ -17,6 +18,7 @@ import { EditorDeItens } from './EditorDeItens';
 import { AtividadesDoNegocio } from './AtividadesDoNegocio';
 import { BotoesDeContato } from './BotoesDeContato';
 import { PainelDePerda } from './PainelDePerda';
+import { PropostasDoNegocio } from './PropostasDoNegocio';
 import { SeloDeParado } from './SeloDeParado';
 
 const PAPEIS_QUE_ESCREVEM = ['PROPRIETARIO', 'ADMIN', 'VENDEDOR'];
@@ -27,6 +29,8 @@ export function DetalheDoNegocio({ id }: { id: string }) {
   const queryClient = useQueryClient();
   const { data: usuario } = useUsuario();
   const podeEscrever = Boolean(usuario && PAPEIS_QUE_ESCREVEM.includes(usuario.papel));
+  const { data: assinatura } = useAssinatura();
+  const temFiscal = assinatura?.plano?.modulos.some((m) => m === 'FISCAL_NFE' || m === 'FISCAL_NFSE') ?? false;
   const [perdendo, setPerdendo] = useState(false);
 
   const negocio = useQuery({ queryKey: [...QUERY_KEY_CRM, 'negocio', id], queryFn: async () => (await crmApi.negocio(id)).data });
@@ -88,6 +92,11 @@ export function DetalheDoNegocio({ id }: { id: string }) {
       <Card>
         <CardHeader><CardTitle>Itens</CardTitle></CardHeader>
         <CardContent><EditorDeItens negocio={n} podeEditar={podeEscrever} /></CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>Propostas</CardTitle></CardHeader>
+        <CardContent><PropostasDoNegocio negocio={n} podeEscrever={podeEscrever} temFiscal={temFiscal} /></CardContent>
       </Card>
 
       <Card>

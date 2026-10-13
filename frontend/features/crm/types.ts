@@ -99,7 +99,8 @@ export interface Atividade {
 }
 
 export type TipoDeRegistro =
-  | 'NOTA' | 'ATIVIDADE_CONCLUIDA' | 'NEGOCIO_CRIADO' | 'NEGOCIO_MOVIDO' | 'NEGOCIO_GANHO' | 'NEGOCIO_PERDIDO';
+  | 'NOTA' | 'ATIVIDADE_CONCLUIDA' | 'NEGOCIO_CRIADO' | 'NEGOCIO_MOVIDO' | 'NEGOCIO_GANHO' | 'NEGOCIO_PERDIDO'
+  | 'PROPOSTA_ENVIADA' | 'PROPOSTA_ACEITA' | 'PROPOSTA_RECUSADA' | 'PROPOSTA_NOTA_GERADA';
 
 export interface RegistroDaTimeline {
   id: string;
@@ -126,4 +127,58 @@ export interface NovaAtividadePayload {
   cliente_id?: string;
   negocio_id?: string;
   responsavel_id?: string;
+}
+
+export type StatusDaProposta = 'RASCUNHO' | 'ENVIADA' | 'ACEITA' | 'RECUSADA' | 'CANCELADA' | 'EXPIRADA';
+
+export interface ItemDaProposta {
+  tipo: TipoDeItem;
+  descricao: string;
+  quantidade: number;
+  valor_unitario_centavos: number;
+  total_centavos: number;
+}
+
+export interface Proposta {
+  id: string;
+  numero: number;
+  status: StatusDaProposta;
+  negocio_id: string;
+  cliente_id: string;
+  validade_dias: number;
+  validade_em: string | null;
+  desconto_centavos: number;
+  subtotal_centavos: number;
+  total_centavos: number;
+  observacoes: string | null;
+  enviada_em: string | null;
+  respondida_em: string | null;
+  aceite_nome: string | null;
+  motivo_recusa: string | null;
+  notas_ids: string[];
+  itens: ItemDaProposta[];
+  /** Só vem para o vendedor, e só depois de enviada. */
+  link?: string | null;
+}
+
+export interface NovaPropostaPayload {
+  validade_dias?: number;
+  desconto_centavos?: number;
+  observacoes?: string | null;
+}
+
+/** Visão do cliente no link público: nenhum id interno. */
+export interface PropostaPublica {
+  numero: number;
+  status: StatusDaProposta;
+  empresa: { nome: string | null; cnpj: string | null };
+  cliente: { nome: string | null };
+  validade_em: string | null;
+  itens: ItemDaProposta[];
+  subtotal_centavos: number;
+  desconto_centavos: number;
+  total_centavos: number;
+  observacoes: string | null;
+  aceite_nome: string | null;
+  respondida_em: string | null;
 }

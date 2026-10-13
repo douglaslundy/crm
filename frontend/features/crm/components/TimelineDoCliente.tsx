@@ -15,6 +15,10 @@ const ROTULO: Record<TipoDeRegistro, string> = {
   NEGOCIO_MOVIDO: 'Negócio',
   NEGOCIO_GANHO: 'Negócio',
   NEGOCIO_PERDIDO: 'Negócio',
+  PROPOSTA_ENVIADA: 'Proposta',
+  PROPOSTA_ACEITA: 'Proposta',
+  PROPOSTA_RECUSADA: 'Proposta',
+  PROPOSTA_NOTA_GERADA: 'Proposta',
 };
 
 function quando(iso: string): string {

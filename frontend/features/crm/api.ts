@@ -1,13 +1,18 @@
 import { api } from '@/lib/api';
 import type {
   Atividade, ConfiguracaoDoCrm, Etapa, Funil, ItemEntrada, MotivoDePerda, Negocio, NovaAtividadePayload,
-  NovoNegocioPayload, RegistroDaTimeline, ResumoDoCrm, StatusDoNegocio,
+  NovaPropostaPayload, NovoNegocioPayload, Proposta, RegistroDaTimeline, ResumoDoCrm, StatusDoNegocio,
 } from './types';
 
 export const QUERY_KEY_CRM = ['crm'] as const;
 
 const BASE = '/api/app/crm';
 const json = (corpo: unknown) => JSON.stringify(corpo);
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000';
+
+/** O PDF abre em outra aba: a sessão vai pelo cookie. */
+export const urlDoPdfDaProposta = (id: string) => `${API_URL}${BASE}/propostas/${id}/pdf`;
 
 export const crmApi = {
   funis: () => api<{ data: Funil[] }>(`${BASE}/funis`),
@@ -74,4 +79,11 @@ export const crmApi = {
     ),
   criarNota: (clienteId: string, texto: string) =>
     api<{ data: RegistroDaTimeline }>(`${BASE}/clientes/${clienteId}/notas`, { method: 'POST', body: json({ texto }) }),
+
+  propostas: (negocioId: string) => api<{ data: Proposta[] }>(`${BASE}/negocios/${negocioId}/propostas`),
+  criarProposta: (negocioId: string, dados: NovaPropostaPayload) =>
+    api<{ data: Proposta }>(`${BASE}/negocios/${negocioId}/propostas`, { method: 'POST', body: json(dados) }),
+  enviarProposta: (id: string) => api<{ data: Proposta }>(`${BASE}/propostas/${id}/enviar`, { method: 'POST' }),
+  cancelarProposta: (id: string) => api<{ data: Proposta }>(`${BASE}/propostas/${id}/cancelar`, { method: 'POST' }),
+  gerarNotaDaProposta: (id: string) => api<{ data: Proposta }>(`${BASE}/propostas/${id}/nota`, { method: 'POST' }),
 };
