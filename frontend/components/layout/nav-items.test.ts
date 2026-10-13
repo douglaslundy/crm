@@ -18,4 +18,20 @@ describe('nav-items', () => {
     expect(itensVisiveis([planos, restrito], 'VENDEDOR')).toEqual([planos]);
     expect(itensVisiveis([planos, restrito], undefined)).toEqual([planos]);
   });
+
+  describe('item de módulo', () => {
+    const crm: NavItem = { href: '/crm/negocios', label: 'CRM', icon: LayoutDashboard, papeis: ['VENDEDOR'], modulo: 'CRM' };
+
+    it('esconde item de módulo ausente do plano', () => {
+      expect(itensVisiveis([crm], 'VENDEDOR', ['FISCAL_NFE'])).toEqual([]);
+    });
+
+    it('mostra com o módulo no plano e papel permitido', () => {
+      expect(itensVisiveis([crm], 'VENDEDOR', ['CRM'])).toEqual([crm]);
+    });
+
+    it('esconde enquanto a lista de módulos não carregou', () => {
+      expect(itensVisiveis([crm], 'VENDEDOR', undefined)).toEqual([]);
+    });
+  });
 });

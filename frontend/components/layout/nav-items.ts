@@ -1,4 +1,5 @@
-import { AlertTriangle, Building2, Contact, CreditCard, FileText, Gauge, KeyRound, Landmark, LayoutDashboard, Package, Users, Webhook, Wrench, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, Briefcase, Building2, Contact, CreditCard, FileText, Gauge, KeyRound, Landmark, LayoutDashboard, Package, Settings2, Users, Webhook, Wrench, type LucideIcon } from 'lucide-react';
+import type { Modulo } from '@/features/assinatura/types';
 import type { Papel } from '@/features/auth/types';
 
 export interface NavItem {
@@ -9,6 +10,8 @@ export interface NavItem {
   exato?: boolean;
   /** Sem papeis = visível para todos da área. */
   papeis?: Papel[];
+  /** Só aparece se o plano da empresa tiver o módulo. */
+  modulo?: Modulo;
 }
 
 /** Área da empresa. Cada fase acrescenta aqui os itens do seu módulo. */
@@ -17,6 +20,8 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/produtos', label: 'Produtos', icon: Package, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
   { href: '/servicos', label: 'Serviços', icon: Wrench, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
   { href: '/clientes', label: 'Clientes', icon: Contact, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
+  { href: '/crm/negocios', label: 'CRM', icon: Briefcase, papeis: ['PROPRIETARIO', 'ADMIN', 'VENDEDOR', 'LEITURA'], modulo: 'CRM' },
+  { href: '/configuracoes/crm', label: 'Config. do CRM', icon: Settings2, papeis: ['PROPRIETARIO', 'ADMIN'], modulo: 'CRM' },
   { href: '/notas', label: 'Notas', icon: FileText, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
   { href: '/pendencias-fiscais', label: 'Pendências fiscais', icon: AlertTriangle, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
   { href: '/configuracoes/fiscal', label: 'Fiscal', icon: Landmark, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL'] },
@@ -36,6 +41,10 @@ export function estaAtivo(item: NavItem, pathname: string): boolean {
   return item.exato ? pathname === item.href : pathname.startsWith(item.href);
 }
 
-export function itensVisiveis(itens: NavItem[], papel: Papel | undefined): NavItem[] {
-  return itens.filter((item) => !item.papeis || (papel !== undefined && item.papeis.includes(papel)));
+export function itensVisiveis(itens: NavItem[], papel: Papel | undefined, modulos?: Modulo[]): NavItem[] {
+  return itens.filter((item) => {
+    if (item.papeis && (papel === undefined || !item.papeis.includes(papel))) return false;
+    if (item.modulo && !(modulos ?? []).includes(item.modulo)) return false;
+    return true;
+  });
 }

@@ -3,6 +3,7 @@
 import { Receipt } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAssinatura } from '@/features/assinatura/hooks/useAssinatura';
 import { useUsuario } from '@/features/auth/hooks/useUsuario';
 import { cn } from '@/lib/utils';
 import { estaAtivo, itensVisiveis, type NavItem } from './nav-items';
@@ -18,7 +19,8 @@ interface Props {
 export function MenuDeNavegacao({ itens, rotulo, aoNavegar }: Props) {
   const pathname = usePathname();
   const { data: usuario } = useUsuario();
-  const visiveis = itensVisiveis(itens, usuario?.papel);
+  const { data: assinatura } = useAssinatura();
+  const visiveis = itensVisiveis(itens, usuario?.papel, assinatura?.plano?.modulos);
 
   return (
     <div className="flex h-full flex-col">
