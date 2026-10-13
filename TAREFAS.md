@@ -29,11 +29,11 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
   - [x] **F6b Notas pela API** (7 de 7, concluída em 2026-10-08): emissão com `Idempotency-Key` e itens inline, consultas, pdf/xml, cancelar e inutilizar; chave `test_`⇔homologação.
   - [x] **F6c1 Webhooks de saída** (9 de 9, concluída em 2026-10-08): eventos de nota assinados, retentativas, log, reenvio, teste, API v1 e tela.
   - [x] **F6c2 OpenAPI 3.1 e guia do integrador** (7 de 7, concluída em 2026-10-08): `docs/api/openapi.yaml` (33 operações + webhooks), guia do integrador com cURL/PHP/JS, página `/docs/api`, testes de cobertura e de conformidade.
-- [ ] **F7 CRM** (decomposta em quatro partes, cada uma com spec, plano e execução próprios):
+- [x] **F7 CRM** (concluída em 2026-10-13; decomposta em quatro partes, cada uma com spec, plano e execução próprios):
   - [x] **F7a Funis e negócios** (12 de 12, concluída em 2026-10-13): módulo `Crm`, funis e etapas, motivos de perda, negócios com itens, ganhar/perder, API `api/app/crm/*`, kanban, visibilidade por vendedor.
   - [x] **F7b Atividades e timeline** (11 de 11, concluída em 2026-10-13): atividades e agenda, timeline do cliente, negócio parado calculado na leitura, WhatsApp e e-mail em 1 clique.
   - [x] **F7c Propostas** (10 de 10, concluída em 2026-10-13): PDF, link público com aceite, aceite → ganho → rascunho de nota em 1 clique.
-  - [ ] **F7d Relatórios e metas:** relatórios comerciais, metas por vendedor, dashboard CRM.
+  - [x] **F7d Relatórios e metas** (10 de 10, concluída em 2026-10-13): relatório comercial (ganhos, perdas, conversão, funil, previsão, motivos, vendedores, propostas, faturado), metas mensais por vendedor, página `/crm/relatorios` e previsão/meta no painel.
 - [ ] **F8 Go-live:** auditoria fiscal, carga, backup e restauração, piloto em produção.
 
 ## Pendências herdadas da revisão da F0 (resolver no início da F1)
@@ -208,3 +208,14 @@ Achados menores adiados e uma decisão de produto parcada durante a revisão das
 - [ ] Página pública sem aviso de privacidade; `aceite_ip` e `aceite_nome` são gravados e devem constar na política de privacidade.
 - [ ] Sem teste de renderização da página pública contra a API real (só mocks); sem limite por token além do `throttle:60,1` por IP.
 - [ ] Proposta de negócio ganho/perdido/cancelado: recusa e aceite dependem só do status da proposta (aceite de proposta de negócio perdido bloqueia por `NEGOCIO_FECHADO`; revisar a mensagem mostrada ao cliente).
+
+## Pendências da F7d (2026-10-13)
+- [ ] **Fumaça no navegador não feita:** `/crm/relatorios` (filtro de período, abas, gráfico do funil, metas) e o bloco do painel com previsão e meta.
+- [ ] **PostgreSQL não verificado:** `whereDate`, `COALESCE(SUM())` e `GROUP BY` só rodaram em SQLite; conferir no staging.
+- [ ] Sem histórico de etapas: não há conversão etapa a etapa nem tempo médio por etapa; o funil é uma foto de agora. Exige tabela de passagens a partir de agora.
+- [ ] CSV do CRM (importação e exportação de negócios e clientes do funil) e exportação dos relatórios ficaram de fora.
+- [ ] Meta só por valor ou quantidade de ganhos; sem meta de atividades. Metas de meses passados e futuros são editáveis, sem trava.
+- [ ] Previsão ignora negócio aberto com data de previsão vencida (antes do período); sem aviso de "previsão atrasada".
+- [ ] Sem cache dos agregados: cada abertura da página roda as consultas; avaliar com volume real.
+- [ ] `ResumoDoCrm` recalcula funil, previsão e meta a cada 60 s por usuário (`refetchInterval` do bloco do painel).
+- [ ] Sem teste de renderização do gráfico (Recharts em jsdom); a tabela `sr-only` entrega os mesmos números.
