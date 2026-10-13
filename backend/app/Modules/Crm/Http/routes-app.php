@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
+use App\Modules\Crm\Http\Controllers\AtividadesController;
 use App\Modules\Crm\Http\Controllers\ConfiguracaoController;
+use App\Modules\Crm\Http\Controllers\ContatosController;
 use App\Modules\Crm\Http\Controllers\EtapasController;
 use App\Modules\Crm\Http\Controllers\FunisController;
 use App\Modules\Crm\Http\Controllers\MotivosDePerdaController;
 use App\Modules\Crm\Http\Controllers\NegociosController;
+use App\Modules\Crm\Http\Controllers\TimelineController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('empresa')->whereUuid(['id', 'funilId'])->group(function (): void {
@@ -29,6 +32,18 @@ Route::middleware('empresa')->whereUuid(['id', 'funilId'])->group(function (): v
     Route::post('negocios/{id}/mover', [NegociosController::class, 'mover'])->name('app.crm.negocios.mover');
     Route::post('negocios/{id}/ganhar', [NegociosController::class, 'ganhar'])->name('app.crm.negocios.ganhar');
     Route::post('negocios/{id}/perder', [NegociosController::class, 'perder'])->name('app.crm.negocios.perder');
+
+    Route::get('atividades', [AtividadesController::class, 'index'])->name('app.crm.atividades.index');
+    Route::post('atividades', [AtividadesController::class, 'store'])->name('app.crm.atividades.store');
+    Route::put('atividades/{id}', [AtividadesController::class, 'update'])->name('app.crm.atividades.update');
+    Route::delete('atividades/{id}', [AtividadesController::class, 'destroy'])->name('app.crm.atividades.destroy');
+    Route::post('atividades/{id}/concluir', [AtividadesController::class, 'concluir'])->name('app.crm.atividades.concluir');
+    Route::post('atividades/{id}/reabrir', [AtividadesController::class, 'reabrir'])->name('app.crm.atividades.reabrir');
+    Route::get('agenda', [AtividadesController::class, 'agenda'])->name('app.crm.agenda');
+    Route::get('resumo', [AtividadesController::class, 'resumo'])->name('app.crm.resumo');
+    Route::post('contatos', [ContatosController::class, 'store'])->name('app.crm.contatos.store');
+    Route::get('clientes/{id}/timeline', [TimelineController::class, 'index'])->name('app.crm.timeline.index');
+    Route::post('clientes/{id}/notas', [TimelineController::class, 'nota'])->name('app.crm.timeline.nota');
 
     Route::get('configuracao', [ConfiguracaoController::class, 'show'])->name('app.crm.configuracao.show');
     Route::put('configuracao', [ConfiguracaoController::class, 'update'])->name('app.crm.configuracao.update');
