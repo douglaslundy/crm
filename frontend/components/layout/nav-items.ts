@@ -1,4 +1,4 @@
-import { AlertTriangle, Briefcase, CalendarDays, Building2, Contact, CreditCard, FileText, Gauge, KeyRound, Landmark, LayoutDashboard, Package, Settings2, Users, Webhook, Wrench, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, BarChart3, Briefcase, CalendarDays, Building2, Contact, CreditCard, FileText, Gauge, KeyRound, Landmark, LayoutDashboard, Package, Settings2, Users, Webhook, Wrench, type LucideIcon } from 'lucide-react';
 import type { Modulo } from '@/features/assinatura/types';
 import type { Papel } from '@/features/auth/types';
 
@@ -24,6 +24,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/clientes', label: 'Clientes', icon: Contact, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
   { href: '/crm/negocios', label: 'CRM', icon: Briefcase, papeis: ['PROPRIETARIO', 'ADMIN', 'VENDEDOR', 'LEITURA'], modulo: 'CRM' },
   { href: '/crm/agenda', label: 'Agenda', icon: CalendarDays, papeis: ['PROPRIETARIO', 'ADMIN', 'VENDEDOR', 'LEITURA'], modulo: 'CRM', emblema: 'crm-atrasadas' },
+  { href: '/crm/relatorios', label: 'Relatórios', icon: BarChart3, papeis: ['PROPRIETARIO', 'ADMIN', 'VENDEDOR', 'LEITURA'], modulo: 'CRM' },
   { href: '/configuracoes/crm', label: 'Config. do CRM', icon: Settings2, papeis: ['PROPRIETARIO', 'ADMIN'], modulo: 'CRM' },
   { href: '/notas', label: 'Notas', icon: FileText, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
   { href: '/pendencias-fiscais', label: 'Pendências fiscais', icon: AlertTriangle, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
