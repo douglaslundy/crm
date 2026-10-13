@@ -2,6 +2,7 @@
 
 use App\Modules\Billing\Providers\BillingServiceProvider;
 use App\Modules\Catalog\Providers\CatalogServiceProvider;
+use App\Modules\Crm\Providers\CrmServiceProvider;
 use App\Modules\Customers\Providers\CustomersServiceProvider;
 use App\Modules\Fiscal\Providers\FiscalServiceProvider;
 use App\Modules\Identity\Providers\IdentityServiceProvider;
@@ -16,6 +17,7 @@ return [
     IdentityServiceProvider::class,
     CatalogServiceProvider::class,
     CustomersServiceProvider::class,
+    CrmServiceProvider::class,
     FiscalServiceProvider::class,
     BillingServiceProvider::class,
 ];
