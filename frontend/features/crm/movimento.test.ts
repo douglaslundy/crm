@@ -6,7 +6,7 @@ function n(id: string, etapa: string, posicao: number): Negocio {
   return {
     id, titulo: id, cliente: null, funil_id: 'f', etapa_id: etapa, responsavel: null, status: 'ABERTO',
     valor_centavos: 0, previsao_fechamento: null, posicao_na_etapa: posicao, motivo_de_perda_id: null,
-    observacao_da_perda: null, fechado_em: null, itens: [],
+    observacao_da_perda: null, fechado_em: null, parado: false, dias_parado: null, itens: [],
   };
 }
 

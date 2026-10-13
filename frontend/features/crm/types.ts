@@ -8,6 +8,7 @@ export interface Etapa {
   posicao: number;
   probabilidade: number;
   ativa: boolean;
+  dias_para_parado: number | null;
 }
 
 export interface Funil {
@@ -60,6 +61,8 @@ export interface Negocio {
   motivo_de_perda_id: string | null;
   observacao_da_perda: string | null;
   fechado_em: string | null;
+  parado: boolean;
+  dias_parado: number | null;
   itens: ItemDoNegocio[];
 }
 
@@ -78,4 +81,49 @@ export interface NovoNegocioPayload {
   previsao_fechamento?: string;
   valor_centavos?: number;
   itens?: ItemEntrada[];
+}
+
+export type TipoDeAtividade = 'LIGACAO' | 'REUNIAO' | 'EMAIL' | 'WHATSAPP' | 'TAREFA';
+
+export interface Atividade {
+  id: string;
+  tipo: TipoDeAtividade;
+  titulo: string;
+  descricao: string | null;
+  agendada_para: string;
+  concluida_em: string | null;
+  atrasada: boolean;
+  cliente: { id: string; nome: string; telefone: string | null; email: string | null } | null;
+  negocio: { id: string; titulo: string } | null;
+  responsavel: { id: string; nome: string } | null;
+}
+
+export type TipoDeRegistro =
+  | 'NOTA' | 'ATIVIDADE_CONCLUIDA' | 'NEGOCIO_CRIADO' | 'NEGOCIO_MOVIDO' | 'NEGOCIO_GANHO' | 'NEGOCIO_PERDIDO';
+
+export interface RegistroDaTimeline {
+  id: string;
+  tipo: TipoDeRegistro;
+  texto: string;
+  dados: Record<string, unknown>;
+  autor: { id: string; nome: string } | null;
+  negocio_id: string | null;
+  atividade_id: string | null;
+  ocorreu_em: string;
+}
+
+export interface ResumoDoCrm {
+  hoje: number;
+  atrasadas: number;
+  parados: number;
+}
+
+export interface NovaAtividadePayload {
+  tipo: TipoDeAtividade;
+  titulo: string;
+  descricao?: string;
+  agendada_para: string;
+  cliente_id?: string;
+  negocio_id?: string;
+  responsavel_id?: string;
 }

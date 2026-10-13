@@ -1,6 +1,7 @@
 import { api } from '@/lib/api';
 import type {
-  ConfiguracaoDoCrm, Etapa, Funil, ItemEntrada, MotivoDePerda, Negocio, NovoNegocioPayload, StatusDoNegocio,
+  Atividade, ConfiguracaoDoCrm, Etapa, Funil, ItemEntrada, MotivoDePerda, Negocio, NovaAtividadePayload,
+  NovoNegocioPayload, RegistroDaTimeline, ResumoDoCrm, StatusDoNegocio,
 } from './types';
 
 export const QUERY_KEY_CRM = ['crm'] as const;
@@ -15,7 +16,7 @@ export const crmApi = {
     api<{ data: Funil }>(`${BASE}/funis/${id}`, { method: 'PUT', body: json(dados) }),
   criarEtapa: (funilId: string, dados: { nome: string; probabilidade: number }) =>
     api<{ data: Etapa }>(`${BASE}/funis/${funilId}/etapas`, { method: 'POST', body: json(dados) }),
-  editarEtapa: (id: string, dados: { nome?: string; probabilidade?: number; ativa?: boolean }) =>
+  editarEtapa: (id: string, dados: { nome?: string; probabilidade?: number; ativa?: boolean; dias_para_parado?: number | null }) =>
     api<{ data: Etapa }>(`${BASE}/etapas/${id}`, { method: 'PUT', body: json(dados) }),
   ordenarEtapas: (funilId: string, etapas: string[]) =>
     api<{ data: Funil }>(`${BASE}/funis/${funilId}/etapas/ordem`, { method: 'PUT', body: json({ etapas }) }),
@@ -45,4 +46,32 @@ export const crmApi = {
       method: 'POST',
       body: json({ motivo_de_perda_id: motivoId, observacao: observacao || undefined }),
     }),
+  atividades: (filtros: { cliente_id?: string; negocio_id?: string; concluida?: boolean }) => {
+    const q = new URLSearchParams();
+    if (filtros.cliente_id) q.set('cliente_id', filtros.cliente_id);
+    if (filtros.negocio_id) q.set('negocio_id', filtros.negocio_id);
+    if (filtros.concluida !== undefined) q.set('concluida', filtros.concluida ? '1' : '0');
+    return api<{ data: Atividade[] }>(`${BASE}/atividades?${q.toString()}`);
+  },
+  agenda: (de: string, ate: string, responsavelId?: string) => {
+    const q = new URLSearchParams({ de, ate });
+    if (responsavelId) q.set('responsavel_id', responsavelId);
+    return api<{ data: Atividade[] }>(`${BASE}/agenda?${q.toString()}`);
+  },
+  resumo: () => api<{ data: ResumoDoCrm }>(`${BASE}/resumo`),
+  criarAtividade: (dados: NovaAtividadePayload) =>
+    api<{ data: Atividade }>(`${BASE}/atividades`, { method: 'POST', body: json(dados) }),
+  editarAtividade: (id: string, dados: Partial<Omit<NovaAtividadePayload, 'cliente_id' | 'negocio_id'>>) =>
+    api<{ data: Atividade }>(`${BASE}/atividades/${id}`, { method: 'PUT', body: json(dados) }),
+  concluirAtividade: (id: string) => api<{ data: Atividade }>(`${BASE}/atividades/${id}/concluir`, { method: 'POST' }),
+  reabrirAtividade: (id: string) => api<{ data: Atividade }>(`${BASE}/atividades/${id}/reabrir`, { method: 'POST' }),
+  excluirAtividade: (id: string) => api<void>(`${BASE}/atividades/${id}`, { method: 'DELETE' }),
+  registrarContato: (canal: 'WHATSAPP' | 'EMAIL', alvo: { cliente_id?: string; negocio_id?: string }) =>
+    api<{ data: { atividade: Atividade; url: string } }>(`${BASE}/contatos`, { method: 'POST', body: json({ canal, ...alvo }) }),
+  timeline: (clienteId: string, cursor?: string) =>
+    api<{ data: RegistroDaTimeline[]; next_cursor: string | null }>(
+      `${BASE}/clientes/${clienteId}/timeline${cursor ? `?cursor=${encodeURIComponent(cursor)}` : ''}`,
+    ),
+  criarNota: (clienteId: string, texto: string) =>
+    api<{ data: RegistroDaTimeline }>(`${BASE}/clientes/${clienteId}/notas`, { method: 'POST', body: json({ texto }) }),
 };

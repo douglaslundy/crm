@@ -19,7 +19,7 @@ function negocio(extra: Partial<Negocio> = {}): Negocio {
   return {
     id: 'n1', titulo: 'Reforma', cliente: { id: 'c1', nome: 'Maria', telefone: null, email: null, estagio: 'LEAD' },
     funil_id: 'f1', etapa_id: 'e1', responsavel: { id: 'u1', nome: 'João' }, status: 'ABERTO', valor_centavos: 5000,
-    previsao_fechamento: null, posicao_na_etapa: 0, motivo_de_perda_id: null, observacao_da_perda: null, fechado_em: null,
+    previsao_fechamento: null, posicao_na_etapa: 0, motivo_de_perda_id: null, observacao_da_perda: null, fechado_em: null, parado: false, dias_parado: null,
     itens: [{ id: 'i1', tipo: 'PRODUTO', item_id: 'p1', descricao: 'Caneca', quantidade: 2, valor_unitario_centavos: 2500 }],
     ...extra,
   };

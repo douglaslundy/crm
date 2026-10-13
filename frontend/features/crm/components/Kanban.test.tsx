@@ -22,8 +22,8 @@ vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }));
 const funil: Funil = {
   id: 'f1', nome: 'Vendas', padrao: true, ativo: true, posicao: 0,
   etapas: [
-    { id: 'e1', funil_id: 'f1', nome: 'Qualificação', posicao: 0, probabilidade: 10, ativa: true },
-    { id: 'e2', funil_id: 'f1', nome: 'Proposta', posicao: 1, probabilidade: 40, ativa: true },
+    { id: 'e1', funil_id: 'f1', nome: 'Qualificação', posicao: 0, probabilidade: 10, ativa: true, dias_para_parado: null },
+    { id: 'e2', funil_id: 'f1', nome: 'Proposta', posicao: 1, probabilidade: 40, ativa: true, dias_para_parado: null },
   ],
 };
 
@@ -32,7 +32,7 @@ function negocio(extra: Partial<Negocio> = {}): Negocio {
     id: 'n1', titulo: 'Reforma', cliente: { id: 'c1', nome: 'Maria', telefone: null, email: null, estagio: 'LEAD' },
     funil_id: 'f1', etapa_id: 'e1', responsavel: { id: 'u1', nome: 'João' }, status: 'ABERTO', valor_centavos: 150000,
     previsao_fechamento: null, posicao_na_etapa: 0, motivo_de_perda_id: null, observacao_da_perda: null,
-    fechado_em: null, itens: [], ...extra,
+    fechado_em: null, parado: false, dias_parado: null, itens: [], ...extra,
   };
 }
 

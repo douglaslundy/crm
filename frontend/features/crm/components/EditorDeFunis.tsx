@@ -54,7 +54,7 @@ export function EditorDeFunis({ podeEditar }: { podeEditar: boolean }) {
 
   const ordenar = useMutation({ mutationFn: ({ funilId, ids }: { funilId: string; ids: string[] }) => crmApi.ordenarEtapas(funilId, ids), ...opcoes });
   const editarEtapa = useMutation({
-    mutationFn: ({ id, dados }: { id: string; dados: { probabilidade?: number; ativa?: boolean } }) => crmApi.editarEtapa(id, dados),
+    mutationFn: ({ id, dados }: { id: string; dados: { probabilidade?: number; ativa?: boolean; dias_para_parado?: number | null } }) => crmApi.editarEtapa(id, dados),
     ...opcoes,
   });
   const criarEtapa = useMutation({
@@ -129,6 +129,23 @@ export function EditorDeFunis({ podeEditar }: { podeEditar: boolean }) {
                           const valor = Number(e.target.value);
                           if (!Number.isNaN(valor) && valor !== etapa.probabilidade) {
                             editarEtapa.mutate({ id: etapa.id, dados: { probabilidade: valor } });
+                          }
+                        }}
+                      />
+                      <Input
+                        type="number"
+                        min={1}
+                        max={365}
+                        className="h-8 w-20"
+                        placeholder="Dias"
+                        aria-label={`Dias para parado de ${etapa.nome}`}
+                        defaultValue={etapa.dias_para_parado ?? ''}
+                        onBlur={(e) => {
+                          const texto = e.target.value.trim();
+                          const valor = texto === '' ? null : Number(texto);
+                          if (valor !== null && (Number.isNaN(valor) || valor < 1 || valor > 365)) return;
+                          if (valor !== etapa.dias_para_parado) {
+                            editarEtapa.mutate({ id: etapa.id, dados: { dias_para_parado: valor } });
                           }
                         }}
                       />
