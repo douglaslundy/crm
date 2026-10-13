@@ -46,4 +46,18 @@ describe('destinoDoArraste', () => {
   it('soltar sobre si mesmo não move', () => {
     expect(destinoDoArraste('a', lista, 'a')).toBeNull();
   });
+
+  describe('dentro da mesma coluna', () => {
+    const coluna = [n('a', 'e1', 0), n('b', 'e1', 1), n('c', 'e1', 2)];
+
+    it('arrastar para baixo sobre um cartão fica depois dele', () => {
+      expect(destinoDoArraste('b', coluna, 'a')).toEqual({ etapaId: 'e1', posicao: 1 });
+      expect(destinoDoArraste('c', coluna, 'a')).toEqual({ etapaId: 'e1', posicao: 2 });
+    });
+
+    it('arrastar para cima sobre um cartão fica antes dele', () => {
+      expect(destinoDoArraste('a', coluna, 'c')).toEqual({ etapaId: 'e1', posicao: 0 });
+      expect(destinoDoArraste('b', coluna, 'c')).toEqual({ etapaId: 'e1', posicao: 1 });
+    });
+  });
 });

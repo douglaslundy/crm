@@ -39,7 +39,13 @@ export function destinoDoArraste(overId: string, negocios: Negocio[], movidoId: 
   const alvo = negocios.find((n) => n.id === overId);
   if (!alvo || alvo.id === movidoId) return null;
 
-  const daEtapa = negocios.filter((n) => n.etapa_id === alvo.etapa_id && n.id !== movidoId).sort(porPosicao);
+  const completa = negocios.filter((n) => n.etapa_id === alvo.etapa_id).sort(porPosicao);
+  const semMovido = completa.filter((n) => n.id !== movidoId);
+  const indiceSemMovido = semMovido.findIndex((n) => n.id === alvo.id);
+  const indiceMovido = completa.findIndex((n) => n.id === movidoId);
+  const indiceAlvo = completa.findIndex((n) => n.id === alvo.id);
+  // Na mesma coluna, arrastar para baixo põe o cartão depois do alvo; para cima, antes dele.
+  const desceNaMesmaColuna = indiceMovido !== -1 && indiceMovido < indiceAlvo;
 
-  return { etapaId: alvo.etapa_id, posicao: daEtapa.findIndex((n) => n.id === alvo.id) };
+  return { etapaId: alvo.etapa_id, posicao: desceNaMesmaColuna ? indiceSemMovido + 1 : indiceSemMovido };
 }

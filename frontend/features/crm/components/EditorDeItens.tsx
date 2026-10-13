@@ -29,6 +29,7 @@ export function EditorDeItens({ negocio, podeEditar }: { negocio: Negocio; podeE
   const aberto = negocio.status === 'ABERTO' && podeEditar;
   const [escolha, setEscolha] = useState('');
   const [quantidade, setQuantidade] = useState('1');
+  const [erroValor, setErroValor] = useState<string | null>(null);
 
   const produtos = useQuery({ queryKey: QUERY_KEY_PRODUTOS, queryFn: async () => (await produtosApi.listar()).data, enabled: aberto });
   const servicos = useQuery({ queryKey: QUERY_KEY_SERVICOS, queryFn: async () => (await servicosApi.listar()).data, enabled: aberto });
@@ -138,13 +139,19 @@ export function EditorDeItens({ negocio, podeEditar }: { negocio: Negocio; podeE
             inputMode="decimal"
             defaultValue={centavosParaReais(negocio.valor_centavos)}
             disabled={salvarValor.isPending}
+            aria-invalid={erroValor !== null}
+            aria-describedby={erroValor ? 'valor-do-negocio-erro' : undefined}
             onBlur={(e) => {
               const texto = e.target.value.trim();
-              if (/^\d+(,\d{1,2})?$/.test(texto) && reaisParaCentavos(texto) !== negocio.valor_centavos) {
-                salvarValor.mutate(reaisParaCentavos(texto));
+              if (!/^\d+(,\d{1,2})?$/.test(texto)) {
+                setErroValor('Use o formato 99,90.');
+                return;
               }
+              setErroValor(null);
+              if (reaisParaCentavos(texto) !== negocio.valor_centavos) salvarValor.mutate(reaisParaCentavos(texto));
             }}
           />
+          {erroValor ? <p id="valor-do-negocio-erro" className="text-xs text-danger">{erroValor}</p> : null}
         </div>
       ) : null}
     </div>

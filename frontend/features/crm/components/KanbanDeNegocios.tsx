@@ -28,7 +28,12 @@ export function KanbanDeNegocios({ funil, negocios, podeEscrever }: Props) {
 
   function aoMoverPeloMenu(negocioId: string, etapaId: string) {
     const alvo = destinoDoArraste(`${PREFIXO_COLUNA}${etapaId}`, negocios, negocioId);
-    if (alvo) mover.mutate({ id: negocioId, ...alvo });
+    if (!alvo) return;
+    // O cartão é remontado na nova coluna: devolve o foco ao controle dele para quem usa teclado.
+    mover.mutate(
+      { id: negocioId, ...alvo },
+      { onSettled: () => setTimeout(() => document.getElementById(`mover-${negocioId}`)?.focus(), 0) },
+    );
   }
 
   return (

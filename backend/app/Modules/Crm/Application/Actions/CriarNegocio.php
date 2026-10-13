@@ -45,7 +45,8 @@ final class CriarNegocio
 
             $funil = Funil::query()->where('ativo', true)->find($dados['funil_id'])
                 ?? throw new RegraDoCrmException('Funil não encontrado ou inativo.', 'FUNIL_INVALIDO');
-            $etapa = Etapa::query()->where('funil_id', $funil->id)->where('ativa', true)->find($dados['etapa_id'])
+            // Trava a etapa: criações simultâneas na mesma etapa não repetem posição.
+            $etapa = Etapa::query()->where('funil_id', $funil->id)->where('ativa', true)->lockForUpdate()->find($dados['etapa_id'])
                 ?? throw new RegraDoCrmException('Etapa não encontrada neste funil.', 'ETAPA_INVALIDA');
 
             $responsavelId = $this->responsavel($autor, $dados['responsavel_id'] ?? null);

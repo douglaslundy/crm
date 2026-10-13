@@ -25,6 +25,8 @@ final class DefinirItensDoNegocio
         $this->politica->garantirPodeOperarNegocios($autor);
 
         return DB::transaction(function () use ($negocio, $itens): Negocio {
+            // Relê travado: o negócio pode ter fechado ou mudado desde que o controller o carregou.
+            $negocio = Negocio::query()->lockForUpdate()->findOrFail($negocio->id);
             $negocio->garantirAberto();
             $this->aplicar($negocio, $itens);
 

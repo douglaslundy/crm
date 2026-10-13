@@ -66,10 +66,12 @@ describe('kanban', () => {
     renderizar(<QuadroDeNegocios />);
 
     await userEvent.selectOptions(await screen.findByLabelText('Mover Reforma para'), 'e2');
+    await userEvent.click(screen.getByRole('button', { name: 'Mover Reforma' }));
 
     await waitFor(() => expect(crmApi.mover).toHaveBeenCalledWith('n1', 'e2', 0));
     const proposta = screen.getByRole('region', { name: 'Proposta' });
     await waitFor(() => expect(within(proposta).getByText('Reforma')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByLabelText('Mover Reforma para')).toHaveFocus());
   });
 
   it('volta o cartão e avisa quando a API recusa (422)', async () => {
@@ -77,6 +79,7 @@ describe('kanban', () => {
     renderizar(<QuadroDeNegocios />);
 
     await userEvent.selectOptions(await screen.findByLabelText('Mover Reforma para'), 'e2');
+    await userEvent.click(screen.getByRole('button', { name: 'Mover Reforma' }));
 
     await waitFor(() => expect(crmApi.mover).toHaveBeenCalled());
     const origem = screen.getByRole('region', { name: 'Qualificação' });

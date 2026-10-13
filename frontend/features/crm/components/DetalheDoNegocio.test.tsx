@@ -79,6 +79,19 @@ describe('DetalheDoNegocio', () => {
     expect(screen.queryByRole('button', { name: 'Perder' })).not.toBeInTheDocument();
   });
 
+  it('valor digitado fora do formato mostra o erro em vez de falhar em silêncio', async () => {
+    vi.mocked(crmApi.negocio).mockResolvedValue({ data: negocio({ itens: [], valor_centavos: 0 }) });
+    renderizar(<DetalheDoNegocio id="n1" />);
+
+    const campo = await screen.findByLabelText('Valor do negócio (R$)');
+    await userEvent.clear(campo);
+    await userEvent.type(campo, '1.500,00');
+    await userEvent.tab();
+
+    expect(await screen.findByText('Use o formato 99,90.')).toBeInTheDocument();
+    expect(crmApi.editarNegocio).not.toHaveBeenCalled();
+  });
+
   it('remover um item reenvia a lista sem ele', async () => {
     vi.mocked(crmApi.definirItens).mockResolvedValue({ data: negocio({ itens: [], valor_centavos: 5000 }) });
     renderizar(<DetalheDoNegocio id="n1" />);

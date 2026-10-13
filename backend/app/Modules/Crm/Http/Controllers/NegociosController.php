@@ -22,6 +22,7 @@ use App\Modules\Crm\Http\Requests\PerderNegocioRequest;
 use App\Modules\Identity\Domain\Models\Usuario;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 final class NegociosController
 {
@@ -34,6 +35,13 @@ final class NegociosController
     {
         $autor = $this->autor($request);
         $this->politica->garantirPodeLer($autor);
+
+        $request->validate([
+            'status' => ['nullable', Rule::enum(StatusDoNegocio::class)],
+            'funil_id' => ['nullable', 'uuid'],
+            'responsavel_id' => ['nullable', 'uuid'],
+            'cliente_id' => ['nullable', 'uuid'],
+        ]);
 
         $status = StatusDoNegocio::tryFrom($request->string('status', 'ABERTO')->toString()) ?? StatusDoNegocio::Aberto;
         $consulta = Negocio::query()->visiveisPara($autor)->with('itens')->where('status', $status);

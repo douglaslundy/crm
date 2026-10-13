@@ -9,7 +9,7 @@ use App\Modules\Crm\Http\Controllers\MotivosDePerdaController;
 use App\Modules\Crm\Http\Controllers\NegociosController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('empresa')->group(function (): void {
+Route::middleware('empresa')->whereUuid(['id', 'funilId'])->group(function (): void {
     Route::get('funis', [FunisController::class, 'index'])->name('app.crm.funis.index');
     Route::post('funis', [FunisController::class, 'store'])->name('app.crm.funis.store');
     Route::put('funis/{id}', [FunisController::class, 'update'])->name('app.crm.funis.update');
