@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ConsumoDoPlano } from '@/features/assinatura/components/ConsumoDoPlano';
 import { useAssinatura } from '@/features/assinatura/hooks/useAssinatura';
 import { useUsuario } from '@/features/auth/hooks/useUsuario';
+import { BlocoCrmNoPainel } from '@/features/crm/components/BlocoCrmNoPainel';
 import { PainelFiscal } from '@/features/dashboard-fiscal/components/PainelFiscal';
 
 export default function DashboardPage() {
@@ -11,6 +12,9 @@ export default function DashboardPage() {
   const { data: assinatura, isError } = useAssinatura();
   // Cada bloco só aparece se o módulo está no plano.
   const temFiscal = assinatura?.plano?.modulos.some((m) => m === 'FISCAL_NFE' || m === 'FISCAL_NFCE' || m === 'FISCAL_NFSE') ?? false;
+
+  // O papel Fiscal não tem acesso ao CRM.
+  const temCrm = (assinatura?.plano?.modulos.includes('CRM') ?? false) && usuario?.papel !== undefined && usuario.papel !== 'FISCAL';
 
   return (
     <div className="space-y-4">
@@ -37,6 +41,7 @@ export default function DashboardPage() {
         </Card>
       </div>
       {temFiscal ? <PainelFiscal /> : null}
+      {temCrm ? <BlocoCrmNoPainel /> : null}
     </div>
   );
 }
