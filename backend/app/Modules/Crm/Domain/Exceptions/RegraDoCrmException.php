@@ -18,6 +18,16 @@ final class RegraDoCrmException extends ErroDeNegocio
         return new self('Negócio fechado não pode ser alterado.', 'NEGOCIO_FECHADO');
     }
 
+    public static function metaInvalida(string $mensagem): self
+    {
+        return new self($mensagem, 'META_INVALIDA');
+    }
+
+    public static function periodoInvalido(string $mensagem): self
+    {
+        return new self($mensagem, 'PERIODO_INVALIDO');
+    }
+
     public function status(): int
     {
         return 422;
