@@ -11,6 +11,7 @@ use App\Modules\Crm\Http\Controllers\MetasController;
 use App\Modules\Crm\Http\Controllers\MotivosDePerdaController;
 use App\Modules\Crm\Http\Controllers\NegociosController;
 use App\Modules\Crm\Http\Controllers\PropostasController;
+use App\Modules\Crm\Http\Controllers\RelatoriosController;
 use App\Modules\Crm\Http\Controllers\TimelineController;
 use Illuminate\Support\Facades\Route;
 
@@ -56,6 +57,7 @@ Route::middleware('empresa')->whereUuid(['id', 'funilId'])->group(function (): v
     Route::post('propostas/{id}/nota', [PropostasController::class, 'nota'])->name('app.crm.propostas.nota');
     Route::get('propostas/{id}/pdf', [PropostasController::class, 'pdf'])->name('app.crm.propostas.pdf');
 
+    Route::get('relatorios', [RelatoriosController::class, 'index'])->name('app.crm.relatorios.index');
     Route::get('metas', [MetasController::class, 'index'])->name('app.crm.metas.index');
     Route::put('metas', [MetasController::class, 'update'])->name('app.crm.metas.update');
     Route::delete('metas/{id}', [MetasController::class, 'destroy'])->name('app.crm.metas.destroy');
