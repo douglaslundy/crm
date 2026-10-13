@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { useAssinatura } from '@/features/assinatura/hooks/useAssinatura';
 import { useUsuario } from '@/features/auth/hooks/useUsuario';
 import { cn } from '@/lib/utils';
+import { EmblemaDeAtrasadas } from './EmblemaDeAtrasadas';
 import { estaAtivo, itensVisiveis, type NavItem } from './nav-items';
 
 interface Props {
@@ -47,6 +48,7 @@ export function MenuDeNavegacao({ itens, rotulo, aoNavegar }: Props) {
             >
               <Icone className="size-4 shrink-0" aria-hidden />
               {label}
+              {item.emblema === 'crm-atrasadas' ? <EmblemaDeAtrasadas /> : null}
             </Link>
           );
         })}

@@ -1,4 +1,4 @@
-import { AlertTriangle, Briefcase, Building2, Contact, CreditCard, FileText, Gauge, KeyRound, Landmark, LayoutDashboard, Package, Settings2, Users, Webhook, Wrench, type LucideIcon } from 'lucide-react';
+import { AlertTriangle, Briefcase, CalendarDays, Building2, Contact, CreditCard, FileText, Gauge, KeyRound, Landmark, LayoutDashboard, Package, Settings2, Users, Webhook, Wrench, type LucideIcon } from 'lucide-react';
 import type { Modulo } from '@/features/assinatura/types';
 import type { Papel } from '@/features/auth/types';
 
@@ -12,6 +12,8 @@ export interface NavItem {
   papeis?: Papel[];
   /** Só aparece se o plano da empresa tiver o módulo. */
   modulo?: Modulo;
+  /** Contador exibido ao lado do rótulo. */
+  emblema?: 'crm-atrasadas';
 }
 
 /** Área da empresa. Cada fase acrescenta aqui os itens do seu módulo. */
@@ -21,6 +23,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/servicos', label: 'Serviços', icon: Wrench, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
   { href: '/clientes', label: 'Clientes', icon: Contact, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
   { href: '/crm/negocios', label: 'CRM', icon: Briefcase, papeis: ['PROPRIETARIO', 'ADMIN', 'VENDEDOR', 'LEITURA'], modulo: 'CRM' },
+  { href: '/crm/agenda', label: 'Agenda', icon: CalendarDays, papeis: ['PROPRIETARIO', 'ADMIN', 'VENDEDOR', 'LEITURA'], modulo: 'CRM', emblema: 'crm-atrasadas' },
   { href: '/configuracoes/crm', label: 'Config. do CRM', icon: Settings2, papeis: ['PROPRIETARIO', 'ADMIN'], modulo: 'CRM' },
   { href: '/notas', label: 'Notas', icon: FileText, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
   { href: '/pendencias-fiscais', label: 'Pendências fiscais', icon: AlertTriangle, papeis: ['PROPRIETARIO', 'ADMIN', 'FISCAL', 'VENDEDOR', 'LEITURA'] },
