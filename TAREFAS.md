@@ -34,7 +34,11 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
   - [x] **F7b Atividades e timeline** (11 de 11, concluída em 2026-10-13): atividades e agenda, timeline do cliente, negócio parado calculado na leitura, WhatsApp e e-mail em 1 clique.
   - [x] **F7c Propostas** (10 de 10, concluída em 2026-10-13): PDF, link público com aceite, aceite → ganho → rascunho de nota em 1 clique.
   - [x] **F7d Relatórios e metas** (10 de 10, concluída em 2026-10-13): relatório comercial (ganhos, perdas, conversão, funil, previsão, motivos, vendedores, propostas, faturado), metas mensais por vendedor, página `/crm/relatorios` e previsão/meta no painel.
-- [ ] **F8 Go-live:** auditoria fiscal, carga, backup e restauração, piloto em produção.
+- [ ] **F8 Go-live** (decomposta em quatro partes, parte código; piloto real vira roteiro do usuário):
+  - [x] **F8a Auditoria fiscal** (concluída em 2026-10-13): 11 checagens do `audit-checklist.md`, relatório em `docs/auditoria/2026-10-13-f8a-auditoria-fiscal.md`, 3 achados Importantes corrigidos, roteiro em `docs/auditoria/roteiro-homologacao-real.md`.
+  - [ ] **F8b Pendências de go-live:** TLS da `nfse-php`, contador único homologação/produção, configuração de produção (HTTPS, domínio, cookies).
+  - [ ] **F8c Backup e restauração:** backup diário do banco e do storage com runbook de restauração testado.
+  - [ ] **F8d Testes de carga.**
 
 ## Pendências herdadas da revisão da F0 (resolver no início da F1)
 - [x] Tirar `tenant_id` e `papel` de `Usuario::$fillable` (escalada de tenant ou privilégio por mass assignment).
@@ -219,3 +223,12 @@ Achados menores adiados e uma decisão de produto parcada durante a revisão das
 - [ ] Sem cache dos agregados: cada abertura da página roda as consultas; avaliar com volume real.
 - [ ] `ResumoDoCrm` recalcula funil, previsão e meta a cada 60 s por usuário (`refetchInterval` do bloco do painel).
 - [ ] Sem teste de renderização do gráfico (Recharts em jsdom); a tabela `sr-only` entrega os mesmos números.
+
+## Pendências da F8a (2026-10-13)
+- [ ] **NF-e: `indPres`, `finNFe`, `modFrete` e `indPag` fixos** (presencial, normal, 9, à vista). Decisão do usuário: aceito no piloto (venda presencial, Simples); permitir informar na nota e na API depois (A-04).
+- [ ] **cStat 108/109 (serviço paralisado) segue como rejeição reemitível**, sem contingência/EPEC. Decisão do usuário: só falha de comunicação leva à contingência (A-05).
+- [ ] Inutilizar um número que ainda está numa nota REJEITADA, ERRO ou rascunho: a nota reemitida é rejeitada para sempre. Limpar o número da nota ao inutilizar ou bloquear (A-06).
+- [ ] Teste de XSD da DPS (`DPS_v1.01.xsd`) com cópia do schema sem `^` e `$`, que o libxml lê como literais (A-07).
+- [ ] `billing:gerar-boletos` sem `withoutOverlapping` (idempotência do gateway protege o boleto, não o registro) (A-08).
+- [ ] Denegada (110/301/302/303) vira REJEITADA com o cStat; falta um estado próprio e mensagem na tela explicando "número consumido, corrija o cadastro e emita de novo".
+

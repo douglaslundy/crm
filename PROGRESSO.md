@@ -4,7 +4,7 @@
 2026-10-13
 
 ## Tarefa em andamento
-**Nenhuma tarefa em andamento. F3, F4 (a e b), F5 inteira, F6 inteira (a, b, c1 e c2) e F7 inteira (a, b, c e d: funis, negócios, atividades, timeline, propostas, relatórios, metas e dashboard) concluídas.** Próxima: F8 (go-live), começando por brainstorming.
+**Nenhuma tarefa em andamento. F3, F4 (a e b), F5 inteira, F6 inteira (a, b, c1 e c2) e F7 inteira (a, b, c e d: funis, negócios, atividades, timeline, propostas, relatórios, metas e dashboard) concluídas.** **F8a (auditoria fiscal) concluída em 2026-10-13.** Próxima: F8b (pendências de go-live: TLS da nfse-php, contador único homologação/produção, configuração de produção), começando por brainstorming.
 
 Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é decisão da SEFAZ (sem número fixo no código); cancelada continua contando na cota `DOCUMENTOS_MES`; `consultarPorChave` usa o ambiente da **nota** (corrige consulta no ambiente errado depois de "Ir para produção"); o XML do cancelamento é o `nfeProc` com `retEvento` (`Complements::cancelRegister`); aceitos 135/136/155; inutilização síncrona com guardas locais (faixa já alocada, sem nota autorizada/em processamento/cancelada na faixa), resultado sempre gravado.
 
@@ -36,6 +36,12 @@ Decisões da F3b1: cancelamento por fila com estado `CANCELANDO`; o prazo é dec
 - **Verificado:** build, migrations de todas as fases no PostgreSQL 16 (primeira vez fora do SQLite), login com sessão pela API, CORS, URL da API embutida no front, worker e agendador de pé, API ~35 ms. **Não verificado:** as telas no navegador.
 - **Reimplantar:** `git -c core.autocrlf=false archive --format=tar.gz -o crm.tar.gz HEAD`, enviar para `~/crm-plataforma/`, extrair em `src/` (NÃO apagar `src/deploy/.env`: tem a senha do banco) e rodar `bash src/deploy/deploy.sh`. Detalhes em `deploy/README.md`.
 - **Diferenças para produção real:** HTTP sem domínio, `INSTALL_DEV=1` (Faker para o seeder), `SESSION_SECURE_COOKIE=false`. Antes de expor à internet: HTTPS, domínio, trocar a senha do usuário SSH e as contas de demonstração.
+
+## Fechamento da F8a (2026-10-13)
+- **Auditoria fiscal pré-go-live.** Spec `docs/superpowers/specs/2026-10-13-f8a-auditoria-fiscal-design.md`, plano `docs/superpowers/plans/2026-10-13-f8a-auditoria-fiscal.md` (8 tarefas, executadas inline na master). Relatório: `docs/auditoria/2026-10-13-f8a-auditoria-fiscal.md`; roteiro para o usuário: `docs/auditoria/roteiro-homologacao-real.md`. Decisões do usuário: só o que é código; auditar e corrigir; sem subagentes.
+- **Corrigido (teste RED→GREEN):** A-01 cStat 150 agora autoriza (emissão e consulta); A-02 uso denegado (110/301/302/303) é terminal na conciliação (vira REJEITADA com o cStat) e a reemissão pega número novo; A-03 `AtualizarSerie` não deixa o próximo número ficar em número já emitido na mesma série e ambiente (`FISCAL_NUMERO_JA_EMITIDO`, com lock da linha da série).
+- **Aceito e documentado pelo usuário:** A-04 `indPres`/`finNFe`/`modFrete`/`indPag` fixos da NF-e; A-05 108/109 sem contingência. Minors A-06 a A-08 em `TAREFAS.md`.
+- **Verificação:** backend 1524 testes, Pint e PHPStan limpos. **Não verificado:** SEFAZ e ADN reais (roteiro), PostgreSQL. A checagem 9 (numeração contra a autoridade) e o XML autorizado real contra o XSD ficam no roteiro. Revisão final: auto-revisão declarada (sem subagente, por regra do usuário).
 
 ## Fechamento da F7d (2026-10-13)
 - **Relatórios, metas e dashboard comercial do CRM.** Spec `docs/superpowers/specs/2026-10-13-crm-f7d-relatorios-design.md`, plano `docs/superpowers/plans/2026-10-13-f7d-crm-relatorios.md` (10 tarefas, executadas inline na master). Decisões do usuário: núcleo (sem CSV do CRM nem relatório de faturamento geral); metas mensais por vendedor em valor ou quantidade, contadas por negócio ganho; conversão sem histórico de etapas (funil de agora); uma página de relatórios com abas.
