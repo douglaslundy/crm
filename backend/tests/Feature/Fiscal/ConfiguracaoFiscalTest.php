@@ -63,6 +63,36 @@ class ConfiguracaoFiscalTest extends TestCase
         $this->assertSame(50, $resposta->json('data.series.0.proximo_numero'));
     }
 
+    private function notaNumerada(int $numero, string $serie = '1', string $ambiente = 'HOMOLOGACAO'): void
+    {
+        app(TenantContext::class)->set($this->tenant->id);
+        $emitente = Emitente::query()->firstOrCreate([], []);
+        Nota::factory()->create(['emitente_id' => $emitente->id, 'cliente_id' => Cliente::factory()->create()->id])
+            ->forceFill(['status' => StatusNota::Autorizada, 'modelo' => 'NFE', 'serie' => $serie, 'numero' => $numero, 'ambiente' => $ambiente])->save();
+    }
+
+    public function test_proximo_numero_nao_pode_voltar_para_antes_do_ultimo_emitido(): void
+    {
+        $this->notaNumerada(5);
+
+        $this->spa()->actingAs($this->admin)->putJson('/api/app/emitente/series/NFE', ['serie' => '1', 'proximo_numero' => 5])
+            ->assertStatus(422)->assertJsonPath('codigo', 'FISCAL_NUMERO_JA_EMITIDO');
+        $this->spa()->actingAs($this->admin)->putJson('/api/app/emitente/series/NFE', ['serie' => '1', 'proximo_numero' => 3])
+            ->assertStatus(422)->assertJsonPath('codigo', 'FISCAL_NUMERO_JA_EMITIDO');
+        $this->spa()->actingAs($this->admin)->putJson('/api/app/emitente/series/NFE', ['serie' => '1', 'proximo_numero' => 6])->assertOk();
+    }
+
+    public function test_serie_nova_ou_ambiente_novo_pode_recomecar_do_um(): void
+    {
+        $this->notaNumerada(5);
+
+        $this->spa()->actingAs($this->admin)->putJson('/api/app/emitente/series/NFE', ['serie' => '2', 'proximo_numero' => 1])->assertOk();
+
+        // A numeração de homologação e a de produção são separadas na SEFAZ: a nota de outro ambiente não trava o contador.
+        Nota::query()->update(['ambiente' => 'PRODUCAO']);
+        $this->spa()->actingAs($this->admin)->putJson('/api/app/emitente/series/NFE', ['serie' => '1', 'proximo_numero' => 1])->assertOk();
+    }
+
     public function test_confirmar_producao_exige_a_flag_explicita(): void
     {
         $this->spa()->actingAs($this->admin)->postJson('/api/app/emitente/ambiente/producao', [])
