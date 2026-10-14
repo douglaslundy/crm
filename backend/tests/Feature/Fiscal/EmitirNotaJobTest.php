@@ -72,6 +72,28 @@ class EmitirNotaJobTest extends TestCase
         $this->assertSame(1, $nota->numero);
     }
 
+    public function test_reemitir_nota_denegada_pega_numero_novo_porque_a_denegacao_consumiu_o_numero(): void
+    {
+        $this->emissor->enfileirarEmissao(ResultadoDeEmissao::rejeitada('302', 'Uso Denegado: irregularidade fiscal do destinatario'));
+        $nota = $this->emitir();
+        $this->assertSame(StatusNota::Rejeitada, $nota->status);
+        $this->assertSame(1, $nota->numero);
+
+        $de_novo = app(IniciarEmissao::class)->executar($nota->id, $this->admin)->refresh();
+
+        $this->assertSame(2, $de_novo->numero, 'número denegado não é reaproveitado');
+    }
+
+    public function test_reemitir_nota_rejeitada_comum_mantem_o_numero(): void
+    {
+        $this->emissor->enfileirarEmissao(ResultadoDeEmissao::rejeitada('232', 'IE do destinatário não informada'));
+        $nota = $this->emitir();
+
+        $de_novo = app(IniciarEmissao::class)->executar($nota->id, $this->admin)->refresh();
+
+        $this->assertSame(1, $de_novo->numero);
+    }
+
     public function test_excecao_inesperada_vira_erro_e_nunca_rejeitada(): void
     {
         $this->emissor->falharEmTransmitir = new RuntimeException('cURL error 28: timeout');

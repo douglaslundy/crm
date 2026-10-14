@@ -55,6 +55,11 @@ final class EmitirNotaJob implements ShouldQueue
 
                     return;
                 }
+                if ($consulta->ehDenegada()) {
+                    $aplicar->aplicarConsulta($nota->id, $consulta);
+
+                    return;
+                }
                 if ($consulta->situacao === SituacaoNaSefaz::Cancelada) {
                     $aplicar->executar($nota->id, ResultadoDeEmissao::erro("A chave {$nota->chave} consta como cancelada na SEFAZ. Edite e emita novamente."));
 

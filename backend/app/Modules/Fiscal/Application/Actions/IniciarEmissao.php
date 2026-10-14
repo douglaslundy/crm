@@ -10,6 +10,7 @@ use App\Modules\Fiscal\Application\Emissao\VerificadorDoEmitente;
 use App\Modules\Fiscal\Application\Jobs\EmitirNfseJob;
 use App\Modules\Fiscal\Application\Jobs\EmitirNotaJob;
 use App\Modules\Fiscal\Application\PoliticaDeNotas;
+use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsulta;
 use App\Modules\Fiscal\Domain\Enums\AmbienteFiscal;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
@@ -113,7 +114,9 @@ final class IniciarEmissao
             }
 
             $ambiente = $emitente->ambiente_fiscal->value;
-            $numeroNovo = $nota->numero === null || $nota->ambiente !== $ambiente;
+            // Uso denegado consome o número: reaproveitá-lo seria rejeitado de novo.
+            $denegada = in_array($nota->cstat, ResultadoDeConsulta::DENEGADAS, true);
+            $numeroNovo = $nota->numero === null || $nota->ambiente !== $ambiente || $denegada;
             if ($numeroNovo) {
                 $serie = EmitenteSerie::query()->where('emitente_id', $emitente->id)->where('modelo', $nota->modelo)->lockForUpdate()->firstOrFail();
                 $nota->numero = $serie->proximo_numero;

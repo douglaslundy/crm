@@ -39,9 +39,10 @@ final class InterpretadorDeResposta
         $cStat = (string) $prot->cStat;
         $motivo = (string) $prot->xMotivo;
 
-        if ($cStat === '100') {
+        // 100 autorizada; 150 autorizada fora do prazo (a SEFAZ autorizou, só a transmissão passou do limite).
+        if (in_array($cStat, ['100', '150'], true)) {
             try {
-                return ResultadoDeEmissao::autorizada((string) $prot->nProt, Complements::toAuthorize($xmlAssinado, $respostaXml));
+                return ResultadoDeEmissao::autorizada((string) $prot->nProt, Complements::toAuthorize($xmlAssinado, $respostaXml), $cStat);
             } catch (Throwable $e) {
                 return ResultadoDeEmissao::erro('A SEFAZ autorizou a nota (protocolo '.(string) $prot->nProt.') mas o XML autorizado não pôde ser montado: '.$e->getMessage());
             }
@@ -66,8 +67,9 @@ final class InterpretadorDeResposta
         $motivo = (string) ($resp->xpath('//n:xMotivo')[0] ?? '');
 
         return match (true) {
-            $cStat === '100' => $this->autorizadaNaConsulta($resp, $respostaXml, $xmlEnviado),
+            in_array($cStat, ['100', '150'], true) => $this->autorizadaNaConsulta($resp, $respostaXml, $xmlEnviado, $cStat),
             in_array($cStat, ['101', '151'], true) => ResultadoDeConsulta::cancelada($cStat),
+            in_array($cStat, ResultadoDeConsulta::DENEGADAS, true) => ResultadoDeConsulta::denegada($cStat, $motivo),
             $cStat === '217' => ResultadoDeConsulta::naoEncontrada(),
             default => ResultadoDeConsulta::erro("cStat {$cStat}: {$motivo}"),
         };
@@ -156,7 +158,7 @@ final class InterpretadorDeResposta
         return ResultadoDeEpec::registrado((string) $evento->nProt, $respostaXml, $cStat);
     }
 
-    private function autorizadaNaConsulta(SimpleXMLElement $resp, string $respostaXml, ?string $xmlEnviado): ResultadoDeConsulta
+    private function autorizadaNaConsulta(SimpleXMLElement $resp, string $respostaXml, ?string $xmlEnviado, string $cStat): ResultadoDeConsulta
     {
         $protocolo = (string) ($resp->xpath('//n:protNFe/n:infProt/n:nProt')[0] ?? '');
         $xml = null;
@@ -168,7 +170,7 @@ final class InterpretadorDeResposta
             }
         }
 
-        return ResultadoDeConsulta::autorizada($protocolo, $xml);
+        return ResultadoDeConsulta::autorizada($protocolo, $xml, $cStat);
     }
 
     private function carregar(string $xml): ?SimpleXMLElement

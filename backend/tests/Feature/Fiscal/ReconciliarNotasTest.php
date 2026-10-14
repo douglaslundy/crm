@@ -58,6 +58,19 @@ class ReconciliarNotasTest extends TestCase
         $this->assertSame('135000000000010', $nota->protocolo);
     }
 
+    public function test_denegada_na_sefaz_vira_rejeitada_com_o_cstat_e_nao_fica_processando(): void
+    {
+        $nota = $this->processando(str_repeat('5', 44), 30);
+        $this->emissor->enfileirarConsulta(ResultadoDeConsulta::denegada('110', 'Uso Denegado'));
+
+        $this->rodar();
+
+        $nota->refresh();
+        $this->assertSame(StatusNota::Rejeitada, $nota->status);
+        $this->assertSame('110', $nota->cstat);
+        $this->assertSame('Uso Denegado', $nota->motivo);
+    }
+
     public function test_marca_cancelada_quando_a_sefaz_diz_cancelada(): void
     {
         $nota = $this->processando(str_repeat('2', 44), 30);

@@ -112,6 +112,42 @@ class InterpretadorDeRespostaTest extends TestCase
         $this->assertNull($r->xmlAutorizado);
     }
 
+    public function test_cstat_150_autorizado_fora_de_prazo_e_autorizada(): void
+    {
+        $nfe = $this->nfeAssinada();
+        $r = (new InterpretadorDeResposta)->emissao($nfe, $this->envio($nfe, '150', 'Autorizado fora de prazo'));
+
+        $this->assertSame(StatusNota::Autorizada, $r->status);
+        $this->assertSame('150', $r->cstat);
+        $this->assertSame('135260000000001', $r->protocolo);
+        $this->assertStringContainsString('<nfeProc', (string) $r->xmlAutorizado);
+    }
+
+    public function test_consulta_150_e_autorizada_com_xml_recomposto(): void
+    {
+        $nfe = $this->nfeAssinada();
+        $xml = '<retConsSitNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><tpAmb>2</tpAmb><verAplic>SP</verAplic><cStat>150</cStat><xMotivo>Autorizado fora de prazo</xMotivo><cUF>35</cUF>'
+            .$this->protocolo($nfe, '150', 'Autorizado fora de prazo').'</retConsSitNFe>';
+
+        $r = (new InterpretadorDeResposta)->consulta($xml, $nfe);
+
+        $this->assertSame(SituacaoNaSefaz::Autorizada, $r->situacao);
+        $this->assertSame('150', $r->cstat);
+        $this->assertStringContainsString('<nfeProc', (string) $r->xmlAutorizado);
+    }
+
+    public function test_consulta_uso_denegado_e_terminal_e_reconhecida(): void
+    {
+        $i = new InterpretadorDeResposta;
+        foreach (['110', '301', '302', '303'] as $cStat) {
+            $r = $i->consulta('<retConsSitNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><cStat>'.$cStat.'</cStat><xMotivo>Uso Denegado</xMotivo></retConsSitNFe>', null);
+
+            $this->assertTrue($r->ehDenegada(), "cStat {$cStat} é denegada");
+            $this->assertSame($cStat, $r->cstat);
+        }
+        $this->assertFalse($i->consulta('<retConsSitNFe xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00"><cStat>999</cStat><xMotivo>m</xMotivo></retConsSitNFe>', null)->ehDenegada());
+    }
+
     public function test_consulta_cancelada_nao_encontrada_e_outros(): void
     {
         $i = new InterpretadorDeResposta;

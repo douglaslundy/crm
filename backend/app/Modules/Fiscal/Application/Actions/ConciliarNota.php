@@ -51,7 +51,7 @@ final class ConciliarNota
             SituacaoNaSefaz::NaoEncontrada => $vencida
                 ? $this->aplicar->executar($nota->id, ResultadoDeEmissao::erro('A SEFAZ não recebeu a nota. Emita novamente: o número foi preservado.'))
                 : $nota,
-            SituacaoNaSefaz::Erro => $nota,
+            SituacaoNaSefaz::Erro => $consulta->ehDenegada() ? $this->aplicar->aplicarConsulta($nota->id, $consulta) : $nota,
         };
     }
 

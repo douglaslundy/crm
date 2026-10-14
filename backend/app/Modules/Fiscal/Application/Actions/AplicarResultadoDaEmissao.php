@@ -86,6 +86,10 @@ final class AplicarResultadoDaEmissao
             } elseif ($r->situacao === SituacaoNaSefaz::Cancelada) {
                 $nota->forceFill(['status' => StatusNota::Cancelada, 'cstat' => $r->cstat, 'motivo' => $r->motivo])->save();
                 NotaEvento::registrar($nota, $anterior, StatusNota::Cancelada, 'Cancelamento encontrado na SEFAZ');
+            } elseif ($r->ehDenegada()) {
+                // Terminal: o número foi consumido pela denegação; a reemissão pega número novo (IniciarEmissao).
+                $nota->forceFill(['status' => StatusNota::Rejeitada, 'cstat' => $r->cstat, 'motivo' => $r->motivo, 'mensagem_erro' => null])->save();
+                NotaEvento::registrar($nota, $anterior, StatusNota::Rejeitada, "Uso denegado na SEFAZ (cStat {$r->cstat}): {$r->motivo}");
             }
 
             return $nota;
