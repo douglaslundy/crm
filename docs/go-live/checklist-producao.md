@@ -51,6 +51,12 @@ docker compose -f docker-compose.yml -f docker-compose.producao.yml up -d
 
 Não rode o seeder de demonstração (`--seed-demo`). Crie o primeiro administrador da plataforma pelo fluxo de cadastro/convite.
 
+### 4.1 Backup
+
+1. Guarde a `APP_KEY` do `.env` num cofre de senhas fora da VPS.
+2. Agende o backup diário e teste uma vez, seguindo `docs/go-live/backup-e-restauracao.md`.
+3. Lembre: o backup fica só no disco da VPS; copie o dump para fora de vez em quando.
+
 ## 5. Segurança da VPS
 
 1. Troque a senha do usuário SSH e desative o login por senha (`PasswordAuthentication no`, só chave).

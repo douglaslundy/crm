@@ -71,3 +71,8 @@ Envio para fora da VPS, criptografia do dump, alerta de falha de backup, restaur
 ## Critério de pronto
 
 Scripts e runbook commitados, teste de conteúdo verde, `.gitignore` atualizado, `checklist-producao.md` e `deploy/README.md` atualizados, `PROGRESSO.md` e `TAREFAS.md` atualizados com o limite acima dito às claras.
+
+## Ajustes na implementação
+
+- O `bash -n` não roda dentro do PHPUnit: no Windows o `bash` do PATH pode ser o do WSL e quebrar o teste por caminho. O teste confere só o conteúdo dos scripts; a sintaxe foi checada à mão com `bash -n` em cada script.
+- Os scripts também foram exercitados sem Docker nas guardas de entrada (sem argumento, arquivo inexistente, `.env` ausente: saem com erro e mensagem). O caminho com banco continua não executado.

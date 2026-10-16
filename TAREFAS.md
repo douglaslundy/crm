@@ -37,7 +37,7 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
 - [ ] **F8 Go-live** (decomposta em quatro partes, parte código; piloto real vira roteiro do usuário):
   - [x] **F8a Auditoria fiscal** (concluída em 2026-10-13): 11 checagens do `audit-checklist.md`, relatório em `docs/auditoria/2026-10-13-f8a-auditoria-fiscal.md`, 3 achados Importantes corrigidos, roteiro em `docs/auditoria/roteiro-homologacao-real.md`.
   - [x] **F8b Pendências de go-live** (7 de 7, concluída em 2026-10-16): TLS ligado por patch (`nfse-php` e `sped-common`), contador de numeração por ambiente com número inicial na virada, template de produção + Caddy + runbook `docs/go-live/checklist-producao.md`. Spec `docs/superpowers/specs/2026-10-16-f8b-pendencias-go-live-design.md`; plano `docs/superpowers/plans/2026-10-16-f8b-pendencias-go-live.md`.
-  - [ ] **F8c Backup e restauração:** backup diário do banco e do storage com runbook de restauração testado.
+  - [x] **F8c Backup e restauração** (concluída em 2026-10-16): `deploy/backup.sh` (dump validado, retenção de 14 dias) e `deploy/restaurar.sh` (confirmação, dump de segurança, transação única), runbook `docs/go-live/backup-e-restauracao.md`. Só o banco entra no backup (o app não grava arquivos em `storage`); destino só o disco da VPS. O ciclo real de backup e restauração não foi executado (sem Docker nem PostgreSQL na máquina de desenvolvimento): o usuário precisa provar no staging pelo roteiro do runbook.
   - [ ] **F8d Testes de carga.**
 
 ## Pendências herdadas da revisão da F0 (resolver no início da F1)

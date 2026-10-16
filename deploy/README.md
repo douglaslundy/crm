@@ -38,7 +38,7 @@ docker compose exec app php artisan tinker
 docker compose down                      # para (os dados ficam nos volumes)
 ```
 
-Backup do banco: `docker compose exec -T db pg_dump -U plataforma plataforma > backup.sql`.
+Backup e restauração do banco: `./backup.sh` e `./restaurar.sh <dump>` (veja `docs/go-live/backup-e-restauracao.md`).
 
 ## Limitações
 
