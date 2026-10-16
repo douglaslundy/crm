@@ -59,4 +59,43 @@ class BackupDoBancoTest extends TestCase
 
         $this->assertMatchesRegularExpression('#^/?backups/$#m', $ignore);
     }
+
+    public function test_restauracao_para_na_primeira_falha_e_exige_o_arquivo(): void
+    {
+        $sh = $this->script('restaurar.sh');
+
+        $this->assertStringStartsWith("#!/usr/bin/env bash\n", $sh);
+        $this->assertStringContainsString('set -euo pipefail', $sh);
+        $this->assertStringNotContainsString("\r", $sh);
+        $this->assertStringContainsString('[ -f "$arquivo" ]', $sh);
+    }
+
+    public function test_restauracao_valida_confirma_faz_dump_de_seguranca_e_so_depois_restaura(): void
+    {
+        $sh = $this->script('restaurar.sh');
+
+        $valida = strpos($sh, 'pg_restore --list');
+        $confirma = strpos($sh, '"RESTAURAR"');
+        $seguranca = strpos($sh, 'pre-restauracao-');
+        $para = strpos($sh, 'compose stop app worker scheduler');
+        $restaura = strpos($sh, 'pg_restore -U');
+
+        foreach ([$valida, $confirma, $seguranca, $para, $restaura] as $posicao) {
+            $this->assertNotFalse($posicao);
+        }
+        $this->assertTrue(
+            $valida < $confirma && $confirma < $seguranca && $seguranca < $para && $para < $restaura,
+            'Ordem: validar, confirmar, dump de segurança, parar serviços, restaurar.',
+        );
+    }
+
+    public function test_restauracao_e_atomica_e_sobe_os_servicos_de_volta(): void
+    {
+        $sh = $this->script('restaurar.sh');
+
+        $this->assertStringContainsString('--single-transaction', $sh);
+        $this->assertStringContainsString('--clean --if-exists', $sh);
+        $this->assertStringContainsString('compose up -d app worker scheduler', $sh);
+        $this->assertStringContainsString('information_schema.tables', $sh);
+    }
 }
