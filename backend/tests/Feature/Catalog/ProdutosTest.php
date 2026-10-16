@@ -117,8 +117,7 @@ class ProdutosTest extends TestCase
             'sku' => 'SKU-1', 'nome' => 'Parafuso', 'unidade' => 'UN', 'preco_centavos' => 500,
         ])->assertCreated();
 
-        $this->app['auth']->forgetGuards();
-        $this->flushSession();
+        $this->reiniciarAutenticacao();
 
         $this->spa()->actingAs($leitura)->postJson('/api/app/produtos', [
             'sku' => 'SKU-2', 'nome' => 'Parafuso', 'unidade' => 'UN', 'preco_centavos' => 500,

@@ -15,10 +15,16 @@ abstract class TestCase extends BaseTestCase
      */
     protected function spaComo(Authenticatable $usuario): static
     {
-        $this->app['auth']->forgetGuards();
-        $this->flushSession();
+        $this->reiniciarAutenticacao();
 
         return $this->spa()->actingAs($usuario);
+    }
+
+    /** Esquece guards e sessão: a próxima requisição do teste começa sem usuário nem cookie. */
+    protected function reiniciarAutenticacao(): void
+    {
+        $this->app['auth']->forgetGuards();
+        $this->flushSession();
     }
 
     /** Simula uma requisição vinda do frontend (domínio stateful do Sanctum). */

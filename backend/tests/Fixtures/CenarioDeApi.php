@@ -56,8 +56,7 @@ trait CenarioDeApi
     /** Requisição autenticada por chave de API (por padrão a do cenário). */
     protected function comoApi(?string $texto = null): static
     {
-        $this->app['auth']->forgetGuards();
-        $this->flushSession();
+        $this->reiniciarAutenticacao();
 
         return $this->withHeaders(['Authorization' => 'Bearer '.($texto ?? $this->textoDaChave), 'Accept' => 'application/json']);
     }

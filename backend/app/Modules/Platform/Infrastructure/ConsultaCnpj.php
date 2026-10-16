@@ -46,9 +46,15 @@ final class ConsultaCnpj
             throw new ConsultaCnpjIndisponivelException;
         }
 
+        // 200 com corpo vazio ou sem razão social não é uma empresa encontrada: não vai para o cache.
+        $razao = trim((string) $resposta->json('razao_social'));
+        if ($razao === '') {
+            return null;
+        }
+
         $fantasia = trim((string) $resposta->json('nome_fantasia'));
         $dados = [
-            'razao_social' => trim((string) $resposta->json('razao_social')),
+            'razao_social' => $razao,
             'nome_fantasia' => $fantasia === '' ? null : $fantasia,
         ];
         Cache::put($chave, $dados, self::CACHE_SEGUNDOS);

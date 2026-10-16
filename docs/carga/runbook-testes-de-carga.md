@@ -33,6 +33,7 @@ Tem que imprimir `App\Modules\Fiscal\Infrastructure\Simulado\EmissorDeNfeSimulad
 ```bash
 docker compose exec app php artisan carga:semear --empresas=50
 mkdir -p ../carga/dados ../carga/saida
+chmod a+rwx ../carga/saida   # o k6 roda como outro usuário no container e precisa gravar o resumo JSON
 docker compose exec -T app cat storage/app/carga/contas.json > ../carga/dados/contas.json
 ```
 
@@ -55,6 +56,7 @@ Metas (os limiares estão dentro de cada script): leitura p95 < 800 ms; escrita 
 Observações dos cenários:
 - `crm-escrita.js` chama o aceite público da proposta. A rota tem `throttle:60,1` por IP e o k6 sai de um IP só, então 429 ali é esperado e tolerado.
 - `api-publica.js` usa a conta 0 de propósito acima do limite (900/min contra 300/min) e confere o 429.
+- Os scripts de sessão (`leitura`, `crm-escrita`, `estresse`) usam `noCookiesReset: true`: o k6 zera os cookies a cada iteração por padrão e o login (feito uma vez por usuário virtual) se perderia.
 - Se o check `enviar devolve o link` falhar em `crm-escrita.js`, a resposta de `POST /api/app/crm/propostas/{id}/enviar` mudou: ver `PropostasController::um`.
 
 ## 5. Estresse (opcional, só depois dos quatro passarem)

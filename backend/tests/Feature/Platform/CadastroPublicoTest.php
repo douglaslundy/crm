@@ -68,6 +68,25 @@ class CadastroPublicoTest extends TestCase
         $this->getJson('/api/publico/cnpj/11222333000181')->assertNotFound();
     }
 
+    public function test_consulta_cnpj_com_corpo_vazio_nao_conta_como_encontrado_nem_vai_para_o_cache(): void
+    {
+        Http::fake(['*' => Http::response([])]);
+
+        $this->getJson('/api/publico/cnpj/11222333000181')->assertNotFound();
+        $this->getJson('/api/publico/cnpj/11222333000181')->assertNotFound();
+
+        Http::assertSentCount(2);
+    }
+
+    public function test_planos_publicos_tem_limite_de_requisicoes(): void
+    {
+        for ($i = 0; $i < 60; $i++) {
+            $this->getJson('/api/publico/planos')->assertOk();
+        }
+
+        $this->getJson('/api/publico/planos')->assertStatus(429);
+    }
+
     public function test_consulta_cnpj_com_brasilapi_fora_responde_503(): void
     {
         Http::fake(['*' => Http::failedConnection()]);

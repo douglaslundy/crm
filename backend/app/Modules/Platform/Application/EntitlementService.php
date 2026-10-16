@@ -34,7 +34,7 @@ final class EntitlementService
     /** -1 = ilimitado; sem plano ou sem linha = 0. */
     public function limite(Tenant $tenant, Recurso $recurso): int
     {
-        return $tenant->plano?->limiteDe($recurso) ?? 0;
+        return $this->limiteNoPlano($tenant->plano, $recurso);
     }
 
     public function uso(Tenant $tenant, Recurso $recurso): int
@@ -68,8 +68,14 @@ final class EntitlementService
         return array_map(fn (Recurso $recurso): array => [
             'recurso' => $recurso->value,
             'uso' => $this->uso($tenant, $recurso),
-            'limite' => $plano?->limiteDe($recurso) ?? 0,
+            'limite' => $this->limiteNoPlano($plano, $recurso),
         ], $this->contadores->recursos());
+    }
+
+    /** Sem plano, o limite é 0 (nada liberado). */
+    private function limiteNoPlano(?Plano $plano, Recurso $recurso): int
+    {
+        return $plano?->limiteDe($recurso) ?? 0;
     }
 
     /** @return list<array{recurso: string, uso: int, limite: int}> */

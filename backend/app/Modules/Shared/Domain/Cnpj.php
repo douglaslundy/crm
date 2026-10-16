@@ -16,7 +16,8 @@ final class Cnpj implements Stringable
 {
     private const PESOS_DV1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
 
-    private const PESOS_DV2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
+    /** Os pesos do segundo dígito são os do primeiro com o 6 na frente. */
+    private const PESOS_DV2 = [6, ...self::PESOS_DV1];
 
     private function __construct(public readonly string $valor) {}
 

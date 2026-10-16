@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Modules\Platform\Domain\Models\Plano;
+use App\Modules\Shared\Domain\Exceptions\CnpjInvalidoException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class IdiomaTest extends TestCase
@@ -27,5 +30,23 @@ class IdiomaTest extends TestCase
         $this->spa()->postJson('/api/app/auth/esqueci-senha', ['email' => 'ninguem@x.com'])
             ->assertStatus(429)
             ->assertJsonPath('message', 'Muitas tentativas. Aguarde um pouco e tente novamente.');
+    }
+
+    public function test_registro_nao_encontrado_responde_em_portugues(): void
+    {
+        Route::middleware('api')->get('api/teste-registro', fn () => Plano::query()->whereKey('inexistente')->firstOrFail());
+
+        $this->getJson('/api/teste-registro')
+            ->assertNotFound()
+            ->assertExactJson(['message' => 'Registro não encontrado.']);
+    }
+
+    public function test_cnpj_invalido_responde_422_com_codigo(): void
+    {
+        Route::middleware('api')->get('api/teste-cnpj', fn () => throw CnpjInvalidoException::para('123'));
+
+        $this->getJson('/api/teste-cnpj')
+            ->assertStatus(422)
+            ->assertJsonPath('codigo', 'CNPJ_INVALIDO');
     }
 }

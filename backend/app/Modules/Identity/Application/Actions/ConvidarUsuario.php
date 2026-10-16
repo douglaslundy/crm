@@ -11,9 +11,11 @@ use App\Modules\Identity\Notifications\ConviteDeUsuario;
 use App\Modules\Platform\Application\EntitlementService;
 use App\Modules\Platform\Domain\Enums\Recurso;
 use App\Modules\Tenancy\Domain\Models\Tenant;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 final class ConvidarUsuario
 {
@@ -36,7 +38,12 @@ final class ConvidarUsuario
 
             // Senha aleatória nunca revelada: o convidado define a dele pelo link.
             $usuario = new Usuario(['nome' => $dados['nome'], 'email' => $dados['email'], 'password' => Str::password(32)]);
-            $usuario->forceFill(['tenant_id' => $tenant->id, 'papel' => $papel, 'ativo' => true])->save();
+            try {
+                $usuario->forceFill(['tenant_id' => $tenant->id, 'papel' => $papel, 'ativo' => true])->save();
+            } catch (UniqueConstraintViolationException) {
+                // Corrida entre dois convites: a validação do request passou nos dois.
+                throw ValidationException::withMessages(['email' => 'Este e-mail já está em uso.']);
+            }
 
             activity('usuarios')->performedOn($usuario)->causedBy($autor)->event('usuario_convidado')
                 ->withProperties(['papel' => $papel->value])->log('Usuário convidado');

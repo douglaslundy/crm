@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Identity;
 
+use App\Modules\Identity\Application\Actions\ConvidarUsuario;
 use App\Modules\Identity\Domain\Enums\Papel;
 use App\Modules\Identity\Domain\Models\Usuario;
 use App\Modules\Identity\Notifications\ConviteDeUsuario;
@@ -12,6 +13,8 @@ use App\Modules\Platform\Domain\Models\Plano;
 use App\Modules\Tenancy\Domain\Models\Tenant;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Validation\ValidationException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Spatie\Activitylog\Models\Activity;
 use Tests\TestCase;
 
@@ -78,6 +81,65 @@ class UsuariosDaEmpresaTest extends TestCase
         $this->spa()->postJson('/api/app/auth/login', ['email' => 'bia@x.com', 'password' => 'Senha123'])->assertOk();
     }
 
+    /** @return array<string, array{string}> */
+    public static function papeisConvidaveis(): array
+    {
+        return ['fiscal' => ['FISCAL'], 'leitura' => ['LEITURA'], 'vendedor' => ['VENDEDOR'], 'admin' => ['ADMIN']];
+    }
+
+    #[DataProvider('papeisConvidaveis')]
+    public function test_proprietario_convida_em_qualquer_papel_da_empresa(string $papel): void
+    {
+        $this->spa()->actingAs($this->dono)
+            ->postJson('/api/app/usuarios', ['nome' => 'Bia', 'email' => 'bia@x.com', 'papel' => $papel])
+            ->assertCreated()
+            ->assertJsonPath('data.papel', $papel);
+    }
+
+    public function test_admin_nao_convida_proprietario(): void
+    {
+        $admin = $this->membro(Papel::Admin);
+
+        $this->spa()->actingAs($admin)
+            ->postJson('/api/app/usuarios', ['nome' => 'Bia', 'email' => 'bia@x.com', 'papel' => 'PROPRIETARIO'])
+            ->assertStatus(403);
+
+        $this->assertDatabaseMissing('usuarios', ['email' => 'bia@x.com']);
+    }
+
+    public function test_convite_so_pode_ser_aceito_uma_vez(): void
+    {
+        $this->spa()->actingAs($this->dono)
+            ->postJson('/api/app/usuarios', ['nome' => 'Bia', 'email' => 'bia@x.com', 'papel' => 'FISCAL'])
+            ->assertCreated();
+        $token = null;
+        Notification::assertSentTo(Usuario::query()->where('email', 'bia@x.com')->firstOrFail(), ConviteDeUsuario::class,
+            function (ConviteDeUsuario $n) use (&$token): bool {
+                $token = $n->token;
+
+                return true;
+            });
+        $corpo = ['token' => $token, 'email' => 'bia@x.com', 'password' => 'Senha123', 'password_confirmation' => 'Senha123'];
+
+        $this->spa()->postJson('/api/app/auth/aceitar-convite', $corpo)->assertOk();
+        $this->reiniciarAutenticacao();
+        $this->spa()->postJson('/api/app/auth/aceitar-convite', [...$corpo, 'password' => 'Outra1234', 'password_confirmation' => 'Outra1234'])
+            ->assertStatus(422);
+    }
+
+    public function test_corrida_de_convites_para_o_mesmo_email_vira_422_e_nao_500(): void
+    {
+        // A validação do request já passou nos dois convites; quem perde a corrida bate na constraint do banco.
+        $this->membro()->forceFill(['email' => 'bia@x.com'])->save();
+
+        try {
+            app(ConvidarUsuario::class)->executar($this->dono, ['nome' => 'Bia', 'email' => 'bia@x.com', 'papel' => 'FISCAL']);
+            $this->fail('Esperava ValidationException.');
+        } catch (ValidationException $e) {
+            $this->assertSame(['Este e-mail já está em uso.'], $e->errors()['email']);
+        }
+    }
+
     public function test_convite_expira_depois_de_72_horas(): void
     {
         $this->spa()->actingAs($this->dono)
@@ -106,8 +168,7 @@ class UsuariosDaEmpresaTest extends TestCase
 
         $this->travel(73)->hours();
 
-        $this->app['auth']->forgetGuards();
-        $this->flushSession();
+        $this->reiniciarAutenticacao();
 
         $this->spa()->postJson('/api/app/auth/esqueci-senha', ['email' => 'bia@x.com'])->assertOk();
     }
@@ -186,8 +247,7 @@ class UsuariosDaEmpresaTest extends TestCase
 
         // Troca de usuário autenticado entre requisições: sem isso o Sanctum
         // (AuthenticateSession) responde 401 espúrio na segunda chamada.
-        $this->app['auth']->forgetGuards();
-        $this->flushSession();
+        $this->reiniciarAutenticacao();
 
         $this->spa()->actingAs($this->dono)->putJson("/api/app/usuarios/{$membro->id}", ['nome' => 'X', 'papel' => 'PROPRIETARIO'])
             ->assertOk()

@@ -51,8 +51,7 @@ class MetasApiTest extends TestCase
         $this->spaComo($this->admin)->getJson('/api/app/crm/metas?mes=2026-10')
             ->assertOk()->assertJsonCount(2, 'data');
 
-        $this->app['auth']->forgetGuards();
-        $this->flushSession();
+        $this->reiniciarAutenticacao();
 
         $this->spaComo($vendedor)->getJson('/api/app/crm/metas?mes=2026-10')
             ->assertOk()->assertJsonCount(1, 'data')->assertJsonPath('data.0.usuario_id', $vendedor->id);

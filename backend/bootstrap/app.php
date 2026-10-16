@@ -12,12 +12,14 @@ use App\Modules\Shared\Domain\Exceptions\ErroDeNegocio;
 use App\Modules\Shared\Http\Middleware\GarantirIdempotencia;
 use App\Modules\Shared\Http\TratadorDeErrosDaApi;
 use App\Modules\Tenancy\Http\Middleware\DefinirTenantDoUsuario;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Exceptions\ThrottleRequestsException;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Middleware\SubstituteBindings;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -87,6 +89,15 @@ return Application::configure(basePath: dirname(__DIR__))
             $e->status(),
             $e->headers(),
         ));
+
+        // O framework converte firstOrFail() em 404 com texto em inglês ("No query results for model...").
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+            if ($request->expectsJson() && $e->getPrevious() instanceof ModelNotFoundException) {
+                return response()->json(['message' => 'Registro não encontrado.'], 404);
+            }
+
+            return null;
+        });
 
         // A mensagem de 429 do framework é fixa em inglês e não passa pela tradução.
         $exceptions->render(function (ThrottleRequestsException $e, Request $request) {
