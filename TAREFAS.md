@@ -36,7 +36,7 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
   - [x] **F7d Relatórios e metas** (10 de 10, concluída em 2026-10-13): relatório comercial (ganhos, perdas, conversão, funil, previsão, motivos, vendedores, propostas, faturado), metas mensais por vendedor, página `/crm/relatorios` e previsão/meta no painel.
 - [ ] **F8 Go-live** (decomposta em quatro partes, parte código; piloto real vira roteiro do usuário):
   - [x] **F8a Auditoria fiscal** (concluída em 2026-10-13): 11 checagens do `audit-checklist.md`, relatório em `docs/auditoria/2026-10-13-f8a-auditoria-fiscal.md`, 3 achados Importantes corrigidos, roteiro em `docs/auditoria/roteiro-homologacao-real.md`.
-  - [ ] **F8b Pendências de go-live:** TLS da `nfse-php`, contador único homologação/produção, configuração de produção (HTTPS, domínio, cookies).
+  - [x] **F8b Pendências de go-live** (7 de 7, concluída em 2026-10-16): TLS ligado por patch (`nfse-php` e `sped-common`), contador de numeração por ambiente com número inicial na virada, template de produção + Caddy + runbook `docs/go-live/checklist-producao.md`. Spec `docs/superpowers/specs/2026-10-16-f8b-pendencias-go-live-design.md`; plano `docs/superpowers/plans/2026-10-16-f8b-pendencias-go-live.md`.
   - [ ] **F8c Backup e restauração:** backup diário do banco e do storage com runbook de restauração testado.
   - [ ] **F8d Testes de carga.**
 
@@ -110,7 +110,7 @@ Achados menores adiados e uma decisão de produto parcada durante a revisão das
 - [ ] `NfePhpEmissor` sem teste automatizado (precisa de SEFAZ).
 
 ## Pendências da F4a (2026-10-07)
-- [ ] **Segurança (go-live, F8):** a `nfse-php` desliga a verificação TLS nos clientes HTTP (`CURLOPT_SSL_VERIFYPEER=0` e `VERIFYHOST=0`), sem opção de configurar. Avaliar fork/patch, proxy com pinning ou aceitar o risco documentado.
+- [x] **Segurança (go-live, F8):** a `nfse-php` e a `sped-common` desligavam a verificação TLS; corrigido na F8b por composer-patches (`backend/patches`). Falta provar a cadeia de CAs da SEFAZ/ADN com `FISCAL_CA_BUNDLE` no roteiro de homologação real. `sped-gtin` (não usado para emitir) segue com o defeito.
 - [ ] **Emissão real da NFS-e em homologação** (roteiro no `PROGRESSO.md`): a comunicação com a ADN, a conversão de falha de rede em ERRO e o formato da resposta 200 de nota cancelada nunca foram exercitados. `NfseNacionalEmissor` não tem teste automatizado.
 - [ ] Município não aderido ao padrão nacional: hoje a recusa da ADN vira mensagem; `consultarParametrosConvenio(codigoIbge)` da lib pode checar a adesão antes de emitir.
 - [ ] Alíquota do ISS é exigida no cadastro do serviço mas não é enviada no Simples (E0625): revisar quando houver Regime Normal.

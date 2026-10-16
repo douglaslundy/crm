@@ -67,3 +67,10 @@ Backup e restauração (F8c), testes de carga (F8d), pinning de certificado da S
 ## Critério de pronto
 
 Backend verde (testes, Pint, PHPStan), patches aplicados e cobertos, contador independente por ambiente com testes, template e runbook de produção commitados, `PROGRESSO.md` e `TAREFAS.md` atualizados.
+
+## Ajustes na implementação
+
+- A migration herda `proximo_numero` para os emitentes que já estão em PRODUCAO (o spec dizia backfill 1, o que repetiria número na SEFAZ).
+- Produção usa a camada `deploy/docker-compose.producao.yml` (com `!reset` das portas) em vez de perfil do Compose, porque perfil não remove as portas publicadas pelo `app` e pelo `web`.
+- O `proximo_numero` do resource da série é o contador do ambiente em que o emitente opera agora; o contrato do frontend não mudou.
+- `AplicarResultadoDaEmissao` (539, número ocupado) usa o ambiente da nota, não o do emitente.
