@@ -265,3 +265,5 @@ O worker precisa estar de pé: `php artisan queue:work` e o agendador `php artis
 
 ## Próxima tarefa
 Executar o runbook da F8d na VPS (é com o usuário) e analisar os resultados com ele; depois, o que restar do go-live (`docs/go-live/checklist-producao.md`, roteiro de homologação real em `docs/auditoria/roteiro-homologacao-real.md`). Contexto necessário: `docs/carga/runbook-testes-de-carga.md`, `docs/carga/_modelo-de-resultado.md`, os JSONs de `carga/saida/` que o usuário trouxer.
+
+- **Enviado e implantado (2026-10-16):** push de 7 commits (5cc4998..1a09ee2) e deploy no staging; landing em `http://192.168.0.233:3200/` (200) e `GET /api/publico/contato/desafio` (200), containers saudaveis.
