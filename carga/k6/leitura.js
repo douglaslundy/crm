@@ -2,6 +2,7 @@ import { sleep, check } from 'k6';
 import { contaDoVu, entrar, ler, semVazamento, limiaresPadrao, erro5xx } from './lib/comum.js';
 
 export const options = {
+  noCookiesReset: true, // a sessão (login feito uma vez por VU) tem que sobreviver entre iterações
   scenarios: {
     leitura: {
       executor: 'ramping-vus',

@@ -3,6 +3,7 @@ import http from 'k6/http';
 import { contaDoVu, entrar, escrever, limiaresPadrao, erro5xx, API } from './lib/comum.js';
 
 export const options = {
+  noCookiesReset: true, // a sessão (login feito uma vez por VU) tem que sobreviver entre iterações
   scenarios: {
     escrita: {
       executor: 'ramping-vus',
