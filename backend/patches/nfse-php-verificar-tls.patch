@@ -1,0 +1,45 @@
+diff -ruN a/src/Http/Client/AdnClient.php b/src/Http/Client/AdnClient.php
+--- a/src/Http/Client/AdnClient.php	2026-10-16 00:08:19.172344900 -0300
++++ b/src/Http/Client/AdnClient.php	2026-10-16 00:08:19.735831600 -0300
+@@ -71,8 +71,9 @@
+                 CURLOPT_CONNECTTIMEOUT => 30,
+                 CURLOPT_TIMEOUT => 60,
+                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+-                CURLOPT_SSL_VERIFYHOST => 0,
+-                CURLOPT_SSL_VERIFYPEER => 0,
++                CURLOPT_SSL_VERIFYHOST => 2,
++                CURLOPT_SSL_VERIFYPEER => 1,
++                ...(($ca = $_SERVER['FISCAL_CA_BUNDLE'] ?? getenv('FISCAL_CA_BUNDLE')) ? [CURLOPT_CAINFO => $ca] : []),
+             ],
+             RequestOptions::HEADERS => [
+                 'Content-Type' => 'application/json',
+diff -ruN a/src/Http/Client/CncClient.php b/src/Http/Client/CncClient.php
+--- a/src/Http/Client/CncClient.php	2026-10-16 00:08:19.178166300 -0300
++++ b/src/Http/Client/CncClient.php	2026-10-16 00:08:19.836919500 -0300
+@@ -62,8 +62,9 @@
+                 CURLOPT_CONNECTTIMEOUT => 30,
+                 CURLOPT_TIMEOUT => 60,
+                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+-                CURLOPT_SSL_VERIFYHOST => 0,
+-                CURLOPT_SSL_VERIFYPEER => 0,
++                CURLOPT_SSL_VERIFYHOST => 2,
++                CURLOPT_SSL_VERIFYPEER => 1,
++                ...(($ca = $_SERVER['FISCAL_CA_BUNDLE'] ?? getenv('FISCAL_CA_BUNDLE')) ? [CURLOPT_CAINFO => $ca] : []),
+             ],
+             RequestOptions::HEADERS => [
+                 'Content-Type' => 'application/json',
+diff -ruN a/src/Http/Client/SefinClient.php b/src/Http/Client/SefinClient.php
+--- a/src/Http/Client/SefinClient.php	2026-10-16 00:08:19.178166300 -0300
++++ b/src/Http/Client/SefinClient.php	2026-10-16 00:08:19.924567200 -0300
+@@ -63,8 +63,9 @@
+                 CURLOPT_CONNECTTIMEOUT => 30,
+                 CURLOPT_TIMEOUT => 60,
+                 CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+-                CURLOPT_SSL_VERIFYHOST => 0,
+-                CURLOPT_SSL_VERIFYPEER => 0,
++                CURLOPT_SSL_VERIFYHOST => 2,
++                CURLOPT_SSL_VERIFYPEER => 1,
++                ...(($ca = $_SERVER['FISCAL_CA_BUNDLE'] ?? getenv('FISCAL_CA_BUNDLE')) ? [CURLOPT_CAINFO => $ca] : []),
+             ],
+             RequestOptions::HEADERS => [
+                 'Content-Type' => 'application/json',

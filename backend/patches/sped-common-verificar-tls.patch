@@ -1,0 +1,31 @@
+diff -ruN a/src/Soap/SoapCurl.php b/src/Soap/SoapCurl.php
+--- a/src/Soap/SoapCurl.php	2026-10-16 00:08:20.582732400 -0300
++++ b/src/Soap/SoapCurl.php	2026-10-16 00:08:20.928054000 -0300
+@@ -85,8 +85,11 @@
+             curl_setopt($oCurl, CURLOPT_TIMEOUT, $this->soaptimeout + 20);
+             curl_setopt($oCurl, CURLOPT_HEADER, 1);
+             curl_setopt($oCurl, CURLOPT_HTTP_VERSION, $this->httpver);
+-            curl_setopt($oCurl, CURLOPT_SSL_VERIFYHOST, 0);
+-            curl_setopt($oCurl, CURLOPT_SSL_VERIFYPEER, 0);
++            curl_setopt($oCurl, CURLOPT_SSL_VERIFYHOST, 2);
++            curl_setopt($oCurl, CURLOPT_SSL_VERIFYPEER, 1);
++            if (($ca = $_SERVER['FISCAL_CA_BUNDLE'] ?? getenv('FISCAL_CA_BUNDLE')) && is_file($ca)) {
++                curl_setopt($oCurl, CURLOPT_CAINFO, $ca);
++            }
+             if (!empty($this->security_level)) {
+                 curl_setopt($oCurl, CURLOPT_SSL_CIPHER_LIST, "{$this->security_level}");
+             }
+@@ -206,8 +209,11 @@
+             curl_setopt($oCurl, CURLOPT_TIMEOUT, $this->soaptimeout + 20);
+             curl_setopt($oCurl, CURLOPT_HEADER, 1);
+             curl_setopt($oCurl, CURLOPT_HTTP_VERSION, $this->httpver);
+-            curl_setopt($oCurl, CURLOPT_SSL_VERIFYHOST, 0);
+-            curl_setopt($oCurl, CURLOPT_SSL_VERIFYPEER, 0);
++            curl_setopt($oCurl, CURLOPT_SSL_VERIFYHOST, 2);
++            curl_setopt($oCurl, CURLOPT_SSL_VERIFYPEER, 1);
++            if (($ca = $_SERVER['FISCAL_CA_BUNDLE'] ?? getenv('FISCAL_CA_BUNDLE')) && is_file($ca)) {
++                curl_setopt($oCurl, CURLOPT_CAINFO, $ca);
++            }
+             curl_setopt($oCurl, CURLOPT_SSLVERSION, $this->soapprotocol);
+             curl_setopt($oCurl, CURLOPT_SSLCERT, $this->tempdir . $this->certfile);
+             curl_setopt($oCurl, CURLOPT_SSLKEY, $this->tempdir . $this->prifile);

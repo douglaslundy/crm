@@ -21,7 +21,7 @@ use Throwable;
 /**
  * Fala com a ADN (Sistema Nacional NFS-e) pela `nfse-nacional/nfse-php`, com o certificado A1 do próprio CNPJ.
  * Sem teste automatizado contra a ADN real (exige certificado e município aderido): coberto pelo roteiro de homologação.
- * ATENÇÃO: a lib desliga a verificação TLS nos próprios clientes HTTP (pendência de segurança, ver TAREFAS.md).
+ * A lib desliga a verificação TLS; backend/patches liga e o bundle de CAs vem de FISCAL_CA_BUNDLE.
  */
 final class NfseNacionalEmissor implements EmissorDeNfse
 {

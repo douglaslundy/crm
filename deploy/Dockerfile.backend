@@ -11,7 +11,10 @@ WORKDIR /var/www/html
 # INSTALL_DEV=1 (staging) instala as dependências de desenvolvimento: o seeder de demonstração usa o Faker.
 # Em produção de verdade use INSTALL_DEV=0 e não rode o seeder.
 ARG INSTALL_DEV=0
+RUN apt-get update && apt-get install -y --no-install-recommends patch \
+    && rm -rf /var/lib/apt/lists/*
 COPY --chown=www-data:www-data backend/composer.json backend/composer.lock ./
+COPY --chown=www-data:www-data backend/patches ./patches
 RUN composer install $( [ "$INSTALL_DEV" = "1" ] || echo --no-dev ) --no-scripts --no-autoloader --prefer-dist --no-interaction
 
 COPY --chown=www-data:www-data backend/ ./

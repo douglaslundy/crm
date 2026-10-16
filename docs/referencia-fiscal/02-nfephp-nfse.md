@@ -79,7 +79,7 @@ Fonte: `mecanicapro/backend/app/Services/Fiscal/NfePhp/MotorNfse.php` (633 linha
 - **Idempotência:** `verificarDps(idDps)` (404 = não existe; outra falha = incerteza) e `consultarDps(idDps)` (devolve a chave) antes de qualquer envio; incerteza vira ERRO e nunca reenvia.
 - **Desconto:** `valores.vDescCondIncond.vDescIncond`, entre `vServPrest` e `trib`.
 - **Status autorizados na 1.23:** o enum `CodigoStatus` só tem 100, 102, 103 e 107 (o 101, substituição, saiu); substituição está fora do escopo.
-- A lib desliga a verificação TLS (`CURLOPT_SSL_VERIFYPEER=0`, `VERIFYHOST=0`) nos clientes HTTP: pendência de segurança para o go-live.
+- A lib desliga a verificação TLS (`CURLOPT_SSL_VERIFYPEER=0`, `VERIFYHOST=0`) nos clientes HTTP; a F8b liga por patch (`backend/patches`, composer-patches) e o bundle de CAs vem de `FISCAL_CA_BUNDLE`.
 - O XSD `DPS_v1.01.xsd` não compila no libxml e o `DpsValidator` é mais rígido que a ADN: os testes conferem a estrutura do XML, não o XSD.
 
 ## Venda mista (F4b, 2026-10-07)
