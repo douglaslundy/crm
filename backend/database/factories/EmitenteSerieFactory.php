@@ -20,6 +20,7 @@ class EmitenteSerieFactory extends Factory
             'modelo' => ModeloDocumento::Nfe,
             'serie' => '1',
             'proximo_numero' => 1,
+            'proximo_numero_producao' => 1,
         ];
     }
 }
