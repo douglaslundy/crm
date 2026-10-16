@@ -29,7 +29,7 @@ Uso esperado (decisão do usuário): 50 empresas, 100 usuários simultâneos.
 
 Comando Artisan `carga:semear` (`backend/app/Console`):
 
-- Recusa rodar com `APP_ENV=production`.
+- Recusa rodar sem `APP_AMBIENTE=staging` (guarda `AmbienteDeCarga`, fail-closed; o staging roda com `APP_ENV=production`, por isso o guarda não é o `APP_ENV`).
 - Cria 50 empresas fictícias (CNPJ gerado, nunca real), cerca de 100 usuários (dono e vendedores), clientes, catálogo, funil e negócios em volume realista por empresa, mais uma série e um emitente de homologação por empresa.
 - Cria um token de API por empresa e grava a lista (usuários e tokens) em um arquivo JSON fora do repositório, que o k6 lê.
 - Idempotente: marca as empresas de carga por um prefixo no nome; `carga:limpar` remove só elas.
@@ -39,7 +39,8 @@ Comando Artisan `carga:semear` (`backend/app/Console`):
 
 - Classe em `Fiscal/Infrastructure` que implementa os contratos de emissor existentes, devolve autorização sintética com latência configurável (`FISCAL_EMISSOR_SIMULADO_LATENCIA_MS`).
 - Ligada só quando `FISCAL_EMISSOR_SIMULADO=1`.
-- `FiscalServiceProvider` **aborta o boot** com exceção clara se a flag estiver ligada e `APP_ENV=production`. Teste automatizado cobre os dois ramos.
+- `FiscalServiceProvider` **aborta o boot** com exceção clara se a flag estiver ligada e `APP_AMBIENTE` não for `staging`. Teste automatizado cobre os dois ramos.
+- Cobre NF-e e NFC-e (`EmissorDeNfe`); NFS-e fica fora.
 - A emissão passa pelas Actions, pela fila e pelo worker reais. Só a chamada final ao órgão fiscal é trocada. Regra tributária continua fora do emissor, como nos providers reais.
 - O emissor de carga não grava XML como se fosse real: o XML sintético é marcado como simulado e não é válido contra o XSD.
 

@@ -30,6 +30,9 @@ return [
 
     'env' => env('APP_ENV', 'production'),
 
+    /** `staging` libera ferramentas de carga (emissor simulado, carga:semear). Qualquer outro valor, inclusive ausente, bloqueia. */
+    'ambiente' => env('APP_AMBIENTE', 'producao'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Debug Mode
