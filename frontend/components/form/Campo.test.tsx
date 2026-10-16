@@ -20,6 +20,14 @@ describe('Campo', () => {
   });
 });
 
+it('sem dica e sem erro, o campo fica sem descrição', () => {
+  render(<Campo id="cidade" label="Cidade">{(a11y) => <input {...a11y} />}</Campo>);
+
+  const campo = screen.getByLabelText('Cidade');
+  expect(campo).not.toHaveAttribute('aria-describedby');
+  expect(campo).toHaveAttribute('aria-invalid', 'false');
+});
+
 describe('Campo obrigatório', () => {
   it('mostra asterisco e anuncia "obrigatório" ao leitor de tela', () => {
     render(<Campo id="nome" label="Nome" obrigatorio>{(a11y) => <input {...a11y} />}</Campo>);

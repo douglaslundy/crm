@@ -29,6 +29,9 @@ async function preencherResponsavel() {
   await userEvent.click(screen.getByLabelText(/Li e aceito os termos de uso/));
 }
 
+// Digitar ~60 caracteres com userEvent passa de 5 s quando a suíte inteira roda em paralelo.
+vi.setConfig({ testTimeout: 20_000 });
+
 describe('CadastroForm', () => {
   beforeEach(() => {
     push.mockClear();

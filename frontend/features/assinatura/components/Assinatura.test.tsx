@@ -38,6 +38,13 @@ describe('FaixaSituacao', () => {
     expect(screen.getByRole('link', { name: texto })).toHaveAttribute('href', '/assinatura/planos');
   });
 
+  it('inadimplente e cancelada explicam a situação', () => {
+    const { rerender } = render(<FaixaSituacao situacao="INADIMPLENTE" testeTerminaEm={null} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Há um pagamento pendente na sua assinatura.');
+    rerender(<FaixaSituacao situacao="CANCELADA" testeTerminaEm={null} />);
+    expect(screen.getByRole('status')).toHaveTextContent('Conta cancelada. Você ainda pode consultar e baixar seus dados.');
+  });
+
   it('ativa e cancelada não oferecem pagamento', () => {
     const { rerender } = render(<FaixaSituacao situacao="CANCELADA" testeTerminaEm={null} />);
     expect(screen.queryByRole('link')).not.toBeInTheDocument();
@@ -86,5 +93,21 @@ describe('ConsumoDoPlano', () => {
     expect(screen.getByText('1 de 3')).toBeInTheDocument();
     expect(screen.getByRole('progressbar', { name: 'Usuários' })).toHaveAttribute('aria-valuenow', '1');
     expect(screen.getByText('40 · ilimitado')).toBeInTheDocument();
+  });
+
+  it.each([
+    [79, 'bg-primary'],
+    [80, 'bg-warning'],
+    [99, 'bg-warning'],
+    [100, 'bg-danger'],
+    [150, 'bg-danger'],
+  ])('uso de %i%% do limite usa a cor %s', (uso, cor) => {
+    render(<ConsumoDoPlano itens={[{ recurso: 'USUARIOS', uso, limite: 100 }]} />);
+    expect(screen.getByRole('progressbar', { name: 'Usuários' }).firstElementChild).toHaveClass(cor);
+  });
+
+  it('limite zero conta como esgotado', () => {
+    render(<ConsumoDoPlano itens={[{ recurso: 'USUARIOS', uso: 0, limite: 0 }]} />);
+    expect(screen.getByRole('progressbar', { name: 'Usuários' }).firstElementChild).toHaveClass('bg-danger');
   });
 });

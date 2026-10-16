@@ -4,12 +4,13 @@ import { describe, expect, it, vi } from 'vitest';
 import { adminApi } from '../api';
 import { EditarPlano } from './EditarPlano';
 import { ListaDePlanosAdmin } from './ListaDePlanosAdmin';
+import { TrocarPlanoForm } from './TrocarPlanoForm';
 import { PainelMetricas } from './PainelMetricas';
 
 vi.mock('../api', () => ({ adminApi: { metricas: vi.fn(), plano: vi.fn(), planos: vi.fn() } }));
 
 function renderizar(ui: React.ReactNode) {
-  render(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>);
+  render(<QueryClientProvider client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}>{ui}</QueryClientProvider>);
 }
 
 describe('área da plataforma', () => {
@@ -45,5 +46,15 @@ describe('área da plataforma', () => {
     vi.mocked(adminApi.planos).mockResolvedValue({ data: [] });
     renderizar(<ListaDePlanosAdmin />);
     expect(await screen.findByText('Nenhum plano cadastrado')).toBeInTheDocument();
+  });
+
+  it('trocar plano avisa quando os planos não carregam', async () => {
+    vi.mocked(adminApi.planos).mockRejectedValue(new Error('falhou'));
+    const empresa = {
+      id: 'e1', cnpj: '11222333000181', razao_social: 'X Ltda', nome_fantasia: null, situacao: 'ATIVA' as const,
+      teste_termina_em: null, situacao_alterada_em: null, plano: null, criada_em: '2026-10-01',
+    };
+    renderizar(<TrocarPlanoForm empresa={empresa} />);
+    expect(await screen.findByText('Não foi possível carregar os planos.')).toBeInTheDocument();
   });
 });

@@ -48,6 +48,8 @@ export function TrocarPlanoForm({ empresa }: { empresa: Empresa }) {
           {(a11y) =>
             planos.isPending ? (
               <p className="text-sm text-muted-foreground">Carregando planos...</p>
+            ) : planos.isError ? (
+              <Banner tom="perigo">Não foi possível carregar os planos.</Banner>
             ) : (
               <SelectNativo {...a11y} value={planoId} onChange={(e) => setPlanoId(e.target.value)}>
                 <option value="">Escolha...</option>

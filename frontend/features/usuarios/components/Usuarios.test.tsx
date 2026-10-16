@@ -7,6 +7,7 @@ import type { Usuario } from '@/features/auth/types';
 import { ApiError } from '@/lib/api';
 import { usuariosApi } from '../api';
 import { ConviteForm } from './ConviteForm';
+import { EditarUsuarioForm } from './EditarUsuarioForm';
 import { ListaDeUsuarios } from './ListaDeUsuarios';
 
 vi.mock('../api', () => ({
@@ -80,5 +81,40 @@ describe('usuários da empresa', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Enviar convite' }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent('Seu plano permite até 3 usuários ativos.');
+  });
+
+  it('edição salva nome e papel e fecha o formulário', async () => {
+    vi.mocked(usuariosApi.editar).mockResolvedValue({ data: { id: 'b', nome: 'Bia Souza', email: 'bia@x.com', papel: 'FISCAL', ativo: true } });
+    const onFechar = vi.fn();
+    renderizar(<EditarUsuarioForm usuario={{ id: 'b', nome: 'Bia', email: 'bia@x.com', papel: 'VENDEDOR', ativo: true }} autor="ADMIN" onFechar={onFechar} />);
+
+    await userEvent.clear(screen.getByLabelText('Nome'));
+    await userEvent.type(screen.getByLabelText('Nome'), 'Bia Souza');
+    await userEvent.selectOptions(screen.getByLabelText('Papel'), 'FISCAL');
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    await waitFor(() => expect(usuariosApi.editar).toHaveBeenCalledWith('b', { nome: 'Bia Souza', papel: 'FISCAL' }));
+    await waitFor(() => expect(onFechar).toHaveBeenCalled());
+  });
+
+  it('edição mostra o erro do servidor e não fecha', async () => {
+    vi.mocked(usuariosApi.editar).mockRejectedValue(new ApiError(422, 'Não é possível alterar o proprietário.'));
+    const onFechar = vi.fn();
+    renderizar(<EditarUsuarioForm usuario={{ id: 'b', nome: 'Bia', email: 'bia@x.com', papel: 'VENDEDOR', ativo: true }} autor="ADMIN" onFechar={onFechar} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Não é possível alterar o proprietário.');
+    expect(onFechar).not.toHaveBeenCalled();
+  });
+
+  it('cancelar fecha sem salvar', async () => {
+    const onFechar = vi.fn();
+    renderizar(<EditarUsuarioForm usuario={{ id: 'b', nome: 'Bia', email: 'bia@x.com', papel: 'VENDEDOR', ativo: true }} autor="ADMIN" onFechar={onFechar} />);
+
+    await userEvent.click(screen.getByRole('button', { name: 'Cancelar' }));
+
+    expect(onFechar).toHaveBeenCalled();
+    expect(usuariosApi.editar).not.toHaveBeenCalled();
   });
 });
