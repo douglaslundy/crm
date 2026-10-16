@@ -10,6 +10,10 @@ Para cada passo registre: data, número da nota, cStat recebido e o que a tela m
 2. Configurar série e próximo número de NF-e, NFC-e e DPS. Para a NFC-e, informar o CSC de homologação.
 3. Deixar o ambiente em HOMOLOGAÇÃO.
 
+## Verificação TLS (F8b)
+
+3a. Com `FISCAL_CA_BUNDLE` apontando para o bundle de CAs (ou vazio, se o do sistema bastar), emitir uma NF-e e uma NFS-e em homologação. Esperado: sem erro `SSL certificate problem`. Esse erro indica CA faltando no bundle: complete o bundle, nunca desligue a verificação (detalhes em `docs/go-live/checklist-producao.md`).
+
 ## NF-e
 
 4. Emitir uma NF-e de venda para destinatário PJ com IE. Esperado: AUTORIZADA, cStat 100, DANFE baixa e mostra "SEM VALOR FISCAL".

@@ -1,0 +1,23 @@
+# TLS automático (Let's Encrypt) para os dois domínios. APP_DOMAIN e API_DOMAIN vêm do deploy/.env.
+(seguranca) {
+	encode zstd gzip
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+}
+
+{$APP_DOMAIN} {
+	import seguranca
+	reverse_proxy web:3000
+}
+
+{$API_DOMAIN} {
+	import seguranca
+	request_body {
+		max_size 25MB
+	}
+	reverse_proxy app:8080
+}

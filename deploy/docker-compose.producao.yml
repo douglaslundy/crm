@@ -1,0 +1,26 @@
+# Camada de produção sobre o docker-compose.yml: remove as portas do host (só o Caddy fica exposto) e sobe o proxy HTTPS.
+# Uso (dentro de deploy/):  docker compose -f docker-compose.yml -f docker-compose.producao.yml up -d
+# Exige Docker Compose >= 2.24 (tag !reset).
+services:
+  app:
+    ports: !reset []
+  web:
+    ports: !reset []
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    env_file: .env
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+      - web
+
+volumes:
+  caddy_data:
+  caddy_config:

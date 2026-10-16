@@ -43,3 +43,7 @@ Backup do banco: `docker compose exec -T db pg_dump -U plataforma plataforma > b
 ## Limitações
 
 HTTP puro e sem domínio (cookie `SESSION_SECURE_COOKIE=false`): serve para rede privada. Para a internet, ponha HTTPS na frente e ajuste `.env` (`SESSION_SECURE_COOKIE=true`, domínios e `NEXT_PUBLIC_API_URL`).
+
+## Produção
+
+Este README é do staging. Para a internet (HTTPS, domínio, cookies seguros, verificação TLS fiscal) use `docker-compose.producao.yml`, `Caddyfile` e `.env.production.example`, seguindo `docs/go-live/checklist-producao.md`.
