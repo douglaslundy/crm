@@ -1,0 +1,2 @@
+# Dumps do banco gerados por deploy/backup.sh (contêm dados de clientes).
+/backups/
