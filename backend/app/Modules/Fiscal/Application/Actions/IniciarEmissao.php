@@ -119,9 +119,9 @@ final class IniciarEmissao
             $numeroNovo = $nota->numero === null || $nota->ambiente !== $ambiente || $denegada;
             if ($numeroNovo) {
                 $serie = EmitenteSerie::query()->where('emitente_id', $emitente->id)->where('modelo', $nota->modelo)->lockForUpdate()->firstOrFail();
-                $nota->numero = $serie->proximo_numero;
+                $nota->numero = $serie->proximoNumeroDo($emitente->ambiente_fiscal);
                 $nota->serie = $serie->serie;
-                $serie->update(['proximo_numero' => $serie->proximo_numero + 1]);
+                $serie->definirProximoNumero($emitente->ambiente_fiscal, $nota->numero + 1);
             }
 
             $anterior = $nota->status;

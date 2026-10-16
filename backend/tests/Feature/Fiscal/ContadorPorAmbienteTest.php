@@ -83,4 +83,64 @@ class ContadorPorAmbienteTest extends TestCase
 
         $this->assertSame(1, $this->serie()->proximo_numero_producao);
     }
+
+    private function rascunho(): Nota
+    {
+        return app(CriarRascunhoDeNota::class)->executar([
+            'cliente_id' => $this->cliente->id, 'consumidor_final' => null, 'desconto_centavos' => 0,
+            'informacoes_complementares' => null,
+            'itens' => [['produto_id' => $this->produto->id, 'quantidade' => '1', 'valor_unitario_centavos' => null]],
+            'pagamentos' => [['tpag' => '01', 'xpag' => null, 'valor_centavos' => 1000]],
+        ], $this->admin);
+    }
+
+    public function test_emissao_em_producao_usa_e_avanca_so_o_contador_de_producao(): void
+    {
+        Queue::fake();
+        $this->emitente->update(['ambiente_fiscal' => 'PRODUCAO']);
+        $this->serie()->update(['proximo_numero' => 9, 'proximo_numero_producao' => 500]);
+
+        $nota = app(IniciarEmissao::class)->executar($this->rascunho()->id, $this->admin);
+
+        $this->assertSame(500, $nota->numero);
+        $this->assertSame('PRODUCAO', $nota->ambiente);
+        $this->assertSame(9, $this->serie()->proximo_numero);
+        $this->assertSame(501, $this->serie()->proximo_numero_producao);
+    }
+
+    public function test_emissao_em_homologacao_nao_move_o_contador_de_producao(): void
+    {
+        Queue::fake();
+        $this->serie()->update(['proximo_numero_producao' => 500]);
+
+        $nota = app(IniciarEmissao::class)->executar($this->rascunho()->id, $this->admin);
+
+        $this->assertSame(1, $nota->numero);
+        $this->assertSame(2, $this->serie()->proximo_numero);
+        $this->assertSame(500, $this->serie()->proximo_numero_producao);
+    }
+
+    public function test_atualizar_serie_grava_no_contador_do_ambiente_atual(): void
+    {
+        $acao = app(AtualizarSerie::class);
+
+        $acao->executar($this->emitente, ModeloDocumento::Nfe, '1', 30);
+        $this->assertSame(30, $this->serie()->proximo_numero);
+        $this->assertSame(1, $this->serie()->proximo_numero_producao);
+
+        $this->emitente->update(['ambiente_fiscal' => 'PRODUCAO']);
+        $acao->executar($this->emitente->refresh(), ModeloDocumento::Nfe, '1', 80);
+        $this->assertSame(30, $this->serie()->proximo_numero);
+        $this->assertSame(80, $this->serie()->proximo_numero_producao);
+    }
+
+    public function test_resource_da_serie_mostra_o_contador_do_ambiente_atual(): void
+    {
+        $this->serie()->update(['proximo_numero' => 9, 'proximo_numero_producao' => 500]);
+        $this->emitente->update(['ambiente_fiscal' => 'PRODUCAO']);
+
+        $json = (new EmitenteSerieResource($this->serie()->refresh()))->resolve();
+
+        $this->assertSame(500, $json['proximo_numero']);
+    }
 }

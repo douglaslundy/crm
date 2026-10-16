@@ -55,8 +55,9 @@ final class InutilizarNumeracao
         if ($serie === null) {
             throw new EmissaoBloqueadaException('FISCAL_SERIE_NAO_CONFIGURADA', "A série {$numeroSerie} da {$rotulo} não está cadastrada em Configurações > Fiscal.");
         }
-        if ($final >= $serie->proximo_numero) {
-            throw new EmissaoBloqueadaException('FISCAL_FAIXA_NAO_ALOCADA', 'Só é possível inutilizar números já alocados (até o '.($serie->proximo_numero - 1).').');
+        $proximo = $serie->proximoNumeroDo($emitente->ambiente_fiscal);
+        if ($final >= $proximo) {
+            throw new EmissaoBloqueadaException('FISCAL_FAIXA_NAO_ALOCADA', 'Só é possível inutilizar números já alocados (até o '.($proximo - 1).').');
         }
 
         $ambiente = $emitente->ambiente_fiscal->value;

@@ -35,7 +35,7 @@ final class AtualizarSerie
 
             return EmitenteSerie::query()->updateOrCreate(
                 ['emitente_id' => $emitente->id, 'modelo' => $modelo],
-                ['serie' => $serie, 'proximo_numero' => $proximoNumero],
+                ['serie' => $serie, EmitenteSerie::colunaDoNumero($emitente->ambiente_fiscal) => $proximoNumero],
             );
         });
     }

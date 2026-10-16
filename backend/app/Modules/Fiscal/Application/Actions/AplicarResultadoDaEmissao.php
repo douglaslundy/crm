@@ -8,6 +8,7 @@ use App\Modules\Fiscal\Application\Jobs\EmitirNotaJob;
 use App\Modules\Fiscal\Domain\Contracts\EmissorDeNfe;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeConsulta;
 use App\Modules\Fiscal\Domain\Emissao\ResultadoDeEmissao;
+use App\Modules\Fiscal\Domain\Enums\AmbienteFiscal;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Enums\SituacaoNaSefaz;
 use App\Modules\Fiscal\Domain\Enums\StatusNota;
@@ -105,12 +106,15 @@ final class AplicarResultadoDaEmissao
         $limite = (int) config('fiscal.tentativas_numero_ocupado');
 
         if ($consulta->situacao === SituacaoNaSefaz::Cancelada && $nota->tentativas_numero < $limite) {
+            // O contador é o do ambiente em que a nota foi enviada, não o do emitente agora.
+            $ambiente = AmbienteFiscal::from((string) $nota->ambiente);
             $serie = EmitenteSerie::query()->where('emitente_id', $emitente->id)->where('modelo', ModeloDocumento::Nfe)->lockForUpdate()->firstOrFail();
+            $numero = $serie->proximoNumeroDo($ambiente);
             $nota->forceFill([
-                'numero' => $serie->proximo_numero, 'tentativas_numero' => $nota->tentativas_numero + 1,
+                'numero' => $numero, 'tentativas_numero' => $nota->tentativas_numero + 1,
                 'chave' => null, 'xml_enviado' => null, 'cstat' => '539', 'motivo' => $r->motivo,
             ])->save();
-            $serie->update(['proximo_numero' => $serie->proximo_numero + 1]);
+            $serie->definirProximoNumero($ambiente, $numero + 1);
             NotaEvento::registrar($nota, StatusNota::Processando, StatusNota::Processando, "Número ocupado por nota cancelada ({$chave}); avançou para o {$nota->numero}");
 
             return true;

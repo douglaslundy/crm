@@ -17,7 +17,8 @@ final class EmitenteSerieResource extends JsonResource
         return [
             'modelo' => $this->modelo->value,
             'serie' => $this->serie,
-            'proximo_numero' => $this->proximo_numero,
+            // O contador do ambiente em que o emitente opera agora.
+            'proximo_numero' => $this->proximoNumeroDo($this->emitente->ambiente_fiscal),
         ];
     }
 }

@@ -156,6 +156,7 @@ class InutilizarNumeracaoTest extends TestCase
     public function test_usa_o_ambiente_atual_do_emitente(): void
     {
         $this->emitente->update(['ambiente_fiscal' => 'PRODUCAO']);
+        $this->emitente->series()->update(['proximo_numero_producao' => 10]);
 
         $r = app(InutilizarNumeracao::class)->executar($this->dados(), $this->admin);
 
