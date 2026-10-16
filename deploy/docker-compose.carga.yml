@@ -1,0 +1,23 @@
+# Overlay de TESTE DE CARGA. Só no staging. Passo a passo: docs/carga/runbook-testes-de-carga.md.
+#   docker compose -f docker-compose.yml -f docker-compose.carga.yml up -d app worker
+#   docker compose -f docker-compose.yml -f docker-compose.carga.yml --profile carga run --rm k6 run /scripts/leitura.js
+# Para voltar ao normal: docker compose up -d app worker   (sem este arquivo o emissor simulado desliga).
+x-simulado: &simulado
+  FISCAL_EMISSOR_SIMULADO: "1"
+  FISCAL_EMISSOR_SIMULADO_LATENCIA_MS: ${FISCAL_EMISSOR_SIMULADO_LATENCIA_MS:-150}
+
+services:
+  app:
+    environment: *simulado
+  worker:
+    environment: *simulado
+  k6:
+    image: grafana/k6:0.54.0
+    profiles: ["carga"]
+    environment:
+      API_URL: http://app:8080
+      ORIGEM: ${CARGA_ORIGEM:-http://192.168.0.233:3200}
+    volumes:
+      - ../carga/k6:/scripts:ro
+      - ../carga/dados:/dados:ro
+      - ../carga/saida:/saida
