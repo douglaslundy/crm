@@ -4,11 +4,17 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Fiscal;
 
+use App\Modules\Fiscal\Application\Actions\AtualizarSerie;
+use App\Modules\Fiscal\Application\Actions\CriarRascunhoDeNota;
+use App\Modules\Fiscal\Application\Actions\IniciarEmissao;
 use App\Modules\Fiscal\Domain\Enums\AmbienteFiscal;
 use App\Modules\Fiscal\Domain\Enums\ModeloDocumento;
 use App\Modules\Fiscal\Domain\Models\EmitenteSerie;
+use App\Modules\Fiscal\Domain\Models\Nota;
+use App\Modules\Fiscal\Http\Resources\EmitenteSerieResource;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Queue;
 use Tests\Fixtures\CenarioDeNota;
 use Tests\TestCase;
 
