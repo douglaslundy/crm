@@ -38,7 +38,7 @@ Detalhes em `docs/superpowers/specs/2026-09-25-plataforma-fiscal-crm-design.md`,
   - [x] **F8a Auditoria fiscal** (concluída em 2026-10-13): 11 checagens do `audit-checklist.md`, relatório em `docs/auditoria/2026-10-13-f8a-auditoria-fiscal.md`, 3 achados Importantes corrigidos, roteiro em `docs/auditoria/roteiro-homologacao-real.md`.
   - [x] **F8b Pendências de go-live** (7 de 7, concluída em 2026-10-16): TLS ligado por patch (`nfse-php` e `sped-common`), contador de numeração por ambiente com número inicial na virada, template de produção + Caddy + runbook `docs/go-live/checklist-producao.md`. Spec `docs/superpowers/specs/2026-10-16-f8b-pendencias-go-live-design.md`; plano `docs/superpowers/plans/2026-10-16-f8b-pendencias-go-live.md`.
   - [x] **F8c Backup e restauração** (concluída em 2026-10-16): `deploy/backup.sh` (dump validado, retenção de 14 dias) e `deploy/restaurar.sh` (confirmação, dump de segurança, transação única), runbook `docs/go-live/backup-e-restauracao.md`. Só o banco entra no backup (o app não grava arquivos em `storage`); destino só o disco da VPS. O ciclo real de backup e restauração não foi executado (sem Docker nem PostgreSQL na máquina de desenvolvimento): o usuário precisa provar no staging pelo roteiro do runbook.
-  - [x] **F8d Testes de carga** (kit entregue em 2026-10-16; **medição pendente do usuário** na VPS): k6 em container, `carga:semear`/`carga:limpar`, emissor de NF-e simulado, runbook `docs/carga/runbook-testes-de-carga.md`. Spec `docs/superpowers/specs/2026-10-16-f8d-testes-de-carga-design.md`; plano `docs/superpowers/plans/2026-10-16-f8d-testes-de-carga.md`.
+  - [x] **F8d Testes de carga** (kit entregue em 2026-10-16; **medida em 2026-10-16, ver `docs/carga/2026-10-16-resultado.md`** na VPS): k6 em container, `carga:semear`/`carga:limpar`, emissor de NF-e simulado, runbook `docs/carga/runbook-testes-de-carga.md`. Spec `docs/superpowers/specs/2026-10-16-f8d-testes-de-carga-design.md`; plano `docs/superpowers/plans/2026-10-16-f8d-testes-de-carga.md`.
 
 ## Pendências herdadas da revisão da F0 (resolver no início da F1)
 - [x] Tirar `tenant_id` e `papel` de `Usuario::$fillable` (escalada de tenant ou privilégio por mass assignment).
@@ -59,38 +59,38 @@ Achados menores adiados e uma decisão de produto parcada durante a revisão das
 
 **Cosméticos e dívidas técnicas menores:**
 - [x] `backend/bootstrap/app.php` sem `declare(strict_types=1)` (pré-existente).
-- [ ] `Cnpj`: arrays `PESOS_DV1`/`PESOS_DV2` quase idênticos.
-- [ ] Sem teste HTTP específico de `CnpjInvalidoException` (422 `CNPJ_INVALIDO`).
+- [x] `Cnpj`: arrays `PESOS_DV1`/`PESOS_DV2` quase idênticos.
+- [x] Sem teste HTTP específico de `CnpjInvalidoException` (422 `CNPJ_INVALIDO`).
 - [x] Migrations publicadas do pacote `activitylog` sem `declare(strict_types=1)`.
 - [ ] `ExpirarTestesCommand` conta `$total` por referência (cosmético).
 - [x] Sem teste cross-tenant para `ContadorDeUsuariosAtivos`.
-- [ ] `limite()` e `consumo()` do `EntitlementService` com expressões quase idênticas.
-- [ ] `AssinaturaController`: `firstOrFail` com tenant órfão devolve 404 com mensagem em inglês.
+- [x] `limite()` e `consumo()` do `EntitlementService` com expressões quase idênticas.
+- [x] `AssinaturaController`: `firstOrFail` com tenant órfão devolve 404 com mensagem em inglês.
 - [ ] Bloco `/** @var Usuario $autor */` repetido nos controllers de admin.
 - [ ] Busca de empresas sem dígitos ainda adiciona `OR cnpj LIKE` (inofensivo; CNPJ alfanumérico pode casar letras).
 - [ ] `CadastrarEmpresa`: `firstOrFail` em corrida de plano desativado devolve 404 genérico em inglês.
-- [ ] BrasilAPI: resposta 200 com corpo vazio é cacheada como "encontrado".
-- [ ] `GET /api/publico/planos` sem throttle.
+- [x] BrasilAPI: resposta 200 com corpo vazio é cacheada como "encontrado".
+- [x] `GET /api/publico/planos` sem throttle.
 - [x] Reativar usuário já ativo não é barrado (422 enganoso ou auditoria espúria).
-- [ ] `unique` de e-mail fora do lock: corrida de convites para o mesmo e-mail pode dar 500.
-- [ ] Lacunas de teste em convites: POST de PROPRIETARIO por ADMIN, reuso de token de convite, token do broker `users` no aceitar-convite, papéis FISCAL/LEITURA.
-- [ ] Workaround `forgetGuards`/`flushSession` repetido nos testes — criar helper no `TestCase`.
+- [x] `unique` de e-mail fora do lock: corrida de convites para o mesmo e-mail pode dar 500.
+- [x] Lacunas de teste em convites: POST de PROPRIETARIO por ADMIN, reuso de token de convite, token do broker `users` no aceitar-convite, papéis FISCAL/LEITURA. (feito, exceto o token do broker `users` no aceitar-convite)
+- [x] Workaround `forgetGuards`/`flushSession` repetido nos testes — criar helper no `TestCase`.
 - [ ] Listagem de usuários da empresa sem paginação (plano ilimitado).
 - [x] `EditarUsuario`/`DesativarUsuario` gravam e auditam fora de transação.
 - [ ] Commit de correção `83bf928` com mensagem em inglês.
-- [ ] `Campo` sem teste do caso sem dica e sem erro.
-- [ ] Faixas de cor do `ConsumoDoPlano` (80%/100%) e ramos INADIMPLENTE/CANCELADA da `FaixaSituacao` sem teste.
+- [x] `Campo` sem teste do caso sem dica e sem erro.
+- [x] Faixas de cor do `ConsumoDoPlano` (80%/100%) e ramos INADIMPLENTE/CANCELADA da `FaixaSituacao` sem teste.
 - [ ] Warning de lint `react-hooks/incompatible-library` por `form.watch` no `CadastroForm` (trocar por `useWatch`).
 - [ ] Checkbox de aceite de termos fora do componente `Campo`.
-- [ ] `ListaDePlanosAdmin` sem estado vazio.
-- [ ] `TrocarPlanoForm` sem tratamento de erro ao carregar planos.
-- [ ] `EditarUsuarioForm` sem teste.
+- [x] `ListaDePlanosAdmin` sem estado vazio.
+- [x] `TrocarPlanoForm` sem tratamento de erro ao carregar planos.
+- [x] `EditarUsuarioForm` sem teste.
 - [ ] Mensagem de convite inválido duplicada entre frontend e backend, sem teste de contrato entre os dois.
 
 ## Pendências de infraestrutura e fechamento (2026-10-02)
 - [x] Publicar no remoto: feito em 2026-10-02 (`origin/master` em `db2bc7d`). Falta enviar os commits da F3a e conferir o CI (job em PostgreSQL 16) na primeira execução.
 - [ ] Conferência visual no navegador da F2 (passo 12 do fechamento, não feita): wizard `/onboarding`, `/configuracoes/fiscal`, produtos, serviços, pendências, clientes, CSV.
-- [ ] Teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado): aumentar timeout ou aliviar o teste.
+- [x] Teste `CadastroForm` estoura 5 s às vezes na suíte completa (passa isolado): aumentar timeout ou aliviar o teste.
 - [x] Plano da F3a revisado e executado inline (2026-10-02).
 - [ ] Fora do código, ainda sem data: certificado A1 e CNPJ de homologação para a fumaça da F3a (Tarefa 23) e para a F8.
 
@@ -232,3 +232,9 @@ Achados menores adiados e uma decisão de produto parcada durante a revisão das
 - [ ] `billing:gerar-boletos` sem `withoutOverlapping` (idempotência do gateway protege o boleto, não o registro) (A-08).
 - [ ] Denegada (110/301/302/303) vira REJEITADA com o cStat; falta um estado próprio e mensagem na tela explicando "número consumido, corrija o cadastro e emita de novo".
 
+
+## Landing e carga (2026-10-16)
+- [x] Estados vazios em clientes, produtos, serviços e planos do admin; landing de vendas em `/` com WhatsApp (35 98429-7193) e formulário de contato com charada de soma (`POST /api/publico/contato`, tabela `contatos_site`).
+- [ ] Tela no admin para ler as mensagens de `contatos_site` (hoje só no banco) e/ou aviso por e-mail (o mailer do staging é `log`).
+- [ ] Refazer a medição de carga com o k6 fora da VPS e com `--scale worker=3`: leitura (p95 1,27 s > 0,8 s) e emissão (p95 63 s > 60 s) reprovaram na VPS compartilhada de 4 núcleos.
+- [ ] Mudanças suas ainda não commitadas (`frontend/eslint.config.mjs`, `CadastroForm.tsx` com `useWatch`, `frontend/eslint-rules/`): conferir e commitar.
