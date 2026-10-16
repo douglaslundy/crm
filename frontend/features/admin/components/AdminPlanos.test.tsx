@@ -3,9 +3,10 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { adminApi } from '../api';
 import { EditarPlano } from './EditarPlano';
+import { ListaDePlanosAdmin } from './ListaDePlanosAdmin';
 import { PainelMetricas } from './PainelMetricas';
 
-vi.mock('../api', () => ({ adminApi: { metricas: vi.fn(), plano: vi.fn() } }));
+vi.mock('../api', () => ({ adminApi: { metricas: vi.fn(), plano: vi.fn(), planos: vi.fn() } }));
 
 function renderizar(ui: React.ReactNode) {
   render(<QueryClientProvider client={new QueryClient()}>{ui}</QueryClientProvider>);
@@ -38,5 +39,11 @@ describe('área da plataforma', () => {
     renderizar(<EditarPlano id="p1" />);
 
     expect(await screen.findByText('2 empresas usam este plano. As alterações valem para todas.')).toBeInTheDocument();
+  });
+
+  it('lista de planos vazia mostra estado vazio', async () => {
+    vi.mocked(adminApi.planos).mockResolvedValue({ data: [] });
+    renderizar(<ListaDePlanosAdmin />);
+    expect(await screen.findByText('Nenhum plano cadastrado')).toBeInTheDocument();
   });
 });

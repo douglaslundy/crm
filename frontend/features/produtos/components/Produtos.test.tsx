@@ -67,4 +67,10 @@ describe('produtos', () => {
     expect(await screen.findByText('Parafuso')).toBeInTheDocument();
     expect(screen.getByText(/pendente/i)).toBeInTheDocument();
   });
+
+  it('lista vazia mostra estado vazio', async () => {
+    vi.mocked(produtosApi.listar).mockResolvedValue({ data: [] });
+    renderizar(<ListaDeProdutos />);
+    expect(await screen.findByText('Nenhum produto cadastrado')).toBeInTheDocument();
+  });
 });

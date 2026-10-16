@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { QUERY_KEY_SERVICOS, servicosApi } from '../api';
 import { ServicoForm } from './ServicoForm';
 import { Banner } from '@/components/ui/banner';
+import { EstadoVazio } from '@/components/ui/estado-vazio';
 
 export function ListaDeServicos() {
   const [editando, setEditando] = useState<string | null>(null);
@@ -13,6 +14,8 @@ export function ListaDeServicos() {
 
   if (isPending) return <p className="text-muted-foreground">Carregando...</p>;
   if (isError) return <Banner tom="perigo">Não foi possível carregar os serviços.</Banner>;
+
+  if (data.length === 0) return <EstadoVazio titulo="Nenhum serviço cadastrado">Cadastre o primeiro no formulário "Novo serviço" ou importe um CSV.</EstadoVazio>;
 
   return (
     <ul className="divide-y">

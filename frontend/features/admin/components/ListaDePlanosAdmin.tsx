@@ -6,6 +6,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { formatarCentavos } from '@/lib/formatos';
 import { adminApi } from '../api';
 import { Banner } from '@/components/ui/banner';
+import { EstadoVazio } from '@/components/ui/estado-vazio';
 
 export function ListaDePlanosAdmin() {
   const { data, isPending, isError } = useQuery({
@@ -21,7 +22,8 @@ export function ListaDePlanosAdmin() {
       </div>
       {isPending ? <p className="text-muted-foreground">Carregando...</p> : null}
       {isError ? <Banner tom="perigo">Não foi possível carregar os planos.</Banner> : null}
-      {data ? (
+      {data && data.length === 0 ? <EstadoVazio titulo="Nenhum plano cadastrado">Use "Novo plano" para criar o primeiro.</EstadoVazio> : null}
+      {data && data.length > 0 ? (
         <ul className="divide-y rounded-lg border">
           {data.map((plano) => (
             <li key={plano.id} className="flex flex-wrap items-center justify-between gap-2 p-3">

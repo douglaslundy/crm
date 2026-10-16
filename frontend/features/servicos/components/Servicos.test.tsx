@@ -55,4 +55,10 @@ describe('serviços', () => {
     expect(await screen.findByText('Consultoria')).toBeInTheDocument();
     expect(screen.getByText(/pendente/i)).toBeInTheDocument();
   });
+
+  it('lista vazia mostra estado vazio', async () => {
+    vi.mocked(servicosApi.listar).mockResolvedValue({ data: [] });
+    renderizar(<ListaDeServicos />);
+    expect(await screen.findByText('Nenhum serviço cadastrado')).toBeInTheDocument();
+  });
 });

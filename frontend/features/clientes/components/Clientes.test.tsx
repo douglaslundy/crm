@@ -60,4 +60,10 @@ describe('clientes', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Converter Maria em cliente' }));
     await waitFor(() => expect(clientesApi.converterEmCliente).toHaveBeenCalledWith('1'));
   });
+
+  it('lista vazia mostra estado vazio', async () => {
+    vi.mocked(clientesApi.listar).mockResolvedValue({ data: [] });
+    renderizar(<ListaDeClientes podeEscrever />);
+    expect(await screen.findByText('Nenhum cliente cadastrado')).toBeInTheDocument();
+  });
 });

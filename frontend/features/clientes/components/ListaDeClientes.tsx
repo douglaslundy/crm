@@ -9,6 +9,7 @@ import { clientesApi, QUERY_KEY_CLIENTES } from '../api';
 import { ClienteForm } from './ClienteForm';
 import { ContatoForm } from './ContatoForm';
 import { Banner } from '@/components/ui/banner';
+import { EstadoVazio } from '@/components/ui/estado-vazio';
 
 export function ListaDeClientes({ podeEscrever }: { podeEscrever: boolean }) {
   const queryClient = useQueryClient();
@@ -25,6 +26,8 @@ export function ListaDeClientes({ podeEscrever }: { podeEscrever: boolean }) {
 
   if (isPending) return <p className="text-muted-foreground">Carregando...</p>;
   if (isError) return <Banner tom="perigo">Não foi possível carregar os clientes.</Banner>;
+
+  if (data.length === 0) return <EstadoVazio titulo="Nenhum cliente cadastrado">{podeEscrever ? 'Cadastre o primeiro no formulário "Novo cliente" ou importe um CSV.' : 'Quando houver clientes ou leads, eles aparecem aqui.'}</EstadoVazio>;
 
   return (
     <ul className="divide-y">
