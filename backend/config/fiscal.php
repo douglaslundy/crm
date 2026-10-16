@@ -26,4 +26,9 @@ return [
 
     /** O painel alerta quando faltam menos horas que isto para o limite do EPEC. */
     'epec_alerta_horas' => (int) env('FISCAL_EPEC_ALERTA_HORAS', 48),
+
+    /** Só para teste de carga (exige APP_AMBIENTE=staging, senão o boot aborta). Troca o envio à SEFAZ por uma resposta sintética. */
+    'emissor_simulado' => (bool) env('FISCAL_EMISSOR_SIMULADO', false),
+
+    'emissor_simulado_latencia_ms' => (int) env('FISCAL_EMISSOR_SIMULADO_LATENCIA_MS', 150),
 ];

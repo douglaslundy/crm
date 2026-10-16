@@ -27,7 +27,9 @@ use App\Modules\Fiscal\Infrastructure\Nfse\NfseNacionalEmissor;
 use App\Modules\Fiscal\Infrastructure\ObservadorDeNotaEvento;
 use App\Modules\Fiscal\Infrastructure\Pdf\DompdfGeradorDeDanfse;
 use App\Modules\Fiscal\Infrastructure\Pdf\SpedDaGeradorDeDanfe;
+use App\Modules\Fiscal\Infrastructure\Simulado\EmissorDeNfeSimulado;
 use App\Modules\Platform\Application\RegistroDeContadores;
+use App\Modules\Shared\Domain\AmbienteDeCarga;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -38,7 +40,13 @@ final class FiscalServiceProvider extends ServiceProvider
         $this->app->bind(GeradorDeRascunhoDeNota::class, GeradorDeRascunhoParaCrm::class);
         $this->app->bind(ConsultorDeValorFaturado::class, ConsultorDeValorFaturadoDoFiscal::class);
         // Os testes sobrescrevem com app()->instance(EmissorDeNfe::class, new EmissorFake).
-        $this->app->bind(EmissorDeNfe::class, NfePhpEmissor::class);
+        if (config('fiscal.emissor_simulado')) {
+            // Aborta o boot fora do staging: o emissor simulado nunca pode atender uma empresa real.
+            AmbienteDeCarga::exigir('FISCAL_EMISSOR_SIMULADO');
+            $this->app->bind(EmissorDeNfe::class, fn (): EmissorDeNfeSimulado => new EmissorDeNfeSimulado((int) config('fiscal.emissor_simulado_latencia_ms')));
+        } else {
+            $this->app->bind(EmissorDeNfe::class, NfePhpEmissor::class);
+        }
         $this->app->bind(EmissorDeNfse::class, NfseNacionalEmissor::class);
         $this->app->bind(GeradorDeDanfe::class, SpedDaGeradorDeDanfe::class);
         $this->app->bind(GeradorDeDanfse::class, DompdfGeradorDeDanfse::class);
