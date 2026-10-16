@@ -40,7 +40,9 @@ final class ConfiguracaoFiscalController
     {
         $this->politica->garantirPodeEscrever($this->autor($request));
 
-        return new EmitenteResource($acao->executar($this->emitente(), $this->autor($request))->load('series'));
+        return new EmitenteResource(
+            $acao->executar($this->emitente(), $this->autor($request), $request->numerosIniciais())->load('series'),
+        );
     }
 
     private function emitente(): Emitente
