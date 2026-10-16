@@ -34,5 +34,9 @@ export const emitenteApi = {
     }),
   atualizarSerie: (modelo: ModeloDocumento, serie: string, proximoNumero: number) =>
     api<{ data: Emitente }>(`/api/app/emitente/series/${modelo}`, { method: 'PUT', body: JSON.stringify({ serie, proximo_numero: proximoNumero }) }),
-  confirmarProducao: () => api<{ data: Emitente }>('/api/app/emitente/ambiente/producao', { method: 'POST', body: JSON.stringify({ confirmo: true }) }),
+  confirmarProducao: (numerosIniciais: Partial<Record<ModeloDocumento, number>> = {}) =>
+    api<{ data: Emitente }>('/api/app/emitente/ambiente/producao', {
+      method: 'POST',
+      body: JSON.stringify({ confirmo: true, numeros_iniciais: numerosIniciais }),
+    }),
 };

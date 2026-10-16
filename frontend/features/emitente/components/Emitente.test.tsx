@@ -98,6 +98,43 @@ describe('ConfirmarProducao', () => {
     await waitFor(() => expect(emitenteApi.confirmarProducao).toHaveBeenCalled());
   });
 
+  it('envia o primeiro número de produção de cada série (padrão 1)', async () => {
+    vi.mocked(emitenteApi.confirmarProducao).mockClear();
+    vi.mocked(emitenteApi.confirmarProducao).mockResolvedValue({ data: { ...EMITENTE_VAZIO, ambiente_fiscal: 'PRODUCAO', emissao_de_teste_autorizada: true } });
+    renderizar(
+      <ConfirmarProducao
+        emitente={{ ...EMITENTE_VAZIO, emissao_de_teste_autorizada: true, series: [{ modelo: 'NFE', serie: '1', proximo_numero: 12 }] }}
+      />,
+    );
+
+    const campo = screen.getByLabelText('Primeiro número em produção (NF-e)');
+    expect(campo).toHaveValue(1);
+    await userEvent.clear(campo);
+    await userEvent.type(campo, '500');
+    await userEvent.click(screen.getByLabelText(/valor fiscal/));
+    await userEvent.click(screen.getByRole('button', { name: 'Ir para produção' }));
+
+    await waitFor(() => expect(emitenteApi.confirmarProducao).toHaveBeenCalledWith({ NFE: 500 }));
+  });
+
+  it('não envia número inicial inválido', async () => {
+    vi.mocked(emitenteApi.confirmarProducao).mockClear();
+    renderizar(
+      <ConfirmarProducao
+        emitente={{ ...EMITENTE_VAZIO, emissao_de_teste_autorizada: true, series: [{ modelo: 'NFE', serie: '1', proximo_numero: 12 }] }}
+      />,
+    );
+
+    const campo = screen.getByLabelText('Primeiro número em produção (NF-e)');
+    await userEvent.clear(campo);
+    await userEvent.type(campo, '0');
+    await userEvent.click(screen.getByLabelText(/valor fiscal/));
+    await userEvent.click(screen.getByRole('button', { name: 'Ir para produção' }));
+
+    expect(await screen.findByText(/pelo menos 1/)).toBeInTheDocument();
+    expect(emitenteApi.confirmarProducao).not.toHaveBeenCalled();
+  });
+
   it('em produção mostra só a faixa de ambiente', () => {
     renderizar(<ConfirmarProducao emitente={{ ...EMITENTE_VAZIO, ambiente_fiscal: 'PRODUCAO', emissao_de_teste_autorizada: true }} />);
     expect(screen.getByText(/PRODUÇÃO/)).toBeInTheDocument();
