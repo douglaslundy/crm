@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useRef, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import { Campo } from '@/components/form/Campo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,7 @@ export function CadastroForm({ planoId }: { planoId: string }) {
   const planos = usePlanosPublicos();
   const plano = planos.data?.find((p) => p.id === planoId);
   const form = useForm<CadastroDados>({ resolver: zodResolver(cadastroSchema), defaultValues: VALORES_INICIAIS });
+  const senha = useWatch({ control: form.control, name: 'password' });
 
   const consulta = useMutation({
     mutationFn: (cnpj: string) => cadastroApi.consultarCnpj(cnpj),
@@ -111,7 +112,6 @@ export function CadastroForm({ planoId }: { planoId: string }) {
   }
 
   const erros = form.formState.errors;
-  const senha = form.watch('password');
   const forca = forcaDaSenha(senha);
   const enviando = form.formState.isSubmitting;
 

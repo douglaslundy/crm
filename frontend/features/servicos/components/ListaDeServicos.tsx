@@ -15,7 +15,7 @@ export function ListaDeServicos() {
   if (isPending) return <p className="text-muted-foreground">Carregando...</p>;
   if (isError) return <Banner tom="perigo">Não foi possível carregar os serviços.</Banner>;
 
-  if (data.length === 0) return <EstadoVazio titulo="Nenhum serviço cadastrado">Cadastre o primeiro no formulário "Novo serviço" ou importe um CSV.</EstadoVazio>;
+  if (data.length === 0) return <EstadoVazio titulo="Nenhum serviço cadastrado">Cadastre o primeiro no formulário &quot;Novo serviço&quot; ou importe um CSV.</EstadoVazio>;
 
   return (
     <ul className="divide-y">

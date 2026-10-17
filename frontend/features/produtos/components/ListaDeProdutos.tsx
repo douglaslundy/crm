@@ -15,7 +15,7 @@ export function ListaDeProdutos() {
   if (isPending) return <p className="text-muted-foreground">Carregando...</p>;
   if (isError) return <Banner tom="perigo">Não foi possível carregar os produtos.</Banner>;
 
-  if (data.length === 0) return <EstadoVazio titulo="Nenhum produto cadastrado">Cadastre o primeiro no formulário "Novo produto" ou importe um CSV.</EstadoVazio>;
+  if (data.length === 0) return <EstadoVazio titulo="Nenhum produto cadastrado">Cadastre o primeiro no formulário &quot;Novo produto&quot; ou importe um CSV.</EstadoVazio>;
 
   return (
     <ul className="divide-y">

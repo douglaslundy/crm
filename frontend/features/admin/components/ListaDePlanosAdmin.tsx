@@ -22,7 +22,7 @@ export function ListaDePlanosAdmin() {
       </div>
       {isPending ? <p className="text-muted-foreground">Carregando...</p> : null}
       {isError ? <Banner tom="perigo">Não foi possível carregar os planos.</Banner> : null}
-      {data && data.length === 0 ? <EstadoVazio titulo="Nenhum plano cadastrado">Use "Novo plano" para criar o primeiro.</EstadoVazio> : null}
+      {data && data.length === 0 ? <EstadoVazio titulo="Nenhum plano cadastrado">Use &quot;Novo plano&quot; para criar o primeiro.</EstadoVazio> : null}
       {data && data.length > 0 ? (
         <ul className="divide-y rounded-lg border">
           {data.map((plano) => (
